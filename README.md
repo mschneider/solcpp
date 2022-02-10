@@ -7,14 +7,16 @@ want to work on this full-time, contact @m_schneider on twitter.
 
 # Dependencies
 
-These are the dependencies I installed on my development machine, while
-developing, other's might work. Please report if you get it to run on earlier
-versions.
+These are the dependencies I installed on my development machine, using
+homebrew, other versions might work. Please report if you get it to run on
+earlier versions. The CI runs the tests using a container built with the
+`Dockerfile` that packages all dependencies.
 
 - C++17
 - boost 1.76.0 [Boost]
 - cpr 1.7.2 [MIT]
 - curl 7.81.0 [MIT]
+- doctest 2.4.8 [MIT]
 - sodium 1.0.18 [ISC]
 - websocketpp 0.8.2 [BSD]
 - nlohmann-json 3.10.5 [MIT]
