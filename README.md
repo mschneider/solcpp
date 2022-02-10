@@ -44,20 +44,17 @@ work well with the rest of the code base.
 - Send Transaction
 - Build complex transactions (atomic cancel and replace)
 
-# TODO
+## TODO
 
-[ ] Find a maintainer
-
-[ ] Make a proper SDK out of this mess, this includes solving engineering issues,
+- [ ] Find a maintainer
+- [ ] Make a proper SDK out of this mess, this includes solving engineering issues,
    I have no idea about, like:
 
 - proper dependency installation
 - API design
 - proper packaging so it can be installed
 
-[ ] Improve liquidity on mango markets
-
-[ ] Remove/replace deprecated methods
-
-[ ] Remove the pragma warnings
+- [ ] Improve liquidity on mango markets
+- [ ] Remove/replace deprecated methods
+- [ ] Remove the pragma warnings
 
