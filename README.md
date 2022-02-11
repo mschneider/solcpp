@@ -22,12 +22,23 @@ dependencies. Install Conan [here](https://conan.io/downloads.html).
 ## Building:
 
 ```sh
-$ conan profile new default --detect # Create a default profile
+# Create a default profile or copy over the example for linux / macos
+$ conan profile new default --detect
 $ mkdir build && cd build
-$ conan install .. --build=missing -o:h boost:without_fiber=True # Skips building boost's header-only fiber
+$ conan install ..  \
+  --build=missing \
+  -o:h boost:without_fiber=True \ # Skips building boost's header-only fiber
+  -o:h boost:without_python=True \ # Skips python bindings
 $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 $ cmake --build .
+$ ./bin/tests
 ```
+
+_Note: if you have issues building libcurl on gcc-9, try clang. See
+[issue](https://github.com/curl/curl/issues/4821)._
+
+_Note: if you have issues linking cpr on linux gcc, try compiling with
+`libcxx=libstdc++11`. See [issue](https://github.com/libcpr/cpr/issues/125)._
 
 In addition some dependencies were directly included and slighly modified to
 work well with the rest of the code base.
@@ -37,9 +48,6 @@ work well with the rest of the code base.
 - fixedp
   (https://gist.github.com/dflemstr/294959/aa90ff5b1a66b45b9edb30a432a66f8383d368e6)
   [CC BY-SA 3.0]
-
-_Note: if you have issues building libcurl on gcc-9, try clang. See
-[issue](https://github.com/curl/curl/issues/4821)._
 
 # Examples
 
@@ -54,9 +62,8 @@ _Note: if you have issues building libcurl on gcc-9, try clang. See
 - [ ] Make a proper SDK out of this mess, this includes solving engineering
       issues, I have no idea about, like:
 
-- proper dependency installation
 - API design
-- proper packaging so it can be installed
+- packaging so it can be easily installed
 
 - [ ] Improve liquidity on mango markets
 - [ ] Remove/replace deprecated methods
