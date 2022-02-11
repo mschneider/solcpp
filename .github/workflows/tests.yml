@@ -16,6 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Get Conan
+        uses: turtlebrowser/get-conan@v1.0
+
+      - name: Create default profile
+        run: conan profile new default --detect --force
+
       - uses: actions/cache@v2
         with:
           path: ~/.conan
@@ -23,15 +29,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-conan-
 
-      - name: Get Conan
-        uses: turtlebrowser/get-conan@v1.0
-
-      - name: Create default profile
-        run: conan profile new default --detect
-
       - name: Override default profile
         run:
-          cp ${{github.workspace}}/conan_profile.${{matrix.config.profile}}
+          rsync --update
+          ${{github.workspace}}/conan_profile.${{matrix.config.profile}}
           ~/.conan/profiles/default
 
       - name: Install dependencies
@@ -41,12 +42,9 @@ jobs:
           boost:without_fiber=True -o:h boost:without_python=True
 
       - name: Configure CMake
-        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        # Build your program with the given configuration
         run:
           cmake --build ${{github.workspace}}/build --config Release --verbose
 
