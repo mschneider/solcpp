@@ -5,6 +5,7 @@ websocketpp/0.8.2
 nlohmann_json/3.10.5
 doctest/2.4.8
 openssl/3.0.1
+fmt/8.1.1
 
 [generators]
 cmake

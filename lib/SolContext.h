@@ -1,5 +1,0 @@
-
-class SolContext{
-    public:
-        
-}
