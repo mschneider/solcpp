@@ -78,10 +78,3 @@ TEST_CASE("compile memo transaction")
   CHECK_EQ(0, ctx.readOnlySignedAccounts);
   CHECK_EQ(1, ctx.readOnlyUnsignedAccounts);
 }
-
-TEST_CASE("compile mango_v3 transaction")
-{
-  const auto recentBlockhash = solana::PublicKey::empty();
-  const auto feePayer = solana::PublicKey::fromBase58("8K4Exjnvs3ZJQDE78zmFoax5Sh4cEVdbk1D1r17Wxuud");
-  const auto program = solana::PublicKey::fromBase58(mango_v3::MAINNET.program);
-}

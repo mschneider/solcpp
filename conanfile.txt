@@ -1,13 +1,10 @@
 [requires]
-boost/1.78.0
 cpr/1.7.2
-libcurl/7.80.0
 libsodium/1.0.18
 websocketpp/0.8.2
 nlohmann_json/3.10.5
 doctest/2.4.8
 openssl/3.0.1
-pkgconf/1.7.4
 
 [generators]
 cmake

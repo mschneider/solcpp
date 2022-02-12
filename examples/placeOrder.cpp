@@ -1,4 +1,3 @@
-#include <bit>
 
 #include "../mango_v3.hpp"
 

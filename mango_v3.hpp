@@ -218,7 +218,7 @@ namespace mango_v3
     AnyEvent items[EVENT_QUEUE_SIZE];
   };
 
-#pragma pack(pop, 8)
+#pragma pack(pop)
 
 // instructions are even tighter packed, every byte counts
 #pragma pack(push, 1)
@@ -323,6 +323,6 @@ namespace mango_v3
     };
   }
 
-#pragma pack(pop, 1)
+#pragma pack(pop)
 
 }

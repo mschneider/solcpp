@@ -70,7 +70,7 @@ namespace solana
     std::vector<uint8_t> signMessage(const std::vector<uint8_t> message) const
     {
       uint8_t sig[crypto_sign_BYTES];
-      uint64_t sigSize;
+      unsigned long long sigSize;
       if (0 != crypto_sign_detached(sig, &sigSize, message.data(), message.size(), data))
       {
         std::cerr << "could not sign tx with private key" << std::endl;
@@ -381,22 +381,4 @@ namespace solana
       return b58Sig;
     }
   }
-
-  /*
-    struct CompiledTransaction
-    {
-      std::vector<std::vector<uint8_t>> signatures;
-      CompiledMessage message;
-
-      void serializeTo(std::vector<uint8_t> &buffer) const
-      {
-        pushCompactU16(signatures.size(), buffer);
-        for (const auto &signature : signatures)
-        {
-          buffer.insert(buffer.end(), signature.begin(), signature.end());
-        }
-        message.serializeTo(buffer);
-      };
-    };
-    */
 }
