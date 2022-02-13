@@ -45,13 +45,13 @@ TEST_CASE("decode mango_v3 Fill")
   CHECK_EQ(event->makerOut, 0);
   CHECK_EQ(event->timestamp, 1644182650);
   CHECK_EQ(event->seqNum, 208787);
-  CHECK_EQ(b58encode(std::string((char *)event->maker.data.data(), 32)), "2Fgjpc7bp9jpiTRKSVSsiAcexw8Cawbz7GLJu8MamS9q");
+  CHECK_EQ(event->maker.toBase58(), "2Fgjpc7bp9jpiTRKSVSsiAcexw8Cawbz7GLJu8MamS9q");
   CHECK_EQ(to_string(event->makerOrderId), "7671244543748780405054196");
   CHECK_EQ(event->makerClientOrderId, 1644182622524);
   CHECK_EQ((int)round(event->makerFee.toDouble() * 10000), -4);
   CHECK_EQ(event->bestInitial, 0);
   CHECK_EQ(event->makerTimestamp, 1644182623);
-  CHECK_EQ(b58encode(std::string((char *)event->taker.data.data(), 32)), "2eTob7jrhKeHNhkK1jTfS3kZYdtNQS1VF7LETom6YHjJ");
+  CHECK_EQ(event->taker.toBase58(), "2eTob7jrhKeHNhkK1jTfS3kZYdtNQS1VF7LETom6YHjJ");
   CHECK_EQ(to_string(event->takerOrderId), "7484028538144702206551329");
   CHECK_EQ(event->takerClientOrderId, 0);
   CHECK_EQ((int)round(event->takerFee.toDouble() * 10000), 5);

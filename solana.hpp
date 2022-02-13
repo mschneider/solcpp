@@ -41,7 +41,7 @@ namespace solana
       if (!ok)
         throw std::runtime_error("invalid base58 '" + b58 + "'");
       if (decodedSize != SIZE)
-        throw std::runtime_error("not a valid PublicKey '" + std::to_string(decodedSize) + " != 32'");
+        throw std::runtime_error("not a valid PublicKey '" + std::to_string(decodedSize) + " != " + std::to_string(SIZE) + "'");
       return result;
     }
 
