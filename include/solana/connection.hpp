@@ -3,10 +3,10 @@
 #include <sodium.h>
 #include <string>
 #include <memory>
-#include "PublicKey.hpp"
-#include "KeyPair.hpp"
-#include "Transaction.hpp"
-#include "Types.h"
+#include "publickey.hpp"
+#include "keypair.hpp"
+#include "transaction.hpp"
+#include "types.hpp"
 
 namespace sol {
 

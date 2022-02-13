@@ -2,10 +2,10 @@
 
 #include <vector>
 #include <algorithm>
-#include "PublicKey.hpp"
-#include "Account.hpp"
-#include "PushCompact.hpp"
-#include "Types.h"
+#include "publickey.hpp"
+#include "account.hpp"
+#include "pushcompact.hpp"
+#include "types.hpp"
 
 namespace sol {
     struct Instruction

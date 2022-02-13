@@ -2,8 +2,8 @@
 
 #include <cstdint>
 #include <string>
-#include "include/fixedp.h"
-#include "include/int128.hpp"
+#include "include/solana/fixedp.h"
+#include "include/solana/int128.hpp"
 #include "solana.hpp"
 
 namespace mango_v3

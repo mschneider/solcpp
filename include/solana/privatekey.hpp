@@ -4,7 +4,7 @@
 #include <vector>
 #include <sodium.h>
 #include <iostream>
-#include "Types.h"
+#include "types.hpp"
 
 namespace sol {
     struct PrivateKey {

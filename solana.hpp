@@ -8,8 +8,8 @@
 #include <nlohmann/json.hpp>
 #include <sodium.h>
 
-#include "include/Base58.hpp"
-#include "include/Base64.hpp"
+#include "include/solana/base58.hpp"
+#include "include/solana/base64.hpp"
 
 namespace solana
 {

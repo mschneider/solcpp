@@ -3,8 +3,8 @@
 #include <iostream>
 #include <sodium.h>
 #include <string>
-#include "Base58.hpp"
-#include "Base64.hpp"
+#include "base58.hpp"
+#include "base64.hpp"
 
 namespace sol {
     struct PublicKey {

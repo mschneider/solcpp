@@ -1,8 +1,8 @@
 #pragma once
 
-#include "PublicKey.hpp"
-#include "Request.hpp"
-#include "Types.h"
+#include "publickey.hpp"
+#include "request.hpp"
+#include "types.hpp"
 
 namespace sol {
     struct AccountMeta

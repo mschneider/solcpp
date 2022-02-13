@@ -9,7 +9,7 @@ typedef websocketpp::client<websocketpp::config::asio_tls_client> ws_client;
 typedef websocketpp::config::asio_client::message_type::ptr ws_message_ptr;
 typedef std::shared_ptr<boost::asio::ssl::context> context_ptr;
 
-#include "../include/int128.hpp"
+#include "../include/solana/int128.hpp"
 #include "../mango_v3.hpp"
 
 static context_ptr on_tls_init()

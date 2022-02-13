@@ -1,10 +1,10 @@
 #pragma once
 
-#include "PublicKey.hpp"
-#include "Instruction.hpp"
-#include "Account.hpp"
-#include "PushCompact.hpp"
-#include "Types.h"
+#include "publickey.hpp"
+#include "instruction.hpp"
+#include "account.hpp"
+#include "pushcompact.hpp"
+#include "types.hpp"
 
 namespace sol {
     struct CompiledTransaction

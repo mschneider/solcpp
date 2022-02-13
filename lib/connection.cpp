@@ -1,9 +1,9 @@
 #include <sodium.h>
 #include <cpr/cpr.h>
-#include "Connection.hpp"
-#include "Account.hpp"
-#include "Types.h"
-#include "Base64.hpp"
+#include "connection.hpp"
+#include "account.hpp"
+#include "types.hpp"
+#include "base64.hpp"
 
 namespace sol {
     Connection::Connection(std::string rpc_url, std::string commitment):

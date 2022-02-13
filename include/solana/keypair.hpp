@@ -1,9 +1,9 @@
 #pragma once
 
 #include <fstream>
-#include "PublicKey.hpp"
-#include "PrivateKey.hpp"
-#include "Types.h"
+#include "publickey.hpp"
+#include "privatekey.hpp"
+#include "types.hpp"
 
 namespace sol {
     struct KeyPair

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../include/Connection.hpp"
+#include "../include/solana.h"
 
 int main()
 {
