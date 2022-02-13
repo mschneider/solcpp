@@ -289,7 +289,7 @@ namespace mango_v3
       };
       for (int i = 0; i < MAX_PAIRS; ++i)
       {
-        accs.push_back({solana::PublicKey::empty(), false, false});
+        accs.push_back({{}, false, false});
       }
       return {programPk, accs, toBytes(ixData)};
     };

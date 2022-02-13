@@ -14,9 +14,9 @@ TEST_CASE("base58 decode & encode")
 
   for (const auto &bs58 : bs58s)
   {
-    const std::string decoded = b58decode(bs58);
-    const std::string encoded = b58encode(decoded);
-    const std::string redecoded = b58decode(encoded);
+    const auto decoded = b58decode(bs58);
+    const auto encoded = b58encode(decoded);
+    const auto redecoded = b58decode(encoded);
     std::ifstream fixture("../tests/fixtures/base58/" + bs58, ios::binary);
     std::vector<char> buffer(std::istreambuf_iterator<char>(fixture), {});
 
@@ -29,6 +29,12 @@ TEST_CASE("base58 decode & encode")
   }
 }
 
+TEST_CASE("parse private keys")
+{
+  const auto keypair = solana::Keypair::fromFile("../tests/fixtures/solana/id.json");
+  CHECK_EQ("8K4Exjnvs3ZJQDE78zmFoax5Sh4cEVdbk1D1r17Wxuud", keypair.publicKey.toBase58());
+}
+
 TEST_CASE("decode mango_v3 Fill")
 {
   const std::string encoded("AAEMAAEAAAB6PABiAAAAAJMvAwAAAAAAEp7AH3xFwgByZdzdjJaK2f9K+nwfGkKL3EBs6qBSkbT0Wsj+/////3JYBgAAAAAAPNHr0H4BAADkFB3J5f//////////////AAAAAAAAAABfPABiAAAAABh0e79OvRxWYgRL9dtu02f5VK/SK/CK1oU+Tgm1NbL9IaU3AQAAAADOMAYAAAAAAAAAAAAAAAAA46WbxCAAAAAAAAAAAAAAAHJYBgAAAAAAAQAAAAAAAAA=");
@@ -39,13 +45,13 @@ TEST_CASE("decode mango_v3 Fill")
   CHECK_EQ(event->makerOut, 0);
   CHECK_EQ(event->timestamp, 1644182650);
   CHECK_EQ(event->seqNum, 208787);
-  CHECK_EQ(b58encode(std::string((char *)event->maker.data, 32)), "2Fgjpc7bp9jpiTRKSVSsiAcexw8Cawbz7GLJu8MamS9q");
+  CHECK_EQ(b58encode(std::string((char *)event->maker.data.data(), 32)), "2Fgjpc7bp9jpiTRKSVSsiAcexw8Cawbz7GLJu8MamS9q");
   CHECK_EQ(to_string(event->makerOrderId), "7671244543748780405054196");
   CHECK_EQ(event->makerClientOrderId, 1644182622524);
   CHECK_EQ((int)round(event->makerFee.toDouble() * 10000), -4);
   CHECK_EQ(event->bestInitial, 0);
   CHECK_EQ(event->makerTimestamp, 1644182623);
-  CHECK_EQ(b58encode(std::string((char *)event->taker.data, 32)), "2eTob7jrhKeHNhkK1jTfS3kZYdtNQS1VF7LETom6YHjJ");
+  CHECK_EQ(b58encode(std::string((char *)event->taker.data.data(), 32)), "2eTob7jrhKeHNhkK1jTfS3kZYdtNQS1VF7LETom6YHjJ");
   CHECK_EQ(to_string(event->takerOrderId), "7484028538144702206551329");
   CHECK_EQ(event->takerClientOrderId, 0);
   CHECK_EQ((int)round(event->takerFee.toDouble() * 10000), 5);
@@ -55,16 +61,14 @@ TEST_CASE("decode mango_v3 Fill")
 
 TEST_CASE("compile memo transaction")
 {
-  const auto recentBlockhash = solana::PublicKey::empty();
+  const solana::PublicKey recentBlockhash = {};
   const auto feePayer = solana::PublicKey::fromBase58("8K4Exjnvs3ZJQDE78zmFoax5Sh4cEVdbk1D1r17Wxuud");
   const auto memoProgram = solana::PublicKey::fromBase58(solana::MEMO_PROGRAM_ID);
   const std::string memo = "Hello \xF0\x9F\xA5\xAD";
-
   const solana::Instruction ix = {
       memoProgram,
       {},
       std::vector<uint8_t>(memo.begin(), memo.end())};
-
   const auto ctx = solana::CompiledTransaction::fromInstructions({ix}, feePayer, recentBlockhash);
 
   CHECK_EQ(recentBlockhash, ctx.recentBlockhash);
