@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [main]
+    branches: [main,connection-api]
   pull_request:
     branches: [main]
 jobs:
