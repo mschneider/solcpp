@@ -31,7 +31,7 @@ jobs:
 
       - name: Override default profile
         run:
-          rsync --update
+          rsync --checksum
           ${{github.workspace}}/conan_profile.${{matrix.config.profile}}
           ~/.conan/profiles/default
 
