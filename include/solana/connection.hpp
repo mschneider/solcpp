@@ -41,6 +41,7 @@ namespace sol {
                                            const std::string &preflightCommitment = "finalized");
         // TODO: Support batch transactions
         // TODO: Add more RPC methods here
+        // TODO: Add WebSocket implementation
 
     private:
         std::string rpc_url_;

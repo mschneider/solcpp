@@ -1,6 +1,6 @@
 # solcpp
 
-A simple collection of examples and dependencies to use Solana from C++. By no
+A collection of examples and dependencies to use Solana from C++. By no
 means a complete SDK, yet, rather a starting point for the community to form
 around and take it to the next level. If you are experienced in c++ dev and want
 to work on this full-time, contact @m_schneider on twitter.
@@ -18,6 +18,27 @@ dependencies. Install Conan [here](https://conan.io/downloads.html).
 - sodium 1.0.18 [ISC]
 - websocketpp 0.8.2 [BSD]
 - nlohmann-json 3.10.5 [MIT]
+
+## Usage
+```cpp
+#include <iostream>
+#include "solana.h"
+
+// Example: getAccountInfo RPC method
+
+const auto rpc_url = "...";
+const auto pubKey = "..";
+sol::Connection connection = sol::Connection{rpc_url, "finalized"};
+auto key  = sol::PublicKey::fromBase58(pubKey);
+std::optional<sol::AccountInfo> info = connection.getAccountInfo(key);
+if (!info.has_value()){
+    std::cout << "Account doesn't exist.\n";
+    return;
+}
+std::cout << "Account Owner: " << info.value().owner.toBase58() << std::endl;
+
+
+```
 
 ## Building:
 
@@ -68,3 +89,9 @@ work well with the rest of the code base.
 - [ ] Improve liquidity on mango markets
 - [ ] Remove/replace deprecated methods
 - [ ] Remove the pragma warnings
+- [ ] Implement all the HTTP RPC calls in `connection.h`
+- [ ] Add support for websocket to `Connection` instance.
+- [ ] Support templated `AccountInfo<T>`
+- [ ] Support multiple concurrent connection instances.
+- [ ] Add more test coverage.
+- [ ] Develop a Getting started guide/wiki.
