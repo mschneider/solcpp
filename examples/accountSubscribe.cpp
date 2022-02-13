@@ -102,8 +102,8 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl, ws_message_ptr ms
         std::cout << " FILL " << (fill.takerSide ? "sell" : "buy")
                   << " prc:" << fill.price
                   << " qty:" << fill.quantity
-                  << " taker:" << b58encode(std::string((char *)fill.taker.data, 32))
-                  << " maker:" << b58encode(std::string((char *)fill.maker.data, 32))
+                  << " taker:" << fill.taker.toBase58()
+                  << " maker:" << fill.maker.toBase58()
                   << " makerOrderId:" << fill.makerOrderId
                   << " makerOrderClientId:" << fill.makerClientOrderId
                   << " timeOnBook:" << timeOnBook

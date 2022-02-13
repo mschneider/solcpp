@@ -23,60 +23,52 @@ namespace solana
 
   struct PublicKey
   {
-    static const size_t SIZE = crypto_sign_PUBLICKEYBYTES;
+    static const auto SIZE = crypto_sign_PUBLICKEYBYTES;
+    typedef std::array<uint8_t, SIZE> array_t;
 
-    uint8_t data[SIZE];
+    array_t data;
 
     static PublicKey empty()
     {
-      PublicKey result = {};
-      memset(result.data, 0, SIZE);
-      return result;
+      return {};
     }
 
     static PublicKey fromBase58(const std::string &b58)
     {
       PublicKey result = {};
-      const std::string decoded = b58decode(b58);
-      memcpy(result.data, decoded.data(), SIZE);
+      size_t decodedSize = SIZE;
+      const auto ok = b58tobin(result.data.data(), &decodedSize, b58.c_str(), 0);
+      if (!ok)
+        throw std::runtime_error("invalid base58 '" + b58 + "'");
+      if (decodedSize != SIZE)
+        throw std::runtime_error("not a valid PublicKey '" + std::to_string(decodedSize) + " != " + std::to_string(SIZE) + "'");
       return result;
     }
 
     bool operator==(const PublicKey &other) const
     {
-      return 0 == memcmp(data, other.data, SIZE);
+      return data == other.data;
     }
 
     std::string toBase58() const
     {
-      return b58encode(std::string(data, data + SIZE));
+      return b58encode(data);
     }
   };
 
   struct PrivateKey
   {
     static const size_t SIZE = crypto_sign_SECRETKEYBYTES;
+    typedef std::array<uint8_t, SIZE> array_t;
 
-    uint8_t data[SIZE];
-
-    static PrivateKey fromJson(const json bytes)
-    {
-      PrivateKey result = {};
-      const std::vector<uint8_t> asVec = bytes;
-      memcpy(result.data, asVec.data(), SIZE);
-      return result;
-    }
+    array_t data;
 
     std::vector<uint8_t> signMessage(const std::vector<uint8_t> message) const
     {
       uint8_t sig[crypto_sign_BYTES];
       unsigned long long sigSize;
-      if (0 != crypto_sign_detached(sig, &sigSize, message.data(), message.size(), data))
-      {
-        std::cerr << "could not sign tx with private key" << std::endl;
-        return {};
-      }
-
+      if (0 != crypto_sign_detached(sig, &sigSize, message.data(), message.size(), data.data()))
+        throw std::runtime_error("could not sign tx with private key");
       return std::vector<uint8_t>(sig, sig + sigSize);
     }
   };
@@ -91,8 +83,8 @@ namespace solana
       Keypair result = {};
       std::ifstream fileStream(path);
       std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
-      result.privateKey = PrivateKey::fromJson(json::parse(fileContent));
-      crypto_sign_ed25519_sk_to_pk(result.publicKey.data, result.privateKey.data);
+      result.privateKey.data = json::parse(fileContent);
+      crypto_sign_ed25519_sk_to_pk(result.publicKey.data.data(), result.privateKey.data.data());
       return result;
     }
   };
@@ -245,10 +237,10 @@ namespace solana
       pushCompactU16(accounts.size(), buffer);
       for (const auto &account : accounts)
       {
-        buffer.insert(buffer.end(), account.data, account.data + PublicKey::SIZE);
+        buffer.insert(buffer.end(), account.data.begin(), account.data.end());
       }
 
-      buffer.insert(buffer.end(), recentBlockhash.data, recentBlockhash.data + PublicKey::SIZE);
+      buffer.insert(buffer.end(), recentBlockhash.data.begin(), recentBlockhash.data.end());
 
       pushCompactU16(instructions.size(), buffer);
       for (const auto &instruction : instructions)
@@ -298,12 +290,14 @@ namespace solana
       cpr::Response r = cpr::Post(cpr::Url{endpoint},
                                   cpr::Body{req.dump()},
                                   cpr::Header{{"Content-Type", "application/json"}});
-      assert(r.status_code == 200);
+      if (r.status_code != 200)
+        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
 
       json res = json::parse(r.text);
       const std::string encoded = res["result"]["value"]["data"][0];
       const std::string decoded = b64decode(encoded);
-      assert(decoded.size() == sizeof(T));
+      if (decoded.size() != sizeof(T))
+        throw std::runtime_error("invalid response length " + std::to_string(decoded.size()) + " expected " + std::to_string(sizeof(T)));
 
       T result;
       memcpy(&result, decoded.data(), sizeof(T));
@@ -324,7 +318,8 @@ namespace solana
       cpr::Response r = cpr::Post(cpr::Url{endpoint},
                                   cpr::Body{req.dump()},
                                   cpr::Header{{"Content-Type", "application/json"}});
-      assert(r.status_code == 200);
+      if (r.status_code != 200)
+        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
 
       json res = json::parse(r.text);
       const std::string encoded = res["result"]["value"]["blockhash"];
@@ -369,14 +364,12 @@ namespace solana
       cpr::Response r = cpr::Post(cpr::Url{endpoint},
                                   cpr::Body{jsonSerialized},
                                   cpr::Header{{"Content-Type", "application/json"}});
-      assert(r.status_code == 200);
+      if (r.status_code != 200)
+        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
 
       json res = json::parse(r.text);
       if (b58Sig != res["result"])
-      {
-        std::cerr << "could not submit tx: " << r.text << std::endl;
-        return "";
-      }
+        throw std::runtime_error("could not submit tx: " + r.text);
 
       return b58Sig;
     }

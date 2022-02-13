@@ -58,12 +58,12 @@ int main()
           continue;
 
         const auto &token = group->tokens[i];
-        const auto mintPk = b58encode(std::string((char *)token.mint.data, 32));
+        const auto mintPk = token.mint.toBase58();
 
         if (mintPk == std::string("11111111111111111111111111111111"))
           continue;
 
-        const auto rootBankPk = b58encode(std::string((char *)token.rootBank.data, 32));
+        const auto rootBankPk = token.rootBank.toBase58();
         if (i != mango_v3::QUOTE_INDEX)
           std::cout << "TOK" << i << std::endl;
         else
@@ -76,7 +76,7 @@ int main()
       for (int i = 0; i < mango_v3::MAX_PAIRS; ++i)
       {
         const auto &market = group->spotMarkets[i];
-        const auto marketPk = b58encode(std::string((char *)market.spotMarket.data, 32));
+        const auto marketPk = market.spotMarket.toBase58();
 
         if (marketPk == std::string("11111111111111111111111111111111"))
           continue;
@@ -93,7 +93,7 @@ int main()
       for (int i = 0; i < mango_v3::MAX_PAIRS; ++i)
       {
         const auto &market = group->perpMarkets[i];
-        const auto marketPk = b58encode(std::string((char *)market.perpMarket.data, 32));
+        const auto marketPk = market.perpMarket.toBase58();
 
         if (marketPk == std::string("11111111111111111111111111111111"))
           continue;
@@ -113,7 +113,7 @@ int main()
 
       for (int i = 0; i < mango_v3::MAX_PAIRS; ++i)
       {
-        const auto oraclePk = b58encode(std::string((char *)group->oracles[i].data, 32));
+        const auto oraclePk = group->oracles[i].toBase58();
 
         if (oraclePk == std::string("11111111111111111111111111111111"))
           continue;
@@ -122,15 +122,15 @@ int main()
       }
 
       std::cout << "signerNonce: " << group->signerNonce << std::endl;
-      std::cout << "signerKey: " << b58encode(std::string((char *)group->signerKey.data, 32)) << std::endl;
-      std::cout << "admin: " << b58encode(std::string((char *)group->admin.data, 32)) << std::endl;
-      std::cout << "dexProgramId: " << b58encode(std::string((char *)group->dexProgramId.data, 32)) << std::endl;
-      std::cout << "mangoCache: " << b58encode(std::string((char *)group->mangoCache.data, 32)) << std::endl;
+      std::cout << "signerKey: " << group->signerKey.toBase58() << std::endl;
+      std::cout << "admin: " << group->admin.toBase58() << std::endl;
+      std::cout << "dexProgramId: " << group->dexProgramId.toBase58() << std::endl;
+      std::cout << "mangoCache: " << group->mangoCache.toBase58() << std::endl;
       std::cout << "validInterval: " << group->validInterval << std::endl;
-      std::cout << "insuranceVault: " << b58encode(std::string((char *)group->insuranceVault.data, 32)) << std::endl;
-      std::cout << "srmVault: " << b58encode(std::string((char *)group->srmVault.data, 32)) << std::endl;
-      std::cout << "msrmVault: " << b58encode(std::string((char *)group->msrmVault.data, 32)) << std::endl;
-      std::cout << "feesVault: " << b58encode(std::string((char *)group->feesVault.data, 32)) << std::endl;
+      std::cout << "insuranceVault: " << group->insuranceVault.toBase58() << std::endl;
+      std::cout << "srmVault: " << group->srmVault.toBase58() << std::endl;
+      std::cout << "msrmVault: " << group->msrmVault.toBase58() << std::endl;
+      std::cout << "feesVault: " << group->feesVault.toBase58() << std::endl;
       std::cout << "maxMangoAccounts: " << group->maxMangoAccounts << std::endl;
       std::cout << "numMangoAccounts: " << group->numMangoAccounts << std::endl;
     }

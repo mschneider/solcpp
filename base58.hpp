@@ -179,7 +179,8 @@ std::string b58decode(const std::string &b58)
 }
 
 // returns an empty string if str fails to encode
-std::string b58encode(const std::string &str)
+template <typename T>
+std::string b58encode(const T &str)
 {
   size_t b58Size = str.size() * 138 / 100 + 1;
   std::string b58(b58Size, '\0');

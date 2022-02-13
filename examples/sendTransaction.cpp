@@ -25,7 +25,7 @@ int main()
   json res = json::parse(r.text);
 
   const std::string encoded = res["result"]["value"]["blockhash"];
-  const solana::PublicKey recentBlockhash = solana::PublicKey::fromBase58(encoded);
+  const solana::PublicKey recentBlockHash = solana::PublicKey::fromBase58(encoded);
 
   // 2. assemble tx
   const solana::PublicKey feePayer = solana::PublicKey::fromBase58("8K4Exjnvs3ZJQDE78zmFoax5Sh4cEVdbk1D1r17Wxuud");
@@ -36,7 +36,7 @@ int main()
       1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
 
   const solana::CompiledTransaction tx = {
-      recentBlockhash,
+      recentBlockHash,
       {feePayer, memoProgram},
       {ix},
       1,
@@ -55,10 +55,7 @@ int main()
     const auto sinceStart = std::chrono::system_clock::now() - start;
     const auto secondsSinceStart = std::chrono::duration_cast<std::chrono::seconds>(sinceStart).count();
     if (secondsSinceStart > 90)
-    {
-      std::cerr << "timeout reached. could not confirm transaction" << std::endl;
-      return 1;
-    }
+      throw std::runtime_error("timeout reached - could not confirm transaction " + b58Sig);
 
     const json req = solana::rpc::getSignatureStatuses({b58Sig});
     const std::string jsonSerialized = req.dump();
