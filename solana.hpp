@@ -38,8 +38,10 @@ namespace solana
       PublicKey result = {};
       size_t decodedSize = SIZE;
       const auto ok = b58tobin(result.data.data(), &decodedSize, b58.c_str(), 0);
-      assert(ok);
-      assert(decodedSize == SIZE);
+      if (!ok)
+        throw std::runtime_error("invalid base58 '" + b58 + "'");
+      if (decodedSize != SIZE)
+        throw std::runtime_error("not a valid PublicKey '" + std::to_string(decodedSize) + " != 32'");
       return result;
     }
 
@@ -57,7 +59,6 @@ namespace solana
   struct PrivateKey
   {
     static const size_t SIZE = crypto_sign_SECRETKEYBYTES;
-
     typedef std::array<uint8_t, SIZE> array_t;
 
     array_t data;
@@ -67,11 +68,7 @@ namespace solana
       uint8_t sig[crypto_sign_BYTES];
       unsigned long long sigSize;
       if (0 != crypto_sign_detached(sig, &sigSize, message.data(), message.size(), data.data()))
-      {
-        std::cerr << "could not sign tx with private key" << std::endl;
-        return {};
-      }
-
+        throw std::runtime_error("could not sign tx with private key");
       return std::vector<uint8_t>(sig, sig + sigSize);
     }
   };
@@ -293,12 +290,14 @@ namespace solana
       cpr::Response r = cpr::Post(cpr::Url{endpoint},
                                   cpr::Body{req.dump()},
                                   cpr::Header{{"Content-Type", "application/json"}});
-      assert(r.status_code == 200);
+      if (r.status_code != 200)
+        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
 
       json res = json::parse(r.text);
       const std::string encoded = res["result"]["value"]["data"][0];
       const std::string decoded = b64decode(encoded);
-      assert(decoded.size() == sizeof(T));
+      if (decoded.size() != sizeof(T))
+        throw std::runtime_error("invalid response length " + std::to_string(decoded.size()) + " expected " + std::to_string(sizeof(T)));
 
       T result;
       memcpy(&result, decoded.data(), sizeof(T));
@@ -319,7 +318,8 @@ namespace solana
       cpr::Response r = cpr::Post(cpr::Url{endpoint},
                                   cpr::Body{req.dump()},
                                   cpr::Header{{"Content-Type", "application/json"}});
-      assert(r.status_code == 200);
+      if (r.status_code != 200)
+        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
 
       json res = json::parse(r.text);
       const std::string encoded = res["result"]["value"]["blockhash"];
@@ -364,14 +364,12 @@ namespace solana
       cpr::Response r = cpr::Post(cpr::Url{endpoint},
                                   cpr::Body{jsonSerialized},
                                   cpr::Header{{"Content-Type", "application/json"}});
-      assert(r.status_code == 200);
+      if (r.status_code != 200)
+        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
 
       json res = json::parse(r.text);
       if (b58Sig != res["result"])
-      {
-        std::cerr << "could not submit tx: " << r.text << std::endl;
-        return "";
-      }
+        throw std::runtime_error("could not submit tx: " + r.text);
 
       return b58Sig;
     }
