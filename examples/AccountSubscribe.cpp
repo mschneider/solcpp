@@ -9,7 +9,7 @@ typedef websocketpp::client<websocketpp::config::asio_tls_client> ws_client;
 typedef websocketpp::config::asio_client::message_type::ptr ws_message_ptr;
 typedef std::shared_ptr<boost::asio::ssl::context> context_ptr;
 
-#include "../int128.hpp"
+#include "../include/int128.hpp"
 #include "../mango_v3.hpp"
 
 static context_ptr on_tls_init()
@@ -78,7 +78,7 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl, ws_message_ptr ms
               << std::endl;
               */
 
-  const auto decoded = b64decode(data);
+  const auto decoded = sol::Base64::b64decode(data);
   const auto events = reinterpret_cast<const mango_v3::EventQueue *>(decoded.data());
   const auto seqNumDiff = events->header.seqNum - lastSeqNum;
   const auto lastSlot = (events->header.head + events->header.count) % mango_v3::EVENT_QUEUE_SIZE;
@@ -102,8 +102,8 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl, ws_message_ptr ms
         std::cout << " FILL " << (fill.takerSide ? "sell" : "buy")
                   << " prc:" << fill.price
                   << " qty:" << fill.quantity
-                  << " taker:" << b58encode(std::string((char *)fill.taker.data, 32))
-                  << " maker:" << b58encode(std::string((char *)fill.maker.data, 32))
+                  << " taker:" << sol::Base58::b58encode(std::string((char *)fill.taker.data, 32))
+                  << " maker:" << sol::Base58::b58encode(std::string((char *)fill.maker.data, 32))
                   << " makerOrderId:" << fill.makerOrderId
                   << " makerOrderClientId:" << fill.makerClientOrderId
                   << " timeOnBook:" << timeOnBook

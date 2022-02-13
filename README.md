@@ -29,7 +29,7 @@ $ conan install ..  \
   --build=missing \
   -o:h boost:without_fiber=True \ # Skips building boost's header-only fiber
   -o:h boost:without_python=True \ # Skips python bindings
-$ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+$ cmake .. -DCMAKE_BUILD_TYPE=Release
 $ cmake --build .
 $ ./bin/tests
 ```

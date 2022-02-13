@@ -8,8 +8,8 @@
 #include <nlohmann/json.hpp>
 #include <sodium.h>
 
-#include "base58.hpp"
-#include "base64.hpp"
+#include "include/Base58.hpp"
+#include "include/Base64.hpp"
 
 namespace solana
 {
@@ -37,7 +37,7 @@ namespace solana
     static PublicKey fromBase58(const std::string &b58)
     {
       PublicKey result = {};
-      const std::string decoded = b58decode(b58);
+      const std::string decoded = sol::Base58::b58decode(b58);
       memcpy(result.data, decoded.data(), SIZE);
       return result;
     }
@@ -49,7 +49,7 @@ namespace solana
 
     std::string toBase58() const
     {
-      return b58encode(std::string(data, data + SIZE));
+      return sol::Base58::b58encode(std::string(data, data + SIZE));
     }
   };
 
@@ -302,7 +302,7 @@ namespace solana
 
       json res = json::parse(r.text);
       const std::string encoded = res["result"]["value"]["data"][0];
-      const std::string decoded = b64decode(encoded);
+      const std::string decoded = sol::Base64::b64decode(encoded);
       assert(decoded.size() == sizeof(T));
 
       T result;
@@ -355,14 +355,14 @@ namespace solana
       tx.serializeTo(txBody);
 
       const auto signature = keypair.privateKey.signMessage(txBody);
-      const auto b58Sig = b58encode(std::string(signature.begin(), signature.end()));
+      const auto b58Sig = sol::Base58::b58encode(std::string(signature.begin(), signature.end()));
 
       std::vector<uint8_t> signedTx;
       pushCompactU16(1, signedTx);
       signedTx.insert(signedTx.end(), signature.begin(), signature.end());
       signedTx.insert(signedTx.end(), txBody.begin(), txBody.end());
 
-      const auto b64tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
+      const auto b64tx = sol::Base64::b64encode(std::string(signedTx.begin(), signedTx.end()));
       const json req = solana::rpc::sendTransactionRequest(b64tx, "base64", skipPreflight, preflightCommitment);
       const std::string jsonSerialized = req.dump();
 

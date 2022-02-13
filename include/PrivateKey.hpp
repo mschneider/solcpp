@@ -3,8 +3,10 @@
 #include <string>
 #include <vector>
 #include <sodium.h>
+#include <iostream>
+#include "Types.h"
 
-namespace solana {
+namespace sol {
     struct PrivateKey {
         static const size_t SIZE = crypto_sign_SECRETKEYBYTES;
 

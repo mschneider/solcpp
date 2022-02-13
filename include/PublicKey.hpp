@@ -1,11 +1,12 @@
 #pragma once
 
+#include <iostream>
 #include <sodium.h>
 #include <string>
-#include "base58.hpp"
-#include "base64.hpp"
+#include "Base58.hpp"
+#include "Base64.hpp"
 
-namespace solana {
+namespace sol {
     struct PublicKey {
         static const size_t SIZE = crypto_sign_PUBLICKEYBYTES;
 
@@ -19,7 +20,7 @@ namespace solana {
 
         static PublicKey fromBase58(const std::string& b58) {
             PublicKey result = {};
-            const std::string decoded = b58decode(b58);
+            const std::string decoded = Base58::b58decode(b58);
             memcpy(result.data, decoded.data(), SIZE);
             return result;
         }
@@ -27,13 +28,10 @@ namespace solana {
         bool operator==(const PublicKey& other) const {
             return 0 == memcmp(data, other.data, SIZE);
         }
-        std::ostream& operator<<(ostream& os, const PublicKey& other){
-            os << other.toBase58();
-            return os;
-        }
 
         std::string toBase58() const {
-            return b58encode(std::string(data, data + SIZE));
+            return Base58::b58encode(std::string(data, data + SIZE));
         }
     };
+
 }

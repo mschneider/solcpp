@@ -12,23 +12,6 @@ size_t writeCallback(void *contents, size_t size, size_t nmemb, void *userp)
 
 int main()
 {
-
-  // Do any context initialization(e.g sodium)
-  auto contex_ = SolContext{url, commitment};
-  // Specify accounts to be used
-  std::vector<AccountMeta> accounts = ...;
-  auto program = PublicKey::fromBase58(PROGRAM_ID);
-  auto feePayer = PublicKey::fromBase58(...);
-   // Build an instruction
-  Instruction instruction = Instruction {feePayer, program, accounts, data};
-  auto wallet = PublicKey::fromFile(...); // or PublicKey::generate()
-  // Send transaction
-  auto sig58 = co_await contex_.sendTransaction(wallet, instruction);
-  // Confirm signature
-  std::optional<std::vector<TransactionStatus>> txStatus = co_await contex_.getSignatureStatuses({sig58});
-
-
-
   // 1. fetch recent blockhash to anchor tx to
   const json req = solana::rpc::getRecentBlockhashRequest();
   const std::string jsonSerialized = req.dump();

@@ -2,8 +2,9 @@
 
 #include "PublicKey.hpp"
 #include "Request.hpp"
+#include "Types.h"
 
-namespace solana {
+namespace sol {
     struct AccountMeta
     {
         PublicKey pubkey;
@@ -15,20 +16,28 @@ namespace solana {
             return (isSigner > other.isSigner) || (isWritable > other.isWritable);
         }
     };
+    // TODO: Template AccountInfo::data
     struct AccountInfo {
-        bool executable;
+        [[maybe_unused]] bool executable;
         PublicKey owner;
         uint64_t lamports;
         std::string data;
-        uint64_t rentEpoch;
+        [[maybe_unused]] uint64_t rentEpoch;
     };
-    class Account{
-        static json getAccountInfoRequest(const PublicKey &account, const std::string &encoding = "base64")
+    class Account {
+    public:
+        static json getAccountInfoRequest(const PublicKey &account,
+                                          const std::string commitment,
+                                          const std::string &encoding = "base64")
         {
             const json params = {
                     account.toBase58(),
-                    {{"encoding", encoding}}};
+                    {
+                        {"encoding", encoding},
+                        {"commitment", commitment},
+                    },
 
+            };
             return Request::fromJson("getAccountInfo", params);
         }
     };

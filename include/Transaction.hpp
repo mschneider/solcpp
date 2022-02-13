@@ -4,8 +4,9 @@
 #include "Instruction.hpp"
 #include "Account.hpp"
 #include "PushCompact.hpp"
+#include "Types.h"
 
-namespace solana {
+namespace sol {
     struct CompiledTransaction
     {
         PublicKey recentBlockhash;
@@ -82,7 +83,7 @@ namespace solana {
             buffer.push_back(readOnlySignedAccounts);
             buffer.push_back(readOnlyUnsignedAccounts);
 
-            pushCompactU16(accounts.size(), buffer);
+            PushCompact::pushCompactU16(accounts.size(), buffer);
             for (const auto &account : accounts)
             {
                 buffer.insert(buffer.end(), account.data, account.data + PublicKey::SIZE);
@@ -90,7 +91,7 @@ namespace solana {
 
             buffer.insert(buffer.end(), recentBlockhash.data, recentBlockhash.data + PublicKey::SIZE);
 
-            pushCompactU16(instructions.size(), buffer);
+            PushCompact::pushCompactU16(instructions.size(), buffer);
             for (const auto &instruction : instructions)
             {
                 instruction.serializeTo(buffer);

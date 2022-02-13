@@ -2,11 +2,12 @@
 
 #include <vector>
 #include <algorithm>
-#include <fmt/core.h>
 #include "PublicKey.hpp"
 #include "Account.hpp"
 #include "PushCompact.hpp"
-namespace solana {
+#include "Types.h"
+
+namespace sol {
     struct Instruction
     {
         PublicKey programId;
@@ -23,7 +24,7 @@ namespace solana {
         {
             const auto programIdIt = std::find(accounts.begin(), accounts.end(), ix.programId);
             if (programIdIt == accounts.end()){
-                throw std::invalid_argument(fmt::format("ProgramId not in accounts: {}", ix.programId));
+                throw std::invalid_argument("ProgramId not in accounts: " + ix.programId.toBase58());
             }
             const auto programIdIndex = static_cast<uint8_t>(programIdIt - accounts.begin());
             std::vector<uint8_t> accountIndices;
@@ -31,7 +32,7 @@ namespace solana {
             {
                 const auto accountPkIt = std::find(accounts.begin(), accounts.end(), account.pubkey);
                 if (accountPkIt == accounts.end()){
-                    throw std::invalid_argument(fmt::format("ProgramId not in accounts: {}", account.pubkey));
+                    throw std::invalid_argument("ProgramId not in accounts: " + account.pubkey.toBase58());
                 }
                 accountIndices.push_back(accountPkIt - accounts.begin());
             }
@@ -41,8 +42,8 @@ namespace solana {
         void serializeTo(std::vector<uint8_t>& buffer) const
         {
             buffer.push_back(programIdIndex);
-            pushCompactVecU8(accountIndices, buffer);
-            pushCompactVecU8(data, buffer);
+            PushCompact::pushCompactVecU8(accountIndices, buffer);
+            PushCompact::pushCompactVecU8(data, buffer);
         }
     };
 }
