@@ -35,7 +35,7 @@ namespace solana
     {
       PublicKey result = {};
       size_t decodedSize = SIZE;
-      const auto ok = b58tobin(result.data.data(), &decodedSize, b58.c_str(), 0);
+      const auto ok = Base58::b58tobin(result.data.data(), &decodedSize, b58.c_str(), 0);
       if (!ok)
         throw std::runtime_error("invalid base58 '" + b58 + "'");
       if (decodedSize != SIZE)
@@ -50,7 +50,7 @@ namespace solana
 
     std::string toBase58() const
     {
-      return b58encode(data);
+      return Base58::b58encode(data);
     }
   };
 
@@ -106,29 +106,30 @@ namespace solana
     std::vector<uint8_t> data;
   };
 
-  void pushCompactU16(uint16_t num, std::vector<uint8_t> &buffer)
-  {
-    buffer.push_back(num & 0x7f);
-    num >>= 7;
-    if (num == 0)
-      return;
+  struct CompactU16 {
+      static void encode(uint16_t num, std::vector<uint8_t> &buffer)
+      {
+          buffer.push_back(num & 0x7f);
+          num >>= 7;
+          if (num == 0)
+              return;
 
-    buffer.back() |= 0x80;
-    buffer.push_back(num & 0x7f);
-    num >>= 7;
-    if (num == 0)
-      return;
+          buffer.back() |= 0x80;
+          buffer.push_back(num & 0x7f);
+          num >>= 7;
+          if (num == 0)
+              return;
 
-    buffer.back() |= 0x80;
-    buffer.push_back(num & 0x3);
+          buffer.back() |= 0x80;
+          buffer.push_back(num & 0x3);
+      };
+
+      static void encode(const std::vector<uint8_t> &vec, std::vector<uint8_t> &buffer)
+      {
+          encode(vec.size(), buffer);
+          buffer.insert(buffer.end(), vec.begin(), vec.end());
+      }
   };
-
-  void pushCompactVecU8(const std::vector<uint8_t> &vec, std::vector<uint8_t> &buffer)
-  {
-    pushCompactU16(vec.size(), buffer);
-    buffer.insert(buffer.end(), vec.begin(), vec.end());
-  }
-
   struct CompiledInstruction
   {
     uint8_t programIdIndex;
@@ -151,8 +152,8 @@ namespace solana
     void serializeTo(std::vector<uint8_t> &buffer) const
     {
       buffer.push_back(programIdIndex);
-      pushCompactVecU8(accountIndices, buffer);
-      pushCompactVecU8(data, buffer);
+      solana::CompactU16::encode(accountIndices, buffer);
+      solana::CompactU16::encode(data, buffer);
     }
   };
 
@@ -232,7 +233,7 @@ namespace solana
       buffer.push_back(readOnlySignedAccounts);
       buffer.push_back(readOnlyUnsignedAccounts);
 
-      pushCompactU16(accounts.size(), buffer);
+      solana::CompactU16::encode(accounts.size(), buffer);
       for (const auto &account : accounts)
       {
         buffer.insert(buffer.end(), account.data.begin(), account.data.end());
@@ -240,7 +241,7 @@ namespace solana
 
       buffer.insert(buffer.end(), recentBlockhash.data.begin(), recentBlockhash.data.end());
 
-      pushCompactU16(instructions.size(), buffer);
+      solana::CompactU16::encode(instructions.size(), buffer);
       for (const auto &instruction : instructions)
       {
         instruction.serializeTo(buffer);
@@ -250,127 +251,71 @@ namespace solana
 
   namespace rpc
   {
-    using json = nlohmann::json;
+      using json = nlohmann::json;
+      inline json jsonRequest(const std::string &method, const json &params = nullptr) {
+          json req = {
+                  {"jsonrpc", "2.0"},
+                  {"id",      1},
+                  {"method",  method}};
+          if (params != nullptr)
+              req["params"] = params;
+          return req;
+      }
+      ///
+      /// RPC HTTP Endpoints
+      class Solana {
+      public:
+          /// Initialize the rpc url and commitment levels to use.
+          /// Initialize sodium
+          Solana(const std::string &rpc_url = MAINNET_BETA, const std::string &commitment = "finalized");
+          ///
+          /// 1. Build requests
+          ///
+          json getAccountInfoRequest(const std::string &account, const std::string &encoding = "base64");
+          json getRecentBlockhashRequest(const std::string &commitment = "finalized");
+          json sendTransactionRequest(const std::string &transaction, const std::string &encoding = "base58", bool skipPreflight = false, const std::string &preflightCommitment = "finalized");
+          ///
+          /// 2. Invoke RPC endpoints
+          ///
+          PublicKey getRecentBlockhash(const std::string &commitment = "finalized");
+          json getSignatureStatuses(const std::vector<std::string> &signatures, bool searchTransactionHistory = false);
+          std::string signAndSendTransaction(const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight = false, const std::string &preflightCommitment = "finalized");
+          template<typename T>
+          inline T getAccountInfo(const std::string &account) {
+              const json req = getAccountInfoRequest(account);
+              cpr::Response r = cpr::Post(cpr::Url{rpc_url_},
+                                          cpr::Body{req.dump()},
+                                          cpr::Header{{"Content-Type", "application/json"}});
+              if (r.status_code != 200)
+                  throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
 
-    json jsonRequest(const std::string &method, const json &params = nullptr)
-    {
-      json req = {
-          {"jsonrpc", "2.0"},
-          {"id", 1},
-          {"method", method}};
-      if (params != nullptr)
-        req["params"] = params;
-      return req;
-    }
+              json res = json::parse(r.text);
+              const std::string encoded = res["result"]["value"]["data"][0];
+              const std::string decoded = Base64::b64decode(encoded);
+              if (decoded.size() != sizeof(T))
+                  throw std::runtime_error("invalid response length " + std::to_string(decoded.size()) + " expected " +
+                                           std::to_string(sizeof(T)));
 
-    json accountSubscribeRequest(const std::string &account, const std::string &commitment = "processed", const std::string &encoding = "base64")
-    {
-      const json params = {
-          account,
-          {{"commitment", commitment}, {"encoding", encoding}}};
+              T result;
+              memcpy(&result, decoded.data(), sizeof(T));
+              return result;
+          }
+      private:
+          const std::string &rpc_url_;
+          const std::string &commitment_;
+      };
 
-      return jsonRequest("accountSubscribe", params);
-    }
+      ///
+      /// Websocket requests
+      namespace subscription {
+          inline json accountSubscribeRequest(const std::string &account, const std::string &commitment = "finalized",
+                                               const std::string &encoding = "base64") {
+              const json params = {
+                      account,
+                      {{"commitment", commitment}, {"encoding", encoding}}};
 
-    json getAccountInfoRequest(const std::string &account, const std::string &encoding = "base64")
-    {
-      const json params = {
-          account,
-          {{"encoding", encoding}}};
-
-      return jsonRequest("getAccountInfo", params);
-    }
-
-    template <typename T>
-    T getAccountInfo(const std::string &endpoint, const std::string &account)
-    {
-      const json req = getAccountInfoRequest(account);
-      cpr::Response r = cpr::Post(cpr::Url{endpoint},
-                                  cpr::Body{req.dump()},
-                                  cpr::Header{{"Content-Type", "application/json"}});
-      if (r.status_code != 200)
-        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
-
-      json res = json::parse(r.text);
-      const std::string encoded = res["result"]["value"]["data"][0];
-      const std::string decoded = b64decode(encoded);
-      if (decoded.size() != sizeof(T))
-        throw std::runtime_error("invalid response length " + std::to_string(decoded.size()) + " expected " + std::to_string(sizeof(T)));
-
-      T result;
-      memcpy(&result, decoded.data(), sizeof(T));
-      return result;
-    }
-
-    json getRecentBlockhashRequest(const std::string &commitment = "finalized")
-    {
-      const json params = {
-          {{"commitment", commitment}}};
-
-      return jsonRequest("getRecentBlockhash", params);
-    }
-
-    PublicKey getRecentBlockhash(const std::string &endpoint, const std::string &commitment = "finalized")
-    {
-      const json req = getRecentBlockhashRequest(commitment);
-      cpr::Response r = cpr::Post(cpr::Url{endpoint},
-                                  cpr::Body{req.dump()},
-                                  cpr::Header{{"Content-Type", "application/json"}});
-      if (r.status_code != 200)
-        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
-
-      json res = json::parse(r.text);
-      const std::string encoded = res["result"]["value"]["blockhash"];
-      return PublicKey::fromBase58(encoded);
-    }
-
-    json getSignatureStatuses(const std::vector<std::string> &signatures, bool searchTransactionHistory = false)
-    {
-      const json params = {
-          signatures,
-          {{"searchTransactionHistory", searchTransactionHistory}}};
-
-      return jsonRequest("getSignatureStatuses", params);
-    }
-
-    json sendTransactionRequest(const std::string &transaction, const std::string &encoding = "base58", bool skipPreflight = false, const std::string &preflightCommitment = "finalized")
-    {
-      const json params = {
-          transaction,
-          {{"encoding", encoding}, {"skipPreflight", skipPreflight}, {"preflightCommitment", preflightCommitment}}};
-
-      return jsonRequest("sendTransaction", params);
-    }
-
-    std::string signAndSendTransaction(const std::string &endpoint, const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight = false, const std::string &preflightCommitment = "finalized")
-    {
-      std::vector<uint8_t> txBody;
-      tx.serializeTo(txBody);
-
-      const auto signature = keypair.privateKey.signMessage(txBody);
-      const auto b58Sig = b58encode(std::string(signature.begin(), signature.end()));
-
-      std::vector<uint8_t> signedTx;
-      pushCompactU16(1, signedTx);
-      signedTx.insert(signedTx.end(), signature.begin(), signature.end());
-      signedTx.insert(signedTx.end(), txBody.begin(), txBody.end());
-
-      const auto b64tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
-      const json req = solana::rpc::sendTransactionRequest(b64tx, "base64", skipPreflight, preflightCommitment);
-      const std::string jsonSerialized = req.dump();
-
-      cpr::Response r = cpr::Post(cpr::Url{endpoint},
-                                  cpr::Body{jsonSerialized},
-                                  cpr::Header{{"Content-Type", "application/json"}});
-      if (r.status_code != 200)
-        throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
-
-      json res = json::parse(r.text);
-      if (b58Sig != res["result"])
-        throw std::runtime_error("could not submit tx: " + r.text);
-
-      return b58Sig;
-    }
-
+              return jsonRequest("accountSubscribe", params);
+          }
+      }
   }
 }

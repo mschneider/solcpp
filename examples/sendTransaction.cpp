@@ -3,16 +3,18 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include "../include/solana.hpp"
+#include "solana.hpp"
 
 int main()
 {
+  std::string rpc_url = "https://mango.devnet.rpcpool.com";
+  auto solana = solana::rpc::Solana(rpc_url);
   // 1. fetch recent blockhash to anchor tx to
-  const json req = solana::rpc::getRecentBlockhashRequest();
+  const json req = solana.getRecentBlockhashRequest();
   const std::string jsonSerialized = req.dump();
   std::cout << "REQ: " << jsonSerialized << std::endl;
 
-  cpr::Response r = cpr::Post(cpr::Url{"https://mango.devnet.rpcpool.com"},
+  cpr::Response r = cpr::Post(cpr::Url{rpc_url},
                               cpr::Body{jsonSerialized},
                               cpr::Header{{"Content-Type", "application/json"}});
 
@@ -51,7 +53,7 @@ int main()
 
     // 3. send & sign tx
     const auto keypair = solana::Keypair::fromFile("../tests/fixtures/solana/id.json");
-    const auto b58Sig = solana::rpc::signAndSendTransaction("https://mango.devnet.rpcpool.com", keypair, tx);
+    const auto b58Sig = solana.signAndSendTransaction(keypair, tx);
     std::cout << "sent tx. check: https://explorer.solana.com/tx/" << b58Sig << "?cluster=devnet" << std::endl;
 
     // 4. wait for tx to confirm
@@ -63,11 +65,11 @@ int main()
       if (secondsSinceStart > 90)
         throw std::runtime_error("timeout reached - could not confirm transaction " + b58Sig);
 
-      const json req = solana::rpc::getSignatureStatuses({b58Sig});
+      const json req = solana.getSignatureStatuses({b58Sig});
       const std::string jsonSerialized = req.dump();
       std::cout << "REQ: " << jsonSerialized << std::endl;
 
-      cpr::Response r = cpr::Post(cpr::Url{"https://mango.devnet.rpcpool.com"},
+      cpr::Response r = cpr::Post(cpr::Url{rpc_url},
                                   cpr::Body{jsonSerialized},
                                   cpr::Header{{"Content-Type", "application/json"}});
       if(r.status_code == 0)

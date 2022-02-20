@@ -8,8 +8,8 @@ typedef websocketpp::client<websocketpp::config::asio_tls_client> ws_client;
 typedef websocketpp::config::asio_client::message_type::ptr ws_message_ptr;
 typedef std::shared_ptr<boost::asio::ssl::context> context_ptr;
 
-#include "../include/int128.hpp"
-#include "../mango_v3.hpp"
+#include "int128.hpp"
+#include "mango_v3.hpp"
 
 static context_ptr on_tls_init()
 {
@@ -36,7 +36,7 @@ void on_open(ws_client *c, websocketpp::connection_hdl hdl)
   const std::string account = "7t5Me8RieYKsFpfLEV8jnpqcqswNpyWD95ZqgUXuLV8Z";
   websocketpp::lib::error_code ec;
 
-  c->send(hdl, solana::rpc::accountSubscribeRequest(account).dump(), websocketpp::frame::opcode::value::text, ec);
+  c->send(hdl, solana::rpc::subscription::accountSubscribeRequest(account).dump(), websocketpp::frame::opcode::value::text, ec);
   if (ec)
   {
     std::cout << "subscribe failed because: " << ec.message() << std::endl;
@@ -77,7 +77,7 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl, ws_message_ptr ms
               << std::endl;
               */
 
-  const auto decoded = b64decode(data);
+  const auto decoded = solana::Base64::b64decode(data);
   const auto events = reinterpret_cast<const mango_v3::EventQueue *>(decoded.data());
   const auto seqNumDiff = events->header.seqNum - lastSeqNum;
   const auto lastSlot = (events->header.head + events->header.count) % mango_v3::EVENT_QUEUE_SIZE;

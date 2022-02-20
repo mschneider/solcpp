@@ -1,11 +1,10 @@
-#include "../mango_v3.hpp"
+#include "mango_v3.hpp"
 
 int main()
 {
     const auto &config = mango_v3::DEVNET;
-    const auto group = solana::rpc::getAccountInfo<mango_v3::MangoGroup>(
-        config.endpoint,
-        config.group);
+    auto solana = solana::rpc::Solana(config.endpoint);
+    const auto group = solana.getAccountInfo<mango_v3::MangoGroup>(config.group);
 
     const auto symbolIt = std::find(config.symbols.begin(), config.symbols.end(), "BTC");
     const auto marketIndex = symbolIt - config.symbols.begin();
@@ -13,12 +12,10 @@ int main()
 
     const auto perpMarketPk = group.perpMarkets[marketIndex].perpMarket;
 
-    const auto market = solana::rpc::getAccountInfo<mango_v3::PerpMarket>(
-        config.endpoint,
-        perpMarketPk.toBase58());
+    const auto market = solana.getAccountInfo<mango_v3::PerpMarket>(perpMarketPk.toBase58());
     assert(market.mangoGroup.toBase58() == config.group);
 
-    const auto recentBlockhash = solana::rpc::getRecentBlockhash(config.endpoint);
+    const auto recentBlockhash = solana.getRecentBlockhash();
     const auto groupPk = solana::PublicKey::fromBase58(config.group);
     const auto programPk = solana::PublicKey::fromBase58(config.program);
     const auto keypair = solana::Keypair::fromFile("../tests/fixtures/solana/id.json");
@@ -60,7 +57,7 @@ int main()
 
     const auto tx = solana::CompiledTransaction::fromInstructions(ixs, keypair.publicKey, recentBlockhash);
 
-    const auto b58Sig = solana::rpc::signAndSendTransaction(config.endpoint, keypair, tx);
+    const auto b58Sig = solana.signAndSendTransaction(keypair, tx);
     std::cout << "placed order. check: https://explorer.solana.com/tx/" << b58Sig << "?cluster=devnet" << std::endl;
 
     return 0;

@@ -2,15 +2,17 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include "../mango_v3.hpp"
+#include "mango_v3.hpp"
 
 int main()
 {
-  const json req = solana::rpc::getAccountInfoRequest("98pjRuQjK3qA6gXts96PqZT4Ze5QmnCmt3QYjhbUSPue");
+  std::string rpc_url = "https://mango.rpcpool.com/946ef7337da3f5b8d3e4a34e7f88";
+  auto solana = solana::rpc::Solana(rpc_url);
+  const json req = solana.getAccountInfoRequest("98pjRuQjK3qA6gXts96PqZT4Ze5QmnCmt3QYjhbUSPue");
   const std::string jsonSerialized = req.dump();
   std::cout << "REQ: " << jsonSerialized << std::endl;
 
-  cpr::Response r = cpr::Post(cpr::Url{"https://mango.rpcpool.com/946ef7337da3f5b8d3e4a34e7f88"},
+  cpr::Response r = cpr::Post(cpr::Url{rpc_url},
                               cpr::Body{jsonSerialized.c_str()},
                               cpr::Header{{"Content-Type", "application/json"}});
 
@@ -30,7 +32,7 @@ int main()
     json res = json::parse(r.text);
 
     const std::string encoded = res["result"]["value"]["data"][0];
-    const std::string decoded = b64decode(encoded);
+    const std::string decoded = solana::Base64::b64decode(encoded);
     const mango_v3::MangoGroup *group = reinterpret_cast<const mango_v3::MangoGroup *>(decoded.data());
     std::cout << "DEC: " << std::endl;
     std::cout << "numOracles: " << group->numOracles << std::endl;
