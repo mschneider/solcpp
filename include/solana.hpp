@@ -15,11 +15,9 @@ namespace solana
 {
   using json = nlohmann::json;
 
-  // initialize libsodium statically, this is really bad but gets the job done
-  auto sodium_error = sodium_init();
-
   const std::string NATIVE_MINT = "So11111111111111111111111111111111111111112";
   const std::string MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
+  const std::string MAINNET_BETA = "https://api.mainnet-beta.solana.com";
 
   struct PublicKey
   {
@@ -373,5 +371,6 @@ namespace solana
 
       return b58Sig;
     }
+
   }
 }

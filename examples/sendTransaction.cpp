@@ -2,7 +2,7 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include "../solana.hpp"
+#include "../include/solana.hpp"
 
 size_t writeCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
