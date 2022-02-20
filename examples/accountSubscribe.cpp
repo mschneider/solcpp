@@ -1,5 +1,4 @@
 #include <chrono>
-#include <curl/curl.h>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
