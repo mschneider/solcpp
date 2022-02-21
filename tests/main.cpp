@@ -14,9 +14,9 @@ TEST_CASE("base58 decode & encode")
 
   for (const auto &bs58 : bs58s)
   {
-    const auto decoded = solana::Base58::b58decode(bs58);
-    const auto encoded = solana::Base58::b58encode(decoded);
-    const auto redecoded = solana::Base58::b58decode(encoded);
+    const auto decoded = solana::b58decode(bs58);
+    const auto encoded = solana::b58encode(decoded);
+    const auto redecoded = solana::b58decode(encoded);
     std::ifstream fixture("../tests/fixtures/base58/" + bs58, ios::binary);
     std::vector<char> buffer(std::istreambuf_iterator<char>(fixture), {});
 
@@ -38,7 +38,7 @@ TEST_CASE("parse private keys")
 TEST_CASE("decode mango_v3 Fill")
 {
   const std::string encoded("AAEMAAEAAAB6PABiAAAAAJMvAwAAAAAAEp7AH3xFwgByZdzdjJaK2f9K+nwfGkKL3EBs6qBSkbT0Wsj+/////3JYBgAAAAAAPNHr0H4BAADkFB3J5f//////////////AAAAAAAAAABfPABiAAAAABh0e79OvRxWYgRL9dtu02f5VK/SK/CK1oU+Tgm1NbL9IaU3AQAAAADOMAYAAAAAAAAAAAAAAAAA46WbxCAAAAAAAAAAAAAAAHJYBgAAAAAAAQAAAAAAAAA=");
-  const std::string decoded = solana::Base64::b64decode(encoded);
+  const std::string decoded = solana::b64decode(encoded);
   const mango_v3::FillEvent *event = (mango_v3::FillEvent *)decoded.data();
   CHECK_EQ(event->eventType, mango_v3::EventType::Fill);
   CHECK_EQ(event->takerSide, mango_v3::Side::Sell);

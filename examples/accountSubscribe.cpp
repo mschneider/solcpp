@@ -77,7 +77,7 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl, ws_message_ptr ms
               << std::endl;
               */
 
-  const auto decoded = solana::Base64::b64decode(data);
+  const auto decoded = solana::b64decode(data);
   const auto events = reinterpret_cast<const mango_v3::EventQueue *>(decoded.data());
   const auto seqNumDiff = events->header.seqNum - lastSeqNum;
   const auto lastSlot = (events->header.head + events->header.count) % mango_v3::EVENT_QUEUE_SIZE;

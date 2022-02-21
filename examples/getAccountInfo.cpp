@@ -32,7 +32,7 @@ int main()
     json res = json::parse(r.text);
 
     const std::string encoded = res["result"]["value"]["data"][0];
-    const std::string decoded = solana::Base64::b64decode(encoded);
+    const std::string decoded = solana::b64decode(encoded);
     const mango_v3::MangoGroup *group = reinterpret_cast<const mango_v3::MangoGroup *>(decoded.data());
     std::cout << "DEC: " << std::endl;
     std::cout << "numOracles: " << group->numOracles << std::endl;

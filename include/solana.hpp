@@ -35,7 +35,7 @@ namespace solana
     {
       PublicKey result = {};
       size_t decodedSize = SIZE;
-      const auto ok = Base58::b58tobin(result.data.data(), &decodedSize, b58.c_str(), 0);
+      const auto ok = b58tobin(result.data.data(), &decodedSize, b58.c_str(), 0);
       if (!ok)
         throw std::runtime_error("invalid base58 '" + b58 + "'");
       if (decodedSize != SIZE)
@@ -50,7 +50,7 @@ namespace solana
 
     std::string toBase58() const
     {
-      return Base58::b58encode(data);
+      return b58encode(data);
     }
   };
 
@@ -291,10 +291,9 @@ namespace solana
 
               json res = json::parse(r.text);
               const std::string encoded = res["result"]["value"]["data"][0];
-              const std::string decoded = Base64::b64decode(encoded);
+              const std::string decoded = b64decode(encoded);
               if (decoded.size() != sizeof(T))
-                  throw std::runtime_error("invalid response length " + std::to_string(decoded.size()) + " expected " +
-                                           std::to_string(sizeof(T)));
+                  throw std::runtime_error("invalid response length " + std::to_string(decoded.size()) + " expected " + std::to_string(sizeof(T)));
 
               T result;
               memcpy(&result, decoded.data(), sizeof(T));

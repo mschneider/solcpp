@@ -23,7 +23,7 @@ namespace solana {
         }
         json Solana::getRecentBlockhashRequest(const std::string &commitment) {
             const json params = {
-                    {{"commitment", commitment_}}};
+                    {{"commitment", commitment}}};
 
             return jsonRequest("getRecentBlockhash", params);
         }
@@ -49,7 +49,6 @@ namespace solana {
                                         cpr::Header{{"Content-Type", "application/json"}});
             if (r.status_code != 200)
                 throw std::runtime_error("unexpected status_code " + std::to_string(r.status_code));
-
             json res = json::parse(r.text);
             const std::string encoded = res["result"]["value"]["blockhash"];
             return PublicKey::fromBase58(encoded);
@@ -71,14 +70,14 @@ namespace solana {
             tx.serializeTo(txBody);
 
             const auto signature = keypair.privateKey.signMessage(txBody);
-            const auto b58Sig = Base58::b58encode(std::string(signature.begin(), signature.end()));
+            const auto b58Sig = b58encode(std::string(signature.begin(), signature.end()));
 
             std::vector <uint8_t> signedTx;
             solana::CompactU16::encode(1, signedTx);
             signedTx.insert(signedTx.end(), signature.begin(), signature.end());
             signedTx.insert(signedTx.end(), txBody.begin(), txBody.end());
 
-            const auto b64tx = Base64::b64encode(std::string(signedTx.begin(), signedTx.end()));
+            const auto b64tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
             const json req = sendTransactionRequest(b64tx, "base64", skipPreflight, preflightCommitment);
             const std::string jsonSerialized = req.dump();
 
