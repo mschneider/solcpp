@@ -1,16 +1,17 @@
 #include <chrono>
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
-
 #include "../solana.hpp"
+#include <spdlog/spdlog.h>
+
+using json = nlohmann::json;
 
 int main()
 {
   // 1. fetch recent blockhash to anchor tx to
   const json req = solana::rpc::getRecentBlockhashRequest();
   const std::string jsonSerialized = req.dump();
-  std::cout << "REQ: " << jsonSerialized << std::endl;
+  spdlog::info("REQ: {}", jsonSerialized);
 
   cpr::Response r = cpr::Post(cpr::Url{"https://mango.devnet.rpcpool.com"},
                               cpr::Body{jsonSerialized},
@@ -22,11 +23,11 @@ int main()
   }
   else if (r.status_code >= 400)
   {
-    std::cerr << "Error [" << r.status_code << "] making request" << std::endl;
+    spdlog::error("Error [{}] making request", r.status_code);
   }
   else
   {
-    std::cout << "RES: " << r.text << std::endl;
+    spdlog::info("RES: {}", r.text);
 
     json res = json::parse(r.text);
 
@@ -52,7 +53,8 @@ int main()
     // 3. send & sign tx
     const auto keypair = solana::Keypair::fromFile("../tests/fixtures/solana/id.json");
     const auto b58Sig = solana::rpc::signAndSendTransaction("https://mango.devnet.rpcpool.com", keypair, tx);
-    std::cout << "sent tx. check: https://explorer.solana.com/tx/" << b58Sig << "?cluster=devnet" << std::endl;
+
+    spdlog::info("sent tx. check: https://explorer.solana.com/tx/{}?cluster=devnet", b58Sig);
 
     // 4. wait for tx to confirm
     const auto start = std::chrono::system_clock::now();
@@ -65,7 +67,7 @@ int main()
 
       const json req = solana::rpc::getSignatureStatuses({b58Sig});
       const std::string jsonSerialized = req.dump();
-      std::cout << "REQ: " << jsonSerialized << std::endl;
+      spdlog::info("REQ: {}", jsonSerialized);
 
       cpr::Response r = cpr::Post(cpr::Url{"https://mango.devnet.rpcpool.com"},
                                   cpr::Body{jsonSerialized},
@@ -77,12 +79,12 @@ int main()
       }
       else if (r.status_code >= 400)
       {
-        std::cerr << "Error [" << r.status_code << "] making request" << std::endl;
+        spdlog::error("Error [{}] making request", r.status_code);
         return 1;
       }
       else
       {
-        std::cout << "RES: " << r.text << std::endl;
+        spdlog::info("RES: {}", r.text);
         json res = json::parse(r.text);
 
         if (res["result"]["value"][0] != nullptr)

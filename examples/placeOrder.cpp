@@ -1,4 +1,5 @@
 #include "../mango_v3.hpp"
+#include <spdlog/spdlog.h>
 
 int main()
 {
@@ -61,7 +62,7 @@ int main()
     const auto tx = solana::CompiledTransaction::fromInstructions(ixs, keypair.publicKey, recentBlockhash);
 
     const auto b58Sig = solana::rpc::signAndSendTransaction(config.endpoint, keypair, tx);
-    std::cout << "placed order. check: https://explorer.solana.com/tx/" << b58Sig << "?cluster=devnet" << std::endl;
+    spdlog::info("placed order. check: https://explorer.solana.com/tx/{}?cluster=devnet", b58Sig);
 
     return 0;
 }

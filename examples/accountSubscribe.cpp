@@ -1,17 +1,16 @@
 #include <chrono>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
+#include <websocketpp/config/asio_client.hpp>
+#include <websocketpp/client.hpp>
+#include "../int128.hpp"
+#include "../mango_v3.hpp"
 
 using json = nlohmann::json;
 
-#include <websocketpp/config/asio_client.hpp>
-#include <websocketpp/client.hpp>
 typedef websocketpp::client<websocketpp::config::asio_tls_client> ws_client;
 typedef websocketpp::config::asio_client::message_type::ptr ws_message_ptr;
 typedef std::shared_ptr<boost::asio::ssl::context> context_ptr;
-
-#include "../int128.hpp"
-#include "../mango_v3.hpp"
 
 static context_ptr on_tls_init() {
   // establishes a SSL connection
@@ -167,7 +166,7 @@ int main() {
     // will exit when this connection is closed.
     c.run();
   } catch (websocketpp::exception const &e) {
-    std::cout << e.what() << std::endl;
+    spdlog::error("caught exception: {}", e.what());
   }
 
   return 0;
