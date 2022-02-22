@@ -4,14 +4,12 @@
 #include "mango_v3.hpp"
 
 TEST_CASE("base58 decode & encode") {
-  const std::vector<std::string> bs58s
-  {
+  const std::vector<std::string> bs58s{
       "98pjRuQjK3qA6gXts96PqZT4Ze5QmnCmt3QYjhbUSPue",
       "mv3ekLzLbnVPNxjSKvqBpU3ZeZXPQdEC3bp5MDEBG68",
       "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
       "MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac",
-      "14ivtgssEBoBjuZJtSAPKYgpUK7DmnSwuPMqJoVTSgKJ"
-  };
+      "14ivtgssEBoBjuZJtSAPKYgpUK7DmnSwuPMqJoVTSgKJ"};
 
   std::string resources_dir = FIXTURES_DIR;
   for (const auto &bs58 : bs58s) {
