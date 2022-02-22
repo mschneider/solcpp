@@ -5,7 +5,8 @@
 
 namespace solana {
 namespace rpc {
-Connection::Connection(const std::string &rpc_url, const std::string &commitment)
+Connection::Connection(const std::string &rpc_url,
+                       const std::string &commitment)
     : rpc_url_(std::move(rpc_url)), commitment_(std::move(commitment)) {
   auto sodium_result = sodium_init();
   if (sodium_result < -1)
@@ -17,7 +18,7 @@ Connection::Connection(const std::string &rpc_url, const std::string &commitment
 /// 1. Build requests
 ///
 json Connection::getAccountInfoRequest(const std::string &account,
-                                   const std::string &encoding) {
+                                       const std::string &encoding) {
   const json params = {account, {{"encoding", encoding}}};
 
   return jsonRequest("getAccountInfo", params);
@@ -28,10 +29,9 @@ json Connection::getRecentBlockhashRequest(const std::string &commitment) {
   return jsonRequest("getRecentBlockhash", params);
 }
 
-json Connection::sendTransactionRequest(const std::string &transaction,
-                                    const std::string &encoding,
-                                    bool skipPreflight,
-                                    const std::string &preflightCommitment) {
+json Connection::sendTransactionRequest(
+    const std::string &transaction, const std::string &encoding,
+    bool skipPreflight, const std::string &preflightCommitment) {
   const json params = {transaction,
                        {{"encoding", encoding},
                         {"skipPreflight", skipPreflight},
@@ -56,8 +56,8 @@ PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
   return PublicKey::fromBase58(encoded);
 }
 
-json Connection::getSignatureStatuses(const std::vector<std::string> &signatures,
-                                  bool searchTransactionHistory) {
+json Connection::getSignatureStatuses(
+    const std::vector<std::string> &signatures, bool searchTransactionHistory) {
   const json params = {
       signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
 
