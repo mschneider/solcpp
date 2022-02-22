@@ -11,8 +11,9 @@
 #ifndef FIXEDP_H
 #define FIXEDP_H
 
-#include <cstddef>
 #include <stdint.h>
+
+#include <cstddef>
 
 using namespace std;
 
@@ -30,8 +31,7 @@ struct FixedPSizeInfo;
 // Declares a SizeInfo with the given signedness S and base type T
 #define FIXEDP_MK_SIZE_INFO(S, T)                                 \
   template <>                                                     \
-  struct FixedPSizeInfo<S, FIXEDP_SIZE(T)>                        \
-  {                                                               \
+  struct FixedPSizeInfo<S, FIXEDP_SIZE(T)> {                      \
     typedef T ValType;                                            \
     static const size_t VAL_SIZE = FIXEDP_SIZE(T);                \
     typedef FixedPSizeInfo<S, FIXEDP_NEXT_SIZE(T)> NEXT_SIZEINFO; \
@@ -40,8 +40,7 @@ struct FixedPSizeInfo;
 
 #define FIXEDP_MK_DOUBLE_SIZE_INFO(S, T)                          \
   template <>                                                     \
-  struct FixedPSizeInfo<S, FIXEDP_SIZE(T) * 2>                    \
-  {                                                               \
+  struct FixedPSizeInfo<S, FIXEDP_SIZE(T) * 2> {                  \
     typedef T ValType;                                            \
     static const size_t VAL_SIZE = FIXEDP_SIZE(T) * 2;            \
     typedef FixedPSizeInfo<S, FIXEDP_NEXT_SIZE(T)> NEXT_SIZEINFO; \
@@ -70,15 +69,13 @@ FIXEDP_MK_SIZE_INFO(false, uint8_t);
 #undef FIXEDP_MK_SIZE_INFO
 
 template <class B, class N>
-struct FixedPConvert
-{
+struct FixedPConvert {
   static B convert(const N &rhs) { return static_cast<B>(rhs); }
 };
 
 template <bool S, size_t I, size_t F>
-class fixedp
-{
-public:
+class fixedp {
+ public:
   // Define some values that can be used from the outside for polymorphism:
   static const size_t INT_SIZE = I;
   static const size_t FRACT_SIZE = F;
@@ -98,7 +95,7 @@ public:
   // 1 in our fixed's format
   static const ValType one = ValType(1) << FRACT_SIZE;
 
-  fixedp() {} // DON'T initialize data here; that's the users job!
+  fixedp() {}  // DON'T initialize data here; that's the users job!
   fixedp(const fixedp &other) : data(other.data) {}
   fixedp(const ValType &rhs) : data(rhs) {}
 
@@ -117,33 +114,26 @@ public:
   FIXEDP_MK_CMP_OP(<=)
 #undef FIXEDP_MK_CMP_OP
 
-  inline bool operator!() const
-  {
-    return !data;
-  }
+  inline bool operator!() const { return !data; }
   inline fixedp operator~() const { return fixedp(~data); }
-  inline fixedp &operator++()
-  {
+  inline fixedp &operator++() {
     data += one;
     return *this;
   }
-  inline fixedp &operator--()
-  {
+  inline fixedp &operator--() {
     data -= one;
     return *this;
   }
 
-#define FIXEDP_MK_BIN_OP(op)                       \
-  inline fixedp &operator op##=(const fixedp &n)   \
-  {                                                \
-    data op## = n.data;                            \
-    return *this;                                  \
-  }                                                \
-  inline fixedp operator op(const fixedp &n) const \
-  {                                                \
-    fixedp x(*this);                               \
-    x op## = n;                                    \
-    return x;                                      \
+#define FIXEDP_MK_BIN_OP(op)                         \
+  inline fixedp &operator op##=(const fixedp &n) {   \
+    data op## = n.data;                              \
+    return *this;                                    \
+  }                                                  \
+  inline fixedp operator op(const fixedp &n) const { \
+    fixedp x(*this);                                 \
+    x op## = n;                                      \
+    return x;                                        \
   }
   FIXEDP_MK_BIN_OP(+)
   FIXEDP_MK_BIN_OP(-)
@@ -152,54 +142,47 @@ public:
   FIXEDP_MK_BIN_OP(^)
 #undef FIXEDP_MK_BIN_OP
 
-  inline fixedp &operator*=(const fixedp &n)
-  {
-    NextValType t(static_cast<NextValType>(data) * static_cast<NextValType>(n.data));
+  inline fixedp &operator*=(const fixedp &n) {
+    NextValType t(static_cast<NextValType>(data) *
+                  static_cast<NextValType>(n.data));
     t >>= FRACT_SIZE;
     data = FixedPConvert<ValType, NextValType>::convert(t);
     return *this;
   }
-  inline fixedp operator*(const fixedp &n)
-  {
+  inline fixedp operator*(const fixedp &n) {
     fixedp x(*this);
     x *= n;
     return x;
   }
 
-  inline fixedp &operator/=(const fixedp &n)
-  {
+  inline fixedp &operator/=(const fixedp &n) {
     NextValType t(data);
     t <<= FRACT_SIZE;
     t /= n.data;
     data = FixedPConvert<ValType, NextValType>::convert(t);
     return *this;
   }
-  inline fixedp operator/(const fixedp &n)
-  {
+  inline fixedp operator/(const fixedp &n) {
     fixedp x(*this);
     x /= n;
     return x;
   }
 
-  inline fixedp &operator>>=(const fixedp &n)
-  {
+  inline fixedp &operator>>=(const fixedp &n) {
     data >>= n.toInt();
     return *this;
   }
-  inline fixedp operator>>(const fixedp &n)
-  {
+  inline fixedp operator>>(const fixedp &n) {
     fixedp x(*this);
     x >>= n;
     return x;
   }
 
-  inline fixedp &operator<<=(const fixedp &n)
-  {
+  inline fixedp &operator<<=(const fixedp &n) {
     data <<= n.toInt();
     return *this;
   }
-  inline fixedp operator<<(const fixedp &n)
-  {
+  inline fixedp operator<<(const fixedp &n) {
     fixedp x(*this);
     x <<= n;
     return x;
@@ -210,7 +193,7 @@ public:
   double toDouble() const { return static_cast<double>(data) / one; }
   ValType raw() const { return data; }
 
-private:
+ private:
   ValType data;
 };
 
@@ -225,4 +208,4 @@ typedef fixedp<false, 16, 16> ufix32;
 
 typedef fixedp<true, 80, 48> i80f48;
 
-#endif // FIXEDP_H
+#endif  // FIXEDP_H
