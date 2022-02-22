@@ -5,10 +5,12 @@
 
 TEST_CASE("base58 decode & encode") {
   const std::vector<std::string> bs58s{
-      "98pjRuQjK3qA6gXts96PqZT4Ze5QmnCmt3QYjhbUSPue",
-      "mv3ekLzLbnVPNxjSKvqBpU3ZeZXPQdEC3bp5MDEBG68",
+
+      "98pjRuQjK3qA6gXts96PqZT4Ze5QmnCmt3QYjhbUSPue","mv3ekLzLbnVPNxjSKvqBpU3ZeZXPQdEC3bp5MDEBG68",
       "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
       "MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac",
+
+
       "14ivtgssEBoBjuZJtSAPKYgpUK7DmnSwuPMqJoVTSgKJ"};
 
   std::string resources_dir = FIXTURES_DIR;
@@ -28,10 +30,10 @@ TEST_CASE("base58 decode & encode") {
   }
 }
 
-TEST_CASE("parse private keys") {
+TEST_CASE("parse private keys")
+{
   std::string resources_dir = FIXTURES_DIR;
-  const auto keypair =
-      solana::Keypair::fromFile(resources_dir + "/solana/id.json");
+  const auto keypair = solana::Keypair::fromFile(resources_dir + "/solana/id.json");
   CHECK_EQ("8K4Exjnvs3ZJQDE78zmFoax5Sh4cEVdbk1D1r17Wxuud",
            keypair.publicKey.toBase58());
 }
