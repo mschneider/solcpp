@@ -33,7 +33,7 @@
 
 
 .vscode
-build
+build*
 
 .idea
 cmake-build-debug

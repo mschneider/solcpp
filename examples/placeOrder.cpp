@@ -1,3 +1,5 @@
+#include <spdlog/spdlog.h>
+
 #include "mango_v3.hpp"
 
 int main() {
@@ -67,8 +69,9 @@ int main() {
       ixs, keypair.publicKey, recentBlockhash);
 
   const auto b58Sig = connection.signAndSendTransaction(keypair, tx);
-  std::cout << "placed order. check: https://explorer.solana.com/tx/" << b58Sig
-            << "?cluster=devnet" << std::endl;
+  spdlog::info(
+      "placed order. check: https://explorer.solana.com/tx/{}?cluster=devnet",
+      b58Sig);
 
   return 0;
 }

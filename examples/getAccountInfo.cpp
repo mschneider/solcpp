@@ -1,4 +1,5 @@
 #include <cpr/cpr.h>
+#include <spdlog/spdlog.h>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -12,28 +13,25 @@ int main() {
   const json req = connection.getAccountInfoRequest(
       "98pjRuQjK3qA6gXts96PqZT4Ze5QmnCmt3QYjhbUSPue");
   const std::string jsonSerialized = req.dump();
-  std::cout << "REQ: " << jsonSerialized << std::endl;
+  spdlog::info("REQ: {}", jsonSerialized);
 
   cpr::Response r =
       cpr::Post(cpr::Url{rpc_url}, cpr::Body{jsonSerialized.c_str()},
                 cpr::Header{{"Content-Type", "application/json"}});
 
-  if (r.status_code == 0) {
-    std::cerr << r.error.message << std::endl;
-    return 1;
-  } else if (r.status_code >= 400) {
-    std::cerr << "Error [" << r.status_code << "] making request" << std::endl;
+  if (r.status_code == 0 || r.status_code >= 400) {
+    spdlog::error("Error: {}, {}", r.status_code, r.error.message);
     return 1;
   } else {
-    std::cout << "RES: " << r.text << std::endl;
+    spdlog::info("RES: {}", r.text);
     json res = json::parse(r.text);
 
     const std::string encoded = res["result"]["value"]["data"][0];
     const std::string decoded = solana::b64decode(encoded);
     const mango_v3::MangoGroup *group =
         reinterpret_cast<const mango_v3::MangoGroup *>(decoded.data());
-    std::cout << "DEC: " << std::endl;
-    std::cout << "numOracles: " << group->numOracles << std::endl;
+    spdlog::info("DEC:");
+    spdlog::info("numOracles: {}", group->numOracles);
 
     for (int i = 0; i < mango_v3::MAX_TOKENS; ++i) {
       if (i >= group->numOracles && i != mango_v3::QUOTE_INDEX) continue;
@@ -44,13 +42,14 @@ int main() {
       if (mintPk == std::string("11111111111111111111111111111111")) continue;
 
       const auto rootBankPk = token.rootBank.toBase58();
-      if (i != mango_v3::QUOTE_INDEX)
-        std::cout << "TOK" << i << std::endl;
-      else
-        std::cout << "QUOTE" << i << std::endl;
-      std::cout << "  mint: " << mintPk << std::endl;
-      std::cout << "  rootBank: " << rootBankPk << std::endl;
-      std::cout << "  decimals: " << (int)token.decimals << std::endl;
+      if (i != mango_v3::QUOTE_INDEX) {
+        spdlog::info("TOK: {}", i);
+      } else {
+        spdlog::info("QUOTE: {}", i);
+      }
+      spdlog::info("  mint: {}", mintPk);
+      spdlog::info("  rootBank: {}", rootBankPk);
+      spdlog::info("  decimals: {}", static_cast<int>(token.decimals));
     }
 
     for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
@@ -59,18 +58,14 @@ int main() {
 
       if (marketPk == std::string("11111111111111111111111111111111")) continue;
 
-      std::cout << "SPOT" << i << std::endl;
-      std::cout << "  market: " << marketPk << std::endl;
-      std::cout << "  maintAssetWeight: " << market.maintAssetWeight.toDouble()
-                << std::endl;
-      std::cout << "  initAssetWeight: " << market.initAssetWeight.toDouble()
-                << std::endl;
-      std::cout << "  maintLiabWeight: " << market.maintLiabWeight.toDouble()
-                << std::endl;
-      std::cout << "  initLiabWeight: " << market.initLiabWeight.toDouble()
-                << std::endl;
-      std::cout << "  liquidationFee: " << market.liquidationFee.toDouble()
-                << std::endl;
+      spdlog::info("SPOT: {}", i);
+      spdlog::info("  market: {}", marketPk);
+      spdlog::info("  maintAssetWeight: {}",
+                   market.maintAssetWeight.toDouble());
+      spdlog::info("  initAssetWeight: {}", market.initAssetWeight.toDouble());
+      spdlog::info("  maintLiabWeight: {}", market.maintLiabWeight.toDouble());
+      spdlog::info("  initLiabWeight: {}", market.initLiabWeight.toDouble());
+      spdlog::info("  liquidationFee: {}", market.liquidationFee.toDouble());
     }
 
     for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
@@ -79,22 +74,18 @@ int main() {
 
       if (marketPk == std::string("11111111111111111111111111111111")) continue;
 
-      std::cout << "PERP" << i << std::endl;
-      std::cout << "  market: " << marketPk << std::endl;
-      std::cout << "  maintAssetWeight: " << market.maintAssetWeight.toDouble()
-                << std::endl;
-      std::cout << "  initAssetWeight: " << market.initAssetWeight.toDouble()
-                << std::endl;
-      std::cout << "  maintLiabWeight: " << market.maintLiabWeight.toDouble()
-                << std::endl;
-      std::cout << "  initLiabWeight: " << market.initLiabWeight.toDouble()
-                << std::endl;
-      std::cout << "  liquidationFee: " << market.liquidationFee.toDouble()
-                << std::endl;
-      std::cout << "  makerFee: " << market.makerFee.toDouble() << std::endl;
-      std::cout << "  takerFee: " << market.takerFee.toDouble() << std::endl;
-      std::cout << "  baseLotSize: " << market.baseLotSize << std::endl;
-      std::cout << "  quoteLotSize: " << market.quoteLotSize << std::endl;
+      spdlog::info("PERP: {}", i);
+      spdlog::info("  market: {}", marketPk);
+      spdlog::info("  maintAssetWeight: {}",
+                   market.maintAssetWeight.toDouble());
+      spdlog::info("  initAssetWeight: {}", market.initAssetWeight.toDouble());
+      spdlog::info("  maintLiabWeight: {}", market.maintLiabWeight.toDouble());
+      spdlog::info("  initLiabWeight: {}", market.initLiabWeight.toDouble());
+      spdlog::info("  liquidationFee: {}", market.liquidationFee.toDouble());
+      spdlog::info("  makerFee: {}", market.makerFee.toDouble());
+      spdlog::info("  takerFee: {}", market.takerFee.toDouble());
+      spdlog::info("  baseLotSize: {}", market.baseLotSize);
+      spdlog::info("  quoteLotSize: {}", market.quoteLotSize);
     }
 
     for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
@@ -102,23 +93,21 @@ int main() {
 
       if (oraclePk == std::string("11111111111111111111111111111111")) continue;
 
-      std::cout << "ORACLE" << i << ": " << oraclePk << std::endl;
+      spdlog::info("ORACLE {}: {}", i, oraclePk);
     }
 
-    std::cout << "signerNonce: " << group->signerNonce << std::endl;
-    std::cout << "signerKey: " << group->signerKey.toBase58() << std::endl;
-    std::cout << "admin: " << group->admin.toBase58() << std::endl;
-    std::cout << "dexProgramId: " << group->dexProgramId.toBase58()
-              << std::endl;
-    std::cout << "mangoCache: " << group->mangoCache.toBase58() << std::endl;
-    std::cout << "validInterval: " << group->validInterval << std::endl;
-    std::cout << "insuranceVault: " << group->insuranceVault.toBase58()
-              << std::endl;
-    std::cout << "srmVault: " << group->srmVault.toBase58() << std::endl;
-    std::cout << "msrmVault: " << group->msrmVault.toBase58() << std::endl;
-    std::cout << "feesVault: " << group->feesVault.toBase58() << std::endl;
-    std::cout << "maxMangoAccounts: " << group->maxMangoAccounts << std::endl;
-    std::cout << "numMangoAccounts: " << group->numMangoAccounts << std::endl;
+    spdlog::info("signerNonce: {}", group->signerNonce);
+    spdlog::info("signerKey: {}", group->signerKey.toBase58());
+    spdlog::info("admin: {}", group->admin.toBase58());
+    spdlog::info("dexProgramId: {}", group->dexProgramId.toBase58());
+    spdlog::info("mangoCache: {}", group->mangoCache.toBase58());
+    spdlog::info("validInterval: {}", group->validInterval);
+    spdlog::info("insuranceVault: {}", group->insuranceVault.toBase58());
+    spdlog::info("srmVault: {}", group->srmVault.toBase58());
+    spdlog::info("msrmVault: {}", group->msrmVault.toBase58());
+    spdlog::info("feesVault: {}", group->feesVault.toBase58());
+    spdlog::info("maxMangoAccounts: {}", group->maxMangoAccounts);
+    spdlog::info("numMangoAccounts: {}", group->numMangoAccounts);
   }
   return 0;
 }
