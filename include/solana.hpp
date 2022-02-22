@@ -250,7 +250,8 @@ class Connection {
   ///
   json getAccountInfoRequest(const std::string &account,
                              const std::string &encoding = "base64",
-                             const size_t offset = 0, const size_t length = 0);
+                             const size_t offset = 0,
+                             const size_t length = 0) const;
   json getRecentBlockhashRequest(const std::string &commitment = "finalized");
   json sendTransactionRequest(
       const std::string &transaction, const std::string &encoding = "base58",
@@ -269,7 +270,8 @@ class Connection {
   template <typename T>
   inline T getAccountInfo(const std::string &account,
                           const std::string &encoding = "base64",
-                          const size_t offset = 0, const size_t length = 0) {
+                          const size_t offset = 0,
+                          const size_t length = 0) const {
     const json req = getAccountInfoRequest(account, encoding, offset, length);
     cpr::Response r =
         cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
