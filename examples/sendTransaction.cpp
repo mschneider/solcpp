@@ -1,10 +1,12 @@
 #include <cpr/cpr.h>
+#include <spdlog/spdlog.h>
 
 #include <chrono>
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
 
 #include "solana.hpp"
+
+using json = nlohmann::json;
 
 int main() {
   std::string rpc_url = "https://mango.devnet.rpcpool.com";
@@ -12,18 +14,17 @@ int main() {
   // 1. fetch recent blockhash to anchor tx to
   const json req = connection.getRecentBlockhashRequest();
   const std::string jsonSerialized = req.dump();
-  std::cout << "REQ: " << jsonSerialized << std::endl;
+  spdlog::info("REQ: {}", jsonSerialized);
 
   cpr::Response r =
       cpr::Post(cpr::Url{rpc_url}, cpr::Body{jsonSerialized},
                 cpr::Header{{"Content-Type", "application/json"}});
 
-  if (r.status_code == 0) {
-    std::cerr << r.error.message << std::endl;
-  } else if (r.status_code >= 400) {
-    std::cerr << "Error [" << r.status_code << "] making request" << std::endl;
+  if (r.status_code == 0 || r.status_code >= 400) {
+    spdlog::error("Error: {}, {}", r.status_code, r.error.message);
+    return 1;
   } else {
-    std::cout << "RES: " << r.text << std::endl;
+    spdlog::info("RES: {}", r.text);
 
     json res = json::parse(r.text);
 
@@ -48,8 +49,9 @@ int main() {
     const auto keypair =
         solana::Keypair::fromFile("../tests/fixtures/solana/id.json");
     const auto b58Sig = connection.signAndSendTransaction(keypair, tx);
-    std::cout << "sent tx. check: https://explorer.solana.com/tx/" << b58Sig
-              << "?cluster=devnet" << std::endl;
+    spdlog::info(
+        "sent tx. check: https://explorer.solana.com/tx/{}?cluster=devnet",
+        b58Sig);
 
     // 4. wait for tx to confirm
     const auto start = std::chrono::system_clock::now();
@@ -63,20 +65,16 @@ int main() {
 
       const json req = connection.getSignatureStatuses({b58Sig});
       const std::string jsonSerialized = req.dump();
-      std::cout << "REQ: " << jsonSerialized << std::endl;
+      spdlog::info("REQ: {}", jsonSerialized);
 
       cpr::Response r =
           cpr::Post(cpr::Url{rpc_url}, cpr::Body{jsonSerialized},
                     cpr::Header{{"Content-Type", "application/json"}});
-      if (r.status_code == 0) {
-        std::cerr << r.error.message << std::endl;
-        return 1;
-      } else if (r.status_code >= 400) {
-        std::cerr << "Error [" << r.status_code << "] making request"
-                  << std::endl;
+      if (r.status_code == 0 || r.status_code >= 400) {
+        spdlog::error("Error: {}, {}", r.status_code, r.error.message);
         return 1;
       } else {
-        std::cout << "RES: " << r.text << std::endl;
+        spdlog::info("RES: {}", r.text);
         json res = json::parse(r.text);
 
         if (res["result"]["value"][0] != nullptr) break;

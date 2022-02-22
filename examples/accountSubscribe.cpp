@@ -1,15 +1,18 @@
+#include <spdlog/spdlog.h>
+
 #include <chrono>
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
-
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_client.hpp>
+
+#include "int128.hpp"
+#include "mango_v3.hpp"
+
 typedef websocketpp::client<websocketpp::config::asio_tls_client> ws_client;
 typedef websocketpp::config::asio_client::message_type::ptr ws_message_ptr;
 typedef std::shared_ptr<boost::asio::ssl::context> context_ptr;
 
-#include "int128.hpp"
-#include "mango_v3.hpp"
+using json = nlohmann::json;
 
 static context_ptr on_tls_init() {
   // establishes a SSL connection
@@ -22,7 +25,7 @@ static context_ptr on_tls_init() {
                      boost::asio::ssl::context::no_sslv3 |
                      boost::asio::ssl::context::single_dh_use);
   } catch (std::exception &e) {
-    std::cout << "Error in context pointer: " << e.what() << std::endl;
+    spdlog::error("Error in context pointer: {}", e.what());
   }
   return ctx;
 }
@@ -36,9 +39,9 @@ void on_open(ws_client *c, websocketpp::connection_hdl hdl) {
           solana::rpc::subscription::accountSubscribeRequest(account).dump(),
           websocketpp::frame::opcode::value::text, ec);
   if (ec) {
-    std::cout << "subscribe failed because: " << ec.message() << std::endl;
+    spdlog::error("subscribe failed because: {}", ec.message());
   } else {
-    std::cout << "subescribed to " << account << std::endl;
+    spdlog::info("subscribed to {}", account);
   }
 }
 
@@ -51,7 +54,7 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl,
   // ignore subscription confirmation
   const auto itResult = parsedMsg.find("result");
   if (itResult != parsedMsg.end()) {
-    std::cout << "on_result " << parsedMsg << std::endl;
+    spdlog::info("on_result {}", parsedMsg.dump());
     return;
   }
 
@@ -61,23 +64,12 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl,
   const int slot = parsedMsg["params"]["result"]["context"]["slot"];
   const std::string data = parsedMsg["params"]["result"]["value"]["data"][0];
 
-  /*
-    std::cout << "on_message"
-              << " method: " << method
-              << " sub: " << subscription
-              << " slot: " << slot
-              << " data: " << data.size()
-              << std::endl;
-              */
-
   const auto decoded = solana::b64decode(data);
   const auto events =
       reinterpret_cast<const mango_v3::EventQueue *>(decoded.data());
   const auto seqNumDiff = events->header.seqNum - lastSeqNum;
   const auto lastSlot =
       (events->header.head + events->header.count) % mango_v3::EVENT_QUEUE_SIZE;
-  // std::cout << "events seqNum:" << events->header.seqNum << " seqNumDiff:" <<
-  // seqNumDiff << " lastSlot:" << lastSlot << std::endl;
 
   // find all recent events and print them to log
   if (events->header.seqNum > lastSeqNum) {
@@ -91,28 +83,30 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl,
           const auto &fill = (mango_v3::FillEvent &)event;
           timestamp = fill.timestamp;
           const auto timeOnBook = fill.timestamp - fill.makerTimestamp;
-          std::cout << " FILL " << (fill.takerSide ? "sell" : "buy")
-                    << " prc:" << fill.price << " qty:" << fill.quantity
-                    << " taker:" << fill.taker.toBase58()
-                    << " maker:" << fill.maker.toBase58()
-                    << " makerOrderId:" << fill.makerOrderId
-                    << " makerOrderClientId:" << fill.makerClientOrderId
-                    << " timeOnBook:" << timeOnBook
-                    << " makerFee:" << fill.makerFee.toDouble()
-                    << " takerFee:" << fill.takerFee.toDouble();
+          spdlog::info("=====================================================");
+          spdlog::info("FILL {}", (fill.takerSide ? "sell" : "buy"));
+          spdlog::info("prc: {}", fill.price);
+          spdlog::info("qty: {}", fill.quantity);
+          spdlog::info("taker: {}", fill.taker.toBase58());
+          spdlog::info("maker: {}", fill.maker.toBase58());
+          spdlog::info("makerOrderId: {}", to_string(fill.makerOrderId));
+          spdlog::info("makerOrderClientId: {}", fill.makerClientOrderId);
+          spdlog::info("timeOnBook: {}", timeOnBook);
+          spdlog::info("makerFee: {}", fill.makerFee.toDouble());
+          spdlog::info("takerFee: {}", fill.takerFee.toDouble());
           break;
         }
         case mango_v3::EventType::Out: {
           const auto &out = (mango_v3::OutEvent &)event;
           timestamp = out.timestamp;
-          std::cout << " OUT ";
+          spdlog::info(" OUT ");
           break;
         }
         case mango_v3::EventType::Liquidate: {
           const auto &liq = (mango_v3::LiquidateEvent &)event;
           timestamp = liq.timestamp;
-          std::cout << " LIQ prc:" << liq.price.toDouble()
-                    << " qty:" << liq.quantity;
+          spdlog::info("LIQ prc: {} qty: {}", liq.price.toDouble(),
+                       liq.quantity);
           break;
         }
       }
@@ -122,7 +116,7 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl,
               std::chrono::system_clock::now().time_since_epoch())
               .count() -
           timestamp * 1000;
-      std::cout << " lag:" << lag << "ms" << std::endl;
+      spdlog::info("lag: {} ms", lag);
     }
   }
 
@@ -150,8 +144,7 @@ int main() {
     ws_client::connection_ptr con = c.get_connection(
         "wss://mango.rpcpool.com/946ef7337da3f5b8d3e4a34e7f88", ec);
     if (ec) {
-      std::cout << "could not create connection because: " << ec.message()
-                << std::endl;
+      spdlog::error("could not create connection because: {}", ec.message());
       return 0;
     }
 
