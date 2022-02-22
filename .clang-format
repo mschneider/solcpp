@@ -67,7 +67,7 @@ Cpp11BracedListStyle: true
 DeriveLineEnding: true
 DerivePointerAlignment: true
 DisableFormat: false
-# EmptyLineAfterAccessModifier: Never
+EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
 # PackConstructorInitializers: NextLine
@@ -165,10 +165,10 @@ RawStringFormats:
       - ParsePartialTestProto
     CanonicalDelimiter: pb
     BasedOnStyle: google
-# ReferenceAlignment: Pointer
+ReferenceAlignment: Pointer
 ReflowComments: true
 ShortNamespaceLines: 1
-# SortIncludes: CaseSensitive
+SortIncludes: CaseSensitive
 SortJavaStaticImport: Before
 SortUsingDeclarations: true
 SpaceAfterCStyleCast: false
@@ -185,7 +185,7 @@ SpaceBeforeRangeBasedForLoopColon: true
 SpaceInEmptyBlock: false
 SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 2
-# SpacesInAngles: Never
+SpacesInAngles: Never
 SpacesInConditionalStatement: false
 SpacesInContainerLiterals: true
 SpacesInCStyleCastParentheses: false
