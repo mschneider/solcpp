@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <stack>
 #include <string>
 
 #include "fixedp.h"
@@ -15,6 +16,8 @@ const int MAX_PAIRS = 15;
 const int QUOTE_INDEX = 15;
 const int EVENT_SIZE = 200;
 const int EVENT_QUEUE_SIZE = 256;
+const int BOOK_NODE_SIZE = 88;
+const int BOOK_SIZE = 1024;
 
 struct Config {
   std::string endpoint;
@@ -195,6 +198,92 @@ struct OutEvent {
 struct EventQueue {
   EventQueueHeader header;
   AnyEvent items[EVENT_QUEUE_SIZE];
+};
+
+enum NodeType : uint32_t {
+  Uninitialized = 0,
+  InnerNode,
+  LeafNode,
+  FreeNode,
+  LastFreeNode
+};
+
+struct AnyNode {
+  NodeType tag;
+  uint8_t padding[BOOK_NODE_SIZE - 4];
+};
+
+struct InnerNode {
+  NodeType tag;
+  uint32_t prefixLen;
+  __uint128_t key;
+  uint32_t children[2];
+  uint8_t padding[BOOK_NODE_SIZE - 32];
+};
+
+struct LeafNode {
+  NodeType tag;
+  uint8_t ownerSlot;
+  uint8_t orderType;
+  uint8_t version;
+  uint8_t timeInForce;
+  __uint128_t key;
+  solana::PublicKey owner;
+  uint64_t quantity;
+  uint64_t clientOrderId;
+  uint64_t bestInitial;
+  uint64_t timestamp;
+};
+
+struct FreeNode {
+  NodeType tag;
+  uint32_t next;
+  uint8_t padding[BOOK_NODE_SIZE - 8];
+};
+
+struct BookSide {
+  MetaData metaData;
+  uint64_t bumpIndex;
+  uint64_t freeListLen;
+  uint32_t freeListHead;
+  uint32_t rootNode;
+  uint64_t leafCount;
+  AnyNode nodes[BOOK_SIZE];
+
+  struct iterator {
+    Side side;
+    const BookSide &bookSide;
+    std::stack<uint32_t> stack;
+    uint32_t left, right;
+
+    iterator(Side side, const BookSide &bookSide)
+        : side(side), bookSide(bookSide) {
+      stack.push(bookSide.rootNode);
+      left = side == Side::Buy ? 1 : 0;
+      right = side == Side::Buy ? 0 : 1;
+    }
+
+    bool operator==(const iterator &other) const {
+      return &bookSide == &other.bookSide && stack.top() == other.stack.top();
+    }
+
+    iterator &operator++() {
+      if (stack.size() > 0) {
+        const auto &elem = **this;
+        stack.pop();
+
+        if (elem.tag == NodeType::InnerNode) {
+          const auto innerNode =
+              reinterpret_cast<const struct InnerNode *>(&elem);
+          stack.push(innerNode->children[right]);
+          stack.push(innerNode->children[left]);
+        }
+      }
+      return *this;
+    }
+
+    const AnyNode &operator*() const { return bookSide.nodes[stack.top()]; }
+  };
 };
 
 #pragma pack(pop)
