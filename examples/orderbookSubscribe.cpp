@@ -29,9 +29,14 @@ int main() {
   while (true) {
     const auto bids =
         solCon.getAccountInfo<mango_v3::BookSide>(market.bids.toBase58());
+    const auto asks =
+        solCon.getAccountInfo<mango_v3::BookSide>(market.asks.toBase58());
+    spdlog::info("got new bookside");
 
     auto bidsIt = mango_v3::BookSide::iterator(mango_v3::Side::Buy, bids);
+
     while (bidsIt.stack.size() > 0) {
+      spdlog::info("bid stack size: {}", bidsIt.stack.size());
       if ((*bidsIt).tag == mango_v3::NodeType::LeafNode) {
         const auto leafNode =
             reinterpret_cast<const struct mango_v3::LeafNode *>(&(*bidsIt));
@@ -43,12 +48,34 @@ int main() {
             !leafNode->timeInForce ||
             leafNode->timestamp + leafNode->timeInForce < nowUnix;
         if (isValid) {
-          spdlog::info("best bid price: {} qty: {}",
+          spdlog::info("highest bid price: {} qty: {}",
                        (uint64_t)(leafNode->key >> 64), leafNode->quantity);
           break;
         }
       }
       ++bidsIt;
+    }
+
+    auto asksIt = mango_v3::BookSide::iterator(mango_v3::Side::Sell, asks);
+    while (asksIt.stack.size() > 0) {
+      spdlog::info("ask stack size: {}", asksIt.stack.size());
+      if ((*asksIt).tag == mango_v3::NodeType::LeafNode) {
+        const auto leafNode =
+            reinterpret_cast<const struct mango_v3::LeafNode *>(&(*asksIt));
+        const auto now = std::chrono::system_clock::now();
+        const auto nowUnix =
+            chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
+                .count();
+        const auto isValid =
+            !leafNode->timeInForce ||
+            leafNode->timestamp + leafNode->timeInForce < nowUnix;
+        if (isValid) {
+          spdlog::info("lowest ask price: {} qty: {}",
+                       (uint64_t)(leafNode->key >> 64), leafNode->quantity);
+          break;
+        }
+      }
+      ++asksIt;
     }
   }
 }

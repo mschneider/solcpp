@@ -138,8 +138,10 @@ struct EventQueueHeader {
   uint64_t seqNum;
 };
 
+// todo: change to scoped enum class
 enum EventType : uint8_t { Fill, Out, Liquidate };
 
+// todo: change to scoped enum class
 enum Side : uint8_t { Buy, Sell };
 
 struct AnyEvent {
@@ -200,6 +202,7 @@ struct EventQueue {
   AnyEvent items[EVENT_QUEUE_SIZE];
 };
 
+// todo: change to scoped enum class
 enum NodeType : uint32_t {
   Uninitialized = 0,
   InnerNode,
