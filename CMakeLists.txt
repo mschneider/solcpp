@@ -16,4 +16,7 @@ add_subdirectory(lib)
 add_subdirectory(examples)
 
 # tests
-add_subdirectory(tests)
+include(CTest)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

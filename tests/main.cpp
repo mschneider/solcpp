@@ -11,11 +11,12 @@ TEST_CASE("base58 decode & encode") {
       "MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac",
       "14ivtgssEBoBjuZJtSAPKYgpUK7DmnSwuPMqJoVTSgKJ"};
 
+  std::string resources_dir = FIXTURES_DIR;
   for (const auto &bs58 : bs58s) {
     const auto decoded = solana::b58decode(bs58);
     const auto encoded = solana::b58encode(decoded);
     const auto redecoded = solana::b58decode(encoded);
-    std::ifstream fixture("../tests/fixtures/base58/" + bs58, ios::binary);
+    std::ifstream fixture(resources_dir + "/base58/" + bs58, ios::binary);
     std::vector<char> buffer(std::istreambuf_iterator<char>(fixture), {});
 
     CHECK_EQ(bs58.size(), encoded.size());
@@ -28,8 +29,9 @@ TEST_CASE("base58 decode & encode") {
 }
 
 TEST_CASE("parse private keys") {
+  std::string resources_dir = FIXTURES_DIR;
   const auto keypair =
-      solana::Keypair::fromFile("../tests/fixtures/solana/id.json");
+      solana::Keypair::fromFile(resources_dir + "/solana/id.json");
   CHECK_EQ("8K4Exjnvs3ZJQDE78zmFoax5Sh4cEVdbk1D1r17Wxuud",
            keypair.publicKey.toBase58());
 }
