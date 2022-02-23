@@ -5,7 +5,7 @@ add_executable(example-get-account-info getAccountInfo.cpp)
 add_executable(example-account-subscribe accountSubscribe.cpp)
 add_executable(example-send-transaction sendTransaction.cpp)
 add_executable(example-place-order placeOrder.cpp)
-add_executable(example-orderbook-subscribe orderbookSubscribe.cpp)
+add_executable(example-orderbook-subscribe orderbookSubscribe/orderbookSubscribe.cpp)
 
 # link
 target_link_libraries(example-get-account-info ${CONAN_LIBS} sol)
