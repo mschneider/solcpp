@@ -18,8 +18,16 @@ Connection::Connection(const std::string &rpc_url,
 /// 1. Build requests
 ///
 json Connection::getAccountInfoRequest(const std::string &account,
-                                       const std::string &encoding) {
-  const json params = {account, {{"encoding", encoding}}};
+                                       const std::string &encoding,
+                                       const size_t offset,
+                                       const size_t length) {
+  json params = {account};
+  json options = {{"encoding", encoding}};
+  if (offset && length) {
+    json dataSlice = {"dataSlice", {{"offset", offset}, {"length", length}}};
+    options.emplace(dataSlice);
+  }
+  params.emplace_back(options);
 
   return jsonRequest("getAccountInfo", params);
 }
