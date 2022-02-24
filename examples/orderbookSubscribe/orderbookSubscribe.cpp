@@ -6,6 +6,7 @@
 #include <websocketpp/config/asio_client.hpp>
 
 #include "bookSideSubscription.hpp"
+#include "tradesSubscription.hpp"
 #include "mango_v3.hpp"
 #include "orderbook.hpp"
 #include "solana.hpp"
@@ -28,8 +29,9 @@ int main() {
 
   examples::bookSideSubscription bids(mango_v3::Buy, market.bids.toBase58());
   examples::bookSideSubscription asks(mango_v3::Sell, market.asks.toBase58());
+  examples::tradesSubscription trades(market.eventQueue.toBase58());
 
-  examples::orderbook book(bids, asks);
+  examples::orderbook book(bids, asks, trades);
 
   while (true) {
   }

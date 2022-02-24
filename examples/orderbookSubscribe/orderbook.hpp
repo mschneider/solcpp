@@ -2,16 +2,20 @@
 #include <spdlog/spdlog.h>
 
 #include "bookSideSubscription.hpp"
+#include "tradesSubscription.hpp"
 
 namespace examples {
 class orderbook {
  public:
-  orderbook(bookSideSubscription& bids, bookSideSubscription& asks)
-      : bids(bids), asks(asks) {
+  orderbook(bookSideSubscription& bids, bookSideSubscription& asks,
+      tradesSubscription& trades)
+      : bids(bids), asks(asks), trades(trades) {
     bids.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
     asks.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
+    trades.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
     bids.subscribe();
     asks.subscribe();
+    trades.subscribe();
   }
 
   void updateCallback() {
@@ -23,7 +27,7 @@ class orderbook {
     latestBook.spreadBsp =
         (((double)latestBook.lowestAsk - latestBook.highestBid) * 10000) /
         latestBook.midPoint;
-
+    spdlog::info("latest trade: {}", trades.getLastTrade());
     spdlog::info("highestBid: {}", latestBook.highestBid);
     spdlog::info("lowestAsk: {}", latestBook.lowestAsk);
     spdlog::info("MidPrice: {}", latestBook.midPoint);
@@ -33,6 +37,7 @@ class orderbook {
  private:
   const bookSideSubscription& bids;
   const bookSideSubscription& asks;
+  const tradesSubscription& trades;
 
   struct pxSnapshot {
     uint64_t highestBid;
