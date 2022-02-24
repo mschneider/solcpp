@@ -1,5 +1,8 @@
+#pragma once
+
 #include <spdlog/spdlog.h>
 
+#include <functional>
 #include <nlohmann/json.hpp>
 #include <thread>
 #include <websocketpp/client.hpp>
@@ -18,13 +21,20 @@ using json = nlohmann::json;
 class bookSideSubscription {
  public:
   bookSideSubscription(mango_v3::Side side, const std::string& account)
-      : side(side), account(account) {
-    runThread = std::thread(&bookSideSubscription::subscribe, this);
-  }
+      : side(side), account(account) {}
 
   ~bookSideSubscription() { runThread.join(); }
 
-  // todo: add public interface to get latest best price and so on
+  void registerUpdateCallback(std::function<void()> callback) {
+    updateCallback = callback;
+  }
+
+  void subscribe() {
+    runThread = std::thread(&bookSideSubscription::subscriptionThread, this);
+  }
+
+  uint64_t getBestPrice() const { return bestPrice; }
+
  private:
   ws_client c;
   const mango_v3::Side side;
@@ -32,8 +42,9 @@ class bookSideSubscription {
   uint64_t bestPrice = 0;
   uint64_t quantity = 0;
   std::thread runThread;
+  std::function<void()> updateCallback;
 
-  bool subscribe() {
+  bool subscriptionThread() {
     try {
       c.set_access_channels(websocketpp::log::alevel::all);
       c.init_asio();
@@ -130,7 +141,7 @@ class bookSideSubscription {
         if (isValid) {
           bestPrice = (uint64_t)(leafNode->key >> 64);
           quantity = leafNode->quantity;
-          logBest();
+          updateCallback();
           break;
         }
       }
@@ -138,7 +149,7 @@ class bookSideSubscription {
     }
   }
 
-  void logBest() {
+  void logBest() const {
     // todo: if decided to make public, have to add mtx/atomic to avoid data
     // race
     spdlog::info("{} best price: {} quantity: {}", side ? "asks" : "bids",
