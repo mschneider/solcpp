@@ -39,7 +39,6 @@ class bookSideSubscription {
 
   // todo: move better here?
   void onMessage(const json& parsedMsg) {
-
     // ignore subscription confirmation
     const auto itResult = parsedMsg.find("result");
     if (itResult != parsedMsg.end()) {

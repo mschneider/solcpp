@@ -21,7 +21,8 @@ class wssSubscriber {
 
   ~wssSubscriber() { runThread.join(); }
 
-  void registerOnMessageCallback(std::function<void(const json& message)> callback) {
+  void registerOnMessageCallback(
+      std::function<void(const json& message)> callback) {
     onMessageCb = callback;
   }
 
@@ -37,13 +38,11 @@ class wssSubscriber {
       c.set_tls_init_handler(
           websocketpp::lib::bind(&wssSubscriber::on_tls_init, this));
 
-      c.set_open_handler(
-          websocketpp::lib::bind(&wssSubscriber::on_open, this,
-                                 websocketpp::lib::placeholders::_1));
-      c.set_message_handler(
-          websocketpp::lib::bind(&wssSubscriber::on_message, this,
-                                 websocketpp::lib::placeholders::_1,
-                                 websocketpp::lib::placeholders::_2));
+      c.set_open_handler(websocketpp::lib::bind(
+          &wssSubscriber::on_open, this, websocketpp::lib::placeholders::_1));
+      c.set_message_handler(websocketpp::lib::bind(
+          &wssSubscriber::on_message, this, websocketpp::lib::placeholders::_1,
+          websocketpp::lib::placeholders::_2));
 
       websocketpp::lib::error_code ec;
       ws_client::connection_ptr con = c.get_connection(

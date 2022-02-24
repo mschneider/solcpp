@@ -6,10 +6,10 @@
 #include <websocketpp/config/asio_client.hpp>
 
 #include "bookSideSubscription.hpp"
-#include "tradesSubscription.hpp"
 #include "mango_v3.hpp"
 #include "orderbook.hpp"
 #include "solana.hpp"
+#include "tradesSubscription.hpp"
 
 int main() {
   const auto &config = mango_v3::MAINNET;

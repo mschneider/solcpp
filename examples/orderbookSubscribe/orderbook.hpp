@@ -8,7 +8,7 @@ namespace examples {
 class orderbook {
  public:
   orderbook(bookSideSubscription& bids, bookSideSubscription& asks,
-      tradesSubscription& trades)
+            tradesSubscription& trades)
       : bids(bids), asks(asks), trades(trades) {
     bids.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
     asks.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
