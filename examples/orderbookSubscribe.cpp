@@ -2,6 +2,7 @@
 #include <spdlog/spdlog.h>
 
 #include <chrono>
+#include <mutex>
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_client.hpp>
 
@@ -26,7 +27,7 @@ class updateLogger {
   }
 
   void logUpdate() {
-    const std::lock_guard<std::mutex> lock(updateMtx);
+    const std::scoped_lock lock(updateMtx);
     if (book.valid()) {
       spdlog::info("============Orderbook Update============");
       spdlog::info("Latest trade: {}", trades.getLastTrade()

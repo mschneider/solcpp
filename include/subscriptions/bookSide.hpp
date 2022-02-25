@@ -2,9 +2,12 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <atomic>
 #include <functional>
+#include <mutex>
 #include <nlohmann/json.hpp>
+#include <vector>
 
 #include "mango_v3.hpp"
 #include "solana.hpp"
@@ -30,20 +33,40 @@ class bookSide {
     wssConnection.start();
   }
 
-  uint64_t getBestPrice() const { return bestPrice.load(); }
+  uint64_t getBestPrice() const {
+    std::scoped_lock lock(ordersMtx);
+    return (!orders.empty()) ? orders.back().price : 0;
+  }
 
   uint64_t getDepth(uint8_t percent) const {
+    std::scoped_lock lock(ordersMtx);
     return 0;
   }  // todo: add depth logic
 
  private:
   wssSubscriber wssConnection;
   const Side side;
-  atomic_uint64_t bestPrice = 0;
-  atomic_uint64_t quantity = 0;
+
+  struct order {
+    order(uint64_t price, uint64_t quantity)
+        : price(price), quantity(quantity) {}
+
+    bool operator<(const order& compare) {
+      return (price < compare.price) ? true : false;
+    }
+
+    bool operator>(const order& compare) {
+      return (price > compare.price) ? true : false;
+    }
+
+    uint64_t price;
+    uint64_t quantity;
+  };
+
+  mutable std::mutex ordersMtx;
+  std::vector<order> orders;
   std::function<void()> updateCallback;
 
-  // todo: move better here?
   void onMessage(const json& parsedMsg) {
     // ignore subscription confirmation
     const auto itResult = parsedMsg.find("result");
@@ -54,6 +77,7 @@ class bookSide {
 
     const std::string encoded =
         parsedMsg["params"]["result"]["value"]["data"][0];
+
     const std::string decoded = solana::b64decode(encoded);
     if (decoded.size() != sizeof(BookSide))
       throw std::runtime_error("invalid response length " +
@@ -64,6 +88,8 @@ class bookSide {
     memcpy(&bookSide, decoded.data(), sizeof(decltype(bookSide)));
 
     auto iter = BookSide::iterator(side, bookSide);
+
+    decltype(orders) newOrders;
 
     while (iter.stack.size() > 0) {
       if ((*iter).tag == NodeType::LeafNode) {
@@ -77,13 +103,24 @@ class bookSide {
             !leafNode->timeInForce ||
             leafNode->timestamp + leafNode->timeInForce < nowUnix;
         if (isValid) {
-          bestPrice.store((uint64_t)(leafNode->key >> 64));
-          quantity.store(leafNode->quantity);
-          updateCallback();
-          break;
+          newOrders.emplace_back((uint64_t)(leafNode->key >> 64),
+                                 leafNode->quantity);
         }
       }
       ++iter;
+    }
+
+    if (!newOrders.empty()) {
+      {
+        std::scoped_lock lock(ordersMtx);
+        orders = std::move(newOrders);
+        if (side == Side::Buy) {
+          std::sort(orders.begin(), orders.end());
+        } else {
+          std::sort(orders.begin(), orders.end(), std::greater{});
+        }
+      }
+      updateCallback();
     }
   }
 };
