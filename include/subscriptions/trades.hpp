@@ -9,13 +9,14 @@
 #include "solana.hpp"
 #include "wssSubscriber.hpp"
 
-namespace examples {
+namespace mango_v3 {
+namespace subscription {
 
 using json = nlohmann::json;
 
-class tradesSubscription {
+class trades {
  public:
-  tradesSubscription(const std::string &account) : wssConnection(account) {}
+  trades(const std::string &account) : wssConnection(account) {}
 
   void registerUpdateCallback(std::function<void()> callback) {
     updateCallback = callback;
@@ -23,7 +24,7 @@ class tradesSubscription {
 
   void subscribe() {
     wssConnection.registerOnMessageCallback(
-        std::bind(&tradesSubscription::onMessage, this, std::placeholders::_1));
+        std::bind(&trades::onMessage, this, std::placeholders::_1));
     wssConnection.start();
   }
 
@@ -49,22 +50,21 @@ class tradesSubscription {
     const std::string data = parsedMsg["params"]["result"]["value"]["data"][0];
 
     const auto decoded = solana::b64decode(data);
-    const auto events =
-        reinterpret_cast<const mango_v3::EventQueue *>(decoded.data());
+    const auto events = reinterpret_cast<const EventQueue *>(decoded.data());
     const auto seqNumDiff = events->header.seqNum - lastSeqNum;
-    const auto lastSlot = (events->header.head + events->header.count) %
-                          mango_v3::EVENT_QUEUE_SIZE;
+    const auto lastSlot =
+        (events->header.head + events->header.count) % EVENT_QUEUE_SIZE;
 
     // find all recent events and print them to log
     if (events->header.seqNum > lastSeqNum) {
       for (int offset = seqNumDiff; offset > 0; --offset) {
-        const auto slot = (lastSlot - offset + mango_v3::EVENT_QUEUE_SIZE) %
-                          mango_v3::EVENT_QUEUE_SIZE;
+        const auto slot =
+            (lastSlot - offset + EVENT_QUEUE_SIZE) % EVENT_QUEUE_SIZE;
         const auto &event = events->items[slot];
         uint64_t timestamp = 0;
         switch (event.eventType) {
-          case mango_v3::EventType::Fill: {
-            const auto &fill = (mango_v3::FillEvent &)event;
+          case EventType::Fill: {
+            const auto &fill = (FillEvent &)event;
             timestamp = fill.timestamp;
             const auto timeOnBook = fill.timestamp - fill.makerTimestamp;
             //          spdlog::info("=====================================================");
@@ -80,19 +80,18 @@ class tradesSubscription {
             //          timeOnBook); spdlog::info("makerFee: {}",
             //          fill.makerFee.toDouble()); spdlog::info("takerFee: {}",
             //          fill.takerFee.toDouble());
-            spdlog::info("prc: {}", fill.price);
             latestTrade = fill.price;
             updateCallback();
             break;
           }
-          case mango_v3::EventType::Out: {
-            const auto &out = (mango_v3::OutEvent &)event;
+          case EventType::Out: {
+            const auto &out = (OutEvent &)event;
             timestamp = out.timestamp;
             // spdlog::info(" OUT ");
             break;
           }
-          case mango_v3::EventType::Liquidate: {
-            const auto &liq = (mango_v3::LiquidateEvent &)event;
+          case EventType::Liquidate: {
+            const auto &liq = (LiquidateEvent &)event;
             timestamp = liq.timestamp;
             //          spdlog::info("LIQ prc: {} qty: {}",
             //          liq.price.toDouble(),
@@ -118,4 +117,5 @@ class tradesSubscription {
   wssSubscriber wssConnection;
   std::function<void()> updateCallback;
 };
-}  // namespace examples
+}  // namespace subscription
+}  // namespace mango_v3

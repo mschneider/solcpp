@@ -11,9 +11,10 @@ typedef websocketpp::client<websocketpp::config::asio_tls_client> ws_client;
 typedef websocketpp::config::asio_client::message_type::ptr ws_message_ptr;
 typedef std::shared_ptr<boost::asio::ssl::context> context_ptr;
 
-using json = nlohmann::json;
+namespace mango_v3 {
+namespace subscription {
 
-namespace examples {
+using json = nlohmann::json;
 
 class wssSubscriber {
  public:
@@ -98,5 +99,5 @@ class wssSubscriber {
   std::thread runThread;
   std::function<void(const json&)> onMessageCb;
 };
-
-}  // namespace examples
+}  // namespace subscription
+}  // namespace mango_v3

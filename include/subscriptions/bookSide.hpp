@@ -9,13 +9,14 @@
 #include "solana.hpp"
 #include "wssSubscriber.hpp"
 
-namespace examples {
+namespace mango_v3 {
+namespace subscription {
 
 using json = nlohmann::json;
 
-class bookSideSubscription {
+class bookSide {
  public:
-  bookSideSubscription(mango_v3::Side side, const std::string& account)
+  bookSide(Side side, const std::string& account)
       : side(side), wssConnection(account) {}
 
   void registerUpdateCallback(std::function<void()> callback) {
@@ -23,8 +24,8 @@ class bookSideSubscription {
   }
 
   void subscribe() {
-    wssConnection.registerOnMessageCallback(std::bind(
-        &bookSideSubscription::onMessage, this, std::placeholders::_1));
+    wssConnection.registerOnMessageCallback(
+        std::bind(&bookSide::onMessage, this, std::placeholders::_1));
     wssConnection.start();
   }
 
@@ -32,7 +33,7 @@ class bookSideSubscription {
 
  private:
   wssSubscriber wssConnection;
-  const mango_v3::Side side;
+  const Side side;
   uint64_t bestPrice = 0;
   uint64_t quantity = 0;
   std::function<void()> updateCallback;
@@ -49,20 +50,20 @@ class bookSideSubscription {
     const std::string encoded =
         parsedMsg["params"]["result"]["value"]["data"][0];
     const std::string decoded = solana::b64decode(encoded);
-    if (decoded.size() != sizeof(mango_v3::BookSide))
+    if (decoded.size() != sizeof(BookSide))
       throw std::runtime_error("invalid response length " +
                                std::to_string(decoded.size()) + " expected " +
-                               std::to_string(sizeof(mango_v3::BookSide)));
+                               std::to_string(sizeof(BookSide)));
 
-    mango_v3::BookSide bookSide;
+    BookSide bookSide;
     memcpy(&bookSide, decoded.data(), sizeof(decltype(bookSide)));
 
-    auto iter = mango_v3::BookSide::iterator(side, bookSide);
+    auto iter = BookSide::iterator(side, bookSide);
 
     while (iter.stack.size() > 0) {
-      if ((*iter).tag == mango_v3::NodeType::LeafNode) {
+      if ((*iter).tag == NodeType::LeafNode) {
         const auto leafNode =
-            reinterpret_cast<const struct mango_v3::LeafNode*>(&(*iter));
+            reinterpret_cast<const struct LeafNode*>(&(*iter));
         const auto now = std::chrono::system_clock::now();
         const auto nowUnix =
             chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
@@ -88,4 +89,5 @@ class bookSideSubscription {
                  bestPrice, quantity);
   }
 };
-}  // namespace examples
+}  // namespace subscription
+}  // namespace mango_v3
