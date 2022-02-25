@@ -63,6 +63,5 @@ class orderbook {
   std::mutex callbackMtx;
   subscription::bookSide& bids;
   subscription::bookSide& asks;
-
 };
 }  // namespace mango_v3
