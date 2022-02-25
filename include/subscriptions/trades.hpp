@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <atomic>
 #include <functional>
 #include <nlohmann/json.hpp>
 
@@ -28,11 +29,7 @@ class trades {
     wssConnection.start();
   }
 
-  int64_t getLastTrade() const {
-    // todo: if decided to make public, have to add mtx/atomic to avoid data
-    // race
-    return latestTrade;
-  }
+  int64_t getLastTrade() const { return latestTrade.load(); }
 
  private:
   void onMessage(const json &parsedMsg) {
@@ -80,22 +77,18 @@ class trades {
             //          timeOnBook); spdlog::info("makerFee: {}",
             //          fill.makerFee.toDouble()); spdlog::info("takerFee: {}",
             //          fill.takerFee.toDouble());
-            latestTrade = fill.price;
+            latestTrade.store(fill.price);
             updateCallback();
             break;
           }
           case EventType::Out: {
             const auto &out = (OutEvent &)event;
             timestamp = out.timestamp;
-            // spdlog::info(" OUT ");
             break;
           }
           case EventType::Liquidate: {
             const auto &liq = (LiquidateEvent &)event;
             timestamp = liq.timestamp;
-            //          spdlog::info("LIQ prc: {} qty: {}",
-            //          liq.price.toDouble(),
-            //                       liq.quantity);
             break;
           }
         }
@@ -105,7 +98,6 @@ class trades {
                 std::chrono::system_clock::now().time_since_epoch())
                 .count() -
             timestamp * 1000;
-        // spdlog::info("lag: {} ms", lag);
       }
     }
 
@@ -113,7 +105,7 @@ class trades {
   }
 
   uint64_t lastSeqNum = INT_MAX;
-  int64_t latestTrade = 0;
+  atomic_uint64_t latestTrade = 0;
   wssSubscriber wssConnection;
   std::function<void()> updateCallback;
 };

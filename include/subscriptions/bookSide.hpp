@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <atomic>
 #include <functional>
 #include <nlohmann/json.hpp>
 
@@ -29,13 +30,17 @@ class bookSide {
     wssConnection.start();
   }
 
-  uint64_t getBestPrice() const { return bestPrice; }
+  uint64_t getBestPrice() const { return bestPrice.load(); }
+
+  uint64_t getDepth(uint8_t percent) const {
+    return 0;
+  }  // todo: add depth logic
 
  private:
   wssSubscriber wssConnection;
   const Side side;
-  uint64_t bestPrice = 0;
-  uint64_t quantity = 0;
+  atomic_uint64_t bestPrice = 0;
+  atomic_uint64_t quantity = 0;
   std::function<void()> updateCallback;
 
   // todo: move better here?
@@ -72,21 +77,14 @@ class bookSide {
             !leafNode->timeInForce ||
             leafNode->timestamp + leafNode->timeInForce < nowUnix;
         if (isValid) {
-          bestPrice = (uint64_t)(leafNode->key >> 64);
-          quantity = leafNode->quantity;
+          bestPrice.store((uint64_t)(leafNode->key >> 64));
+          quantity.store(leafNode->quantity);
           updateCallback();
           break;
         }
       }
       ++iter;
     }
-  }
-
-  void logBest() const {
-    // todo: if decided to make public, have to add mtx/atomic to avoid data
-    // race
-    spdlog::info("{} best price: {} quantity: {}", side ? "asks" : "bids",
-                 bestPrice, quantity);
   }
 };
 }  // namespace subscription

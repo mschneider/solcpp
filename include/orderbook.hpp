@@ -32,7 +32,7 @@ class orderbook {
     rx.lowestAsk = asks.getBestPrice();
     if (rx.valid()) {
       rx.midPoint = (rx.lowestAsk + rx.highestBid) / 2;
-      rx.spreadBsp =
+      rx.spreadBps =
           (((double)rx.lowestAsk - rx.highestBid) * 10000) / rx.midPoint;
       latestBook.store(rx);
       onUpdateCb();
@@ -43,14 +43,18 @@ class orderbook {
   uint64_t getHighestBid() const { return latestBook.load().highestBid; }
   uint64_t getLowestAsk() const { return latestBook.load().lowestAsk; }
   uint64_t getMidPoint() const { return latestBook.load().midPoint; }
-  double getSpreadBsp() const { return latestBook.load().spreadBsp; }
+  double getSpreadBps() const { return latestBook.load().spreadBps; }
+
+  uint64_t getDepth(int8_t percent) {
+    return (percent > 0) ? bids.getDepth(percent) : bids.getDepth(percent);
+  }
 
  private:
   struct snapshot {
     uint64_t highestBid;
     uint64_t lowestAsk;
     uint64_t midPoint;
-    double spreadBsp;
+    double spreadBps;
 
     bool valid() const {
       return ((highestBid && lowestAsk) && (lowestAsk > highestBid)) ? true
@@ -63,6 +67,5 @@ class orderbook {
   std::mutex callbackMtx;
   subscription::bookSide& bids;
   subscription::bookSide& asks;
-
 };
 }  // namespace mango_v3

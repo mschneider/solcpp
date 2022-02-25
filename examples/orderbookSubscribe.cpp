@@ -28,13 +28,15 @@ class updateLogger {
   void logUpdate() {
     const std::lock_guard<std::mutex> lock(updateMtx);
     if (book.valid()) {
-      spdlog::info("============update received============");
-      spdlog::info("latest trade: {}", trades.getLastTrade()
+      spdlog::info("============Orderbook Update============");
+      spdlog::info("Latest trade: {}", trades.getLastTrade()
                                            ? to_string(trades.getLastTrade())
                                            : "not received yet");
-      spdlog::info("bid-ask {}-{}", book.getHighestBid(), book.getLowestAsk());
+      spdlog::info("Bid-Ask {}-{}", book.getHighestBid(), book.getLowestAsk());
       spdlog::info("MidPrice: {}", book.getMidPoint());
-      spdlog::info("Spread in basis points: {0:.2f}", book.getSpreadBsp());
+      spdlog::info("Spread: {0:.2f} bps", book.getSpreadBps());
+      spdlog::info("Market depth +2%: {}", book.getDepth(2));
+      spdlog::info("Market depth -2%: {}", book.getDepth(-2));
     }
   }
 
