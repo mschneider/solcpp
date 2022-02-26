@@ -32,7 +32,7 @@ class wssSubscriber {
   }
 
  private:
-  bool subscriptionThread() {
+  void subscriptionThread() {
     try {
       c.set_access_channels(websocketpp::log::alevel::all);
       c.init_asio();
@@ -50,15 +50,12 @@ class wssSubscriber {
           "wss://mango.rpcpool.com/946ef7337da3f5b8d3e4a34e7f88", ec);
       if (ec) {
         spdlog::error("could not create connection because: {}", ec.message());
-        return 0;
       }
       c.connect(con);
       c.run();
     } catch (websocketpp::exception const& e) {
       std::cout << e.what() << std::endl;
     }
-    return true;
-    // todo: return false if failed
   }
 
   context_ptr on_tls_init() {
