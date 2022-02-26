@@ -46,7 +46,9 @@ class orderbook {
   double getSpreadBps() const { return latestBook.load().spreadBps; }
 
   uint64_t getDepth(int8_t percent) {
-    return (percent > 0) ? asks.getDepth(percent) : bids.getDepth(percent);
+    auto price = (latestBook.load().midPoint * (100 + percent)) / 100;
+    return (percent > 0) ? asks.getVolume<std::less_equal<uint64_t>>(price)
+                         : bids.getVolume<std::greater_equal<uint64_t>>(price);
   }
 
  private:

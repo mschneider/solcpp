@@ -36,8 +36,10 @@ class updateLogger {
       spdlog::info("Bid-Ask {}-{}", book.getHighestBid(), book.getLowestAsk());
       spdlog::info("MidPrice: {}", book.getMidPoint());
       spdlog::info("Spread: {0:.2f} bps", book.getSpreadBps());
-      spdlog::info("Market depth +2%: {}", book.getDepth(2));
-      spdlog::info("Market depth -2%: {}", book.getDepth(-2));
+
+      auto depth = 2;
+      spdlog::info("Market depth +{}%: {}", depth, book.getDepth(depth));
+      spdlog::info("Market depth -{}%: {}", depth, book.getDepth(-depth));
     }
   }
 
@@ -49,8 +51,7 @@ class updateLogger {
 
 int main() {
   const auto& config = mango_v3::MAINNET;
-  // todo: make this const
-  solana::rpc::Connection solCon;
+  const solana::rpc::Connection solCon;
   const auto group = solCon.getAccountInfo<mango_v3::MangoGroup>(config.group);
 
   const auto symbolIt =

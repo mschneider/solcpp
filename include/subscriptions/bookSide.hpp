@@ -35,13 +35,23 @@ class bookSide {
 
   uint64_t getBestPrice() const {
     std::scoped_lock lock(ordersMtx);
-    return (!orders.empty()) ? orders.back().price : 0;
+    return (!orders.empty()) ? orders.front().price : 0;
   }
 
-  uint64_t getDepth(uint8_t percent) const {
+  template <typename Op>
+  uint64_t getVolume(uint64_t price) const {
+    Op operation;
     std::scoped_lock lock(ordersMtx);
-    return 0;
-  }  // todo: add depth logic
+    uint64_t volume = 0;
+    for (auto&& order : orders) {
+      if (operation(order.price, price)) {
+        volume += order.quantity;
+      } else {
+        break;
+      }
+    }
+    return volume;
+  }
 
  private:
   wssSubscriber wssConnection;
@@ -115,9 +125,9 @@ class bookSide {
         std::scoped_lock lock(ordersMtx);
         orders = std::move(newOrders);
         if (side == Side::Buy) {
-          std::sort(orders.begin(), orders.end());
-        } else {
           std::sort(orders.begin(), orders.end(), std::greater{});
+        } else {
+          std::sort(orders.begin(), orders.end());
         }
       }
       updateCallback();
