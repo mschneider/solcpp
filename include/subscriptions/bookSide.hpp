@@ -42,8 +42,8 @@ class bookSide {
   template <typename Op>
   uint64_t getVolume(uint64_t price) const {
     Op operation;
-    std::scoped_lock lock(ordersMtx);
     uint64_t volume = 0;
+    std::scoped_lock lock(ordersMtx);
     for (auto&& order : orders) {
       if (operation(order.price, price)) {
         volume += order.quantity;
@@ -55,13 +55,6 @@ class bookSide {
   }
 
  private:
-  wssSubscriber wssConnection;
-  const Side side;
-
-  mutable std::mutex ordersMtx;
-  std::vector<orderbook::order> orders;
-  std::function<void()> updateCallback;
-
   void onMessage(const json& parsedMsg) {
     // ignore subscription confirmation
     const auto itResult = parsedMsg.find("result");
@@ -118,6 +111,12 @@ class bookSide {
       updateCallback();
     }
   }
+
+  wssSubscriber wssConnection;
+  const Side side;
+  mutable std::mutex ordersMtx;
+  std::vector<orderbook::order> orders;
+  std::function<void()> updateCallback;
 };
 }  // namespace subscription
 }  // namespace mango_v3

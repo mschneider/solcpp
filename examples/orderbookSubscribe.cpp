@@ -40,7 +40,7 @@ class updateLogger {
       spdlog::info("MidPrice: {}", level1Snapshot.midPoint);
       spdlog::info("Spread: {0:.2f} bps", level1Snapshot.spreadBps);
 
-      auto depth = 2;
+      constexpr auto depth = 2;
       spdlog::info("Market depth -{}%: {}", depth, orderbook.getDepth(-depth));
       spdlog::info("Market depth +{}%: {}", depth, orderbook.getDepth(depth));
     }
