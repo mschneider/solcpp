@@ -52,7 +52,6 @@ class trades {
     const auto lastSlot =
         (events->header.head + events->header.count) % EVENT_QUEUE_SIZE;
 
-    // find all recent events and print them to log
     if (events->header.seqNum > lastSeqNum) {
       for (int offset = seqNumDiff; offset > 0; --offset) {
         const auto slot =
@@ -64,19 +63,6 @@ class trades {
             const auto &fill = (FillEvent &)event;
             timestamp = fill.timestamp;
             const auto timeOnBook = fill.timestamp - fill.makerTimestamp;
-            //          spdlog::info("=====================================================");
-            //          spdlog::info("FILL {}", (fill.takerSide ? "sell" :
-            //          "buy")); spdlog::info("prc: {}", fill.price);
-            //          spdlog::info("qty: {}", fill.quantity);
-            //          spdlog::info("taker: {}", fill.taker.toBase58());
-            //          spdlog::info("maker: {}", fill.maker.toBase58());
-            //          spdlog::info("makerOrderId: {}",
-            //          to_string(fill.makerOrderId));
-            //          spdlog::info("makerOrderClientId: {}",
-            //          fill.makerClientOrderId); spdlog::info("timeOnBook: {}",
-            //          timeOnBook); spdlog::info("makerFee: {}",
-            //          fill.makerFee.toDouble()); spdlog::info("takerFee: {}",
-            //          fill.takerFee.toDouble());
             latestTrade.store(fill.price);
             updateCallback();
             break;

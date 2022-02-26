@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "mango_v3.hpp"
+#include "orderbook/order.hpp"
 #include "solana.hpp"
 #include "wssSubscriber.hpp"
 
@@ -33,9 +34,9 @@ class bookSide {
     wssConnection.start();
   }
 
-  uint64_t getBestPrice() const {
+  orderbook::order getBestOrder() const {
     std::scoped_lock lock(ordersMtx);
-    return (!orders.empty()) ? orders.front().price : 0;
+    return (!orders.empty()) ? orders.front() : orderbook::order{0, 0};
   }
 
   template <typename Op>
@@ -57,24 +58,8 @@ class bookSide {
   wssSubscriber wssConnection;
   const Side side;
 
-  struct order {
-    order(uint64_t price, uint64_t quantity)
-        : price(price), quantity(quantity) {}
-
-    bool operator<(const order& compare) {
-      return (price < compare.price) ? true : false;
-    }
-
-    bool operator>(const order& compare) {
-      return (price > compare.price) ? true : false;
-    }
-
-    uint64_t price;
-    uint64_t quantity;
-  };
-
   mutable std::mutex ordersMtx;
-  std::vector<order> orders;
+  std::vector<orderbook::order> orders;
   std::function<void()> updateCallback;
 
   void onMessage(const json& parsedMsg) {

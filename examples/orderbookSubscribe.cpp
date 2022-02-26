@@ -7,45 +7,48 @@
 #include <websocketpp/config/asio_client.hpp>
 
 #include "mango_v3.hpp"
-#include "orderbook.hpp"
+#include "orderbook/levelOne.hpp"
+#include "orderbook/orderbook.hpp"
 #include "solana.hpp"
 #include "subscriptions/bookSide.hpp"
 #include "subscriptions/trades.hpp"
 
 class updateLogger {
  public:
-  updateLogger(mango_v3::orderbook& book,
+  updateLogger(mango_v3::orderbook::book& orderbook,
                mango_v3::subscription::trades& trades)
-      : book(book), trades(trades) {
-    book.registerUpdateCallback(std::bind(&updateLogger::logUpdate, this));
+      : orderbook(orderbook), trades(trades) {
+    orderbook.registerUpdateCallback(std::bind(&updateLogger::logUpdate, this));
     trades.registerUpdateCallback(std::bind(&updateLogger::logUpdate, this));
   }
 
   void start() {
-    book.subscribe();
+    orderbook.subscribe();
     trades.subscribe();
   }
 
   void logUpdate() {
     const std::scoped_lock lock(updateMtx);
-    if (book.valid()) {
-      spdlog::info("============Orderbook Update============");
+    auto level1Snapshot = orderbook.getLevel1();
+    if (level1Snapshot.valid()) {
+      spdlog::info("============Update============");
       spdlog::info("Latest trade: {}", trades.getLastTrade()
                                            ? to_string(trades.getLastTrade())
                                            : "not received yet");
-      spdlog::info("Bid-Ask {}-{}", book.getHighestBid(), book.getLowestAsk());
-      spdlog::info("MidPrice: {}", book.getMidPoint());
-      spdlog::info("Spread: {0:.2f} bps", book.getSpreadBps());
+      spdlog::info("Bid-Ask {}-{}", level1Snapshot.highestBid,
+                   level1Snapshot.lowestAsk);
+      spdlog::info("MidPrice: {}", level1Snapshot.midPoint);
+      spdlog::info("Spread: {0:.2f} bps", level1Snapshot.spreadBps);
 
       auto depth = 2;
-      spdlog::info("Market depth +{}%: {}", depth, book.getDepth(depth));
-      spdlog::info("Market depth -{}%: {}", depth, book.getDepth(-depth));
+      spdlog::info("Market depth -{}%: {}", depth, orderbook.getDepth(-depth));
+      spdlog::info("Market depth +{}%: {}", depth, orderbook.getDepth(depth));
     }
   }
 
  private:
   std::mutex updateMtx;
-  mango_v3::orderbook& book;
+  mango_v3::orderbook::book& orderbook;
   mango_v3::subscription::trades& trades;
 };
 
@@ -68,9 +71,9 @@ int main() {
   mango_v3::subscription::bookSide asks(mango_v3::Sell, market.asks.toBase58());
   mango_v3::subscription::trades trades(market.eventQueue.toBase58());
 
-  mango_v3::orderbook book(bids, asks);
+  mango_v3::orderbook::book orderbook(bids, asks);
 
-  updateLogger logger(book, trades);
+  updateLogger logger(orderbook, trades);
   logger.start();
 
   while (true) {
