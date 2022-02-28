@@ -8,10 +8,13 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.config.os }}
+    permissions:
+      security-events: write
     strategy:
+      fail-fast: false
       matrix:
         config:
-          - { os: "ubuntu-18.04", profile: "linux" }
+          - { os: "ubuntu-latest", profile: "linux" }
           - { os: "macos-latest", profile: "macos" }
     steps:
       - uses: actions/checkout@v2
@@ -44,9 +47,20 @@ jobs:
       - name: Configure CMake
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
 
+      # Initialised pre-build to monitor the build process
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: cpp
+          
       - name: Build
         run:
           cmake --build ${{github.workspace}}/build --config Release --verbose
+
+      # Run security tests against build and log to the security center
+      - name: Perform CodeQL Analysis
+        continue-on-error: true
+        uses: github/codeql-action/analyze@v1
 
       - name: Test
         run: cd ${{github.workspace}}/build && ./bin/tests
