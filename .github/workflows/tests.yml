@@ -50,9 +50,10 @@ jobs:
 
       # Initialised pre-build to monitor the build process
       - name: Initialize CodeQL
+        if: ${{matrix.config.profile}} = 'linux'
         uses: github/codeql-action/init@v1
         with:
-          languages: cpp
+          languages: 'cpp'
           
       - name: Build
         run:
@@ -60,6 +61,7 @@ jobs:
 
       # Run security tests against build and log to the security center
       - name: Perform CodeQL Analysis
+        if: ${{matrix.config.profile}} = 'linux'
         continue-on-error: true
         uses: github/codeql-action/analyze@v1
 
