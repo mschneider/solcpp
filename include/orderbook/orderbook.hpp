@@ -57,8 +57,7 @@ class book {
   uint64_t getDepth(int8_t percent) {
     const std::scoped_lock lock(levelOneMtx);
     auto price = (level1.midPoint * (100 + percent)) / 100;
-    return (percent > 0) ? asks.getVolume<std::less_equal<uint64_t>>(price)
-                         : bids.getVolume<std::greater_equal<uint64_t>>(price);
+    return (percent > 0) ? asks.getVolume(price) : bids.getVolume(price);
   }
 
  private:

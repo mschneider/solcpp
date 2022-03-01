@@ -21,7 +21,7 @@ using json = nlohmann::json;
 class bookSide {
  public:
   bookSide(Side side, const std::string& account)
-      : side(side), wssConnection(account) {}
+      : bookSide_(side), wssConnection(account) {}
 
   void registerUpdateCallback(std::function<void()> callback) {
     notifyCb = callback;
@@ -33,24 +33,10 @@ class bookSide {
     wssConnection.start();
   }
 
-  orderbook::order getBestOrder() const {
-    std::scoped_lock lock(ordersMtx);
-    return (!orders.empty()) ? orders.front() : orderbook::order{0, 0};
-  }
+  orderbook::order getBestOrder() const { return bookSide_.getBestOrder(); }
 
-  template <typename Op>
   uint64_t getVolume(uint64_t price) const {
-    Op operation;
-    uint64_t volume = 0;
-    std::scoped_lock lock(ordersMtx);
-    for (auto&& order : orders) {
-      if (operation(order.price, price)) {
-        volume += order.quantity;
-      } else {
-        break;
-      }
-    }
-    return volume;
+    return bookSide_.getVolume(price);
   }
 
  private:
@@ -66,55 +52,13 @@ class bookSide {
         parsedMsg["params"]["result"]["value"]["data"][0];
 
     const std::string decoded = solana::b64decode(encoded);
-    if (decoded.size() != sizeof(BookSide))
-      throw std::runtime_error("invalid response length " +
-                               std::to_string(decoded.size()) + " expected " +
-                               std::to_string(sizeof(BookSide)));
-
-    BookSide bookSide;
-    memcpy(&bookSide, decoded.data(), sizeof(decltype(bookSide)));
-
-    auto iter = BookSide::iterator(side, bookSide);
-
-    decltype(orders) newOrders;
-
-    while (iter.stack.size() > 0) {
-      if ((*iter).tag == NodeType::LeafNode) {
-        const auto leafNode =
-            reinterpret_cast<const struct LeafNode*>(&(*iter));
-        const auto now = std::chrono::system_clock::now();
-        const auto nowUnix =
-            chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
-                .count();
-        const auto isValid =
-            !leafNode->timeInForce ||
-            leafNode->timestamp + leafNode->timeInForce < nowUnix;
-        if (isValid) {
-          newOrders.emplace_back((uint64_t)(leafNode->key >> 64),
-                                 leafNode->quantity);
-        }
-      }
-      ++iter;
-    }
-
-    if (!newOrders.empty()) {
-      {
-        std::scoped_lock lock(ordersMtx);
-        orders = std::move(newOrders);
-        if (side == Side::Buy) {
-          std::sort(orders.begin(), orders.end(), std::greater{});
-        } else {
-          std::sort(orders.begin(), orders.end());
-        }
-      }
+    if (bookSide_.update(decoded)) {
       notifyCb();
     }
   }
 
   wssSubscriber wssConnection;
-  const Side side;
-  mutable std::mutex ordersMtx;
-  std::vector<orderbook::order> orders;
+  BookSide bookSide_;
   std::function<void()> notifyCb;
 };
 }  // namespace subscription

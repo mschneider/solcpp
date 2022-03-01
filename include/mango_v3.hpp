@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 #include <stack>
 #include <string>
 
 #include "fixedp.h"
 #include "int128.hpp"
+#include "orderbook/order.hpp"
 #include "solana.hpp"
 
 namespace mango_v3 {
@@ -244,49 +246,112 @@ struct FreeNode {
   uint8_t padding[BOOK_NODE_SIZE - 8];
 };
 
-struct BookSide {
-  MetaData metaData;
-  uint64_t bumpIndex;
-  uint64_t freeListLen;
-  uint32_t freeListHead;
-  uint32_t rootNode;
-  uint64_t leafCount;
-  AnyNode nodes[BOOK_SIZE];
+class BookSide {
+ public:
+  BookSide(Side side) : side(side) {}
 
-  struct iterator {
-    Side side;
-    const BookSide &bookSide;
-    std::stack<uint32_t> stack;
-    uint32_t left, right;
-
-    iterator(Side side, const BookSide &bookSide)
-        : side(side), bookSide(bookSide) {
-      stack.push(bookSide.rootNode);
-      left = side == Side::Buy ? 1 : 0;
-      right = side == Side::Buy ? 0 : 1;
+  bool update(const std::string decoded) {
+    if (decoded.size() != sizeof(BookSideRaw)) {
+      throw std::runtime_error("invalid response length " +
+                               std::to_string(decoded.size()) + " expected " +
+                               std::to_string(sizeof(BookSideRaw)));
     }
+    memcpy(&raw, decoded.data(), sizeof(BookSideRaw));
 
-    bool operator==(const iterator &other) const {
-      return &bookSide == &other.bookSide && stack.top() == other.stack.top();
-    }
-
-    iterator &operator++() {
-      if (stack.size() > 0) {
-        const auto &elem = **this;
-        stack.pop();
-
-        if (elem.tag == NodeType::InnerNode) {
-          const auto innerNode =
-              reinterpret_cast<const struct InnerNode *>(&elem);
-          stack.push(innerNode->children[right]);
-          stack.push(innerNode->children[left]);
+    auto iter = BookSide::BookSideRaw::iterator(side, raw);
+    orderbook::order_container newOrders;
+    while (iter.stack.size() > 0) {
+      if ((*iter).tag == NodeType::LeafNode) {
+        const auto leafNode =
+            reinterpret_cast<const struct LeafNode *>(&(*iter));
+        const auto now = std::chrono::system_clock::now();
+        const auto nowUnix =
+            chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
+                .count();
+        const auto isValid =
+            !leafNode->timeInForce ||
+            leafNode->timestamp + leafNode->timeInForce < nowUnix;
+        if (isValid) {
+          newOrders.orders.emplace_back((uint64_t)(leafNode->key >> 64),
+                                        leafNode->quantity);
         }
       }
-      return *this;
+      ++iter;
     }
 
-    const AnyNode &operator*() const { return bookSide.nodes[stack.top()]; }
+    if (!newOrders.orders.empty()) {
+      std::scoped_lock lock(mtx);
+      orders = std::move(newOrders);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  orderbook::order getBestOrder() const {
+    std::scoped_lock lock(mtx);
+    return orders.getBest();
+  }
+
+  uint64_t getVolume(uint64_t price) const {
+    std::scoped_lock lock(mtx);
+    if (side == Side::Buy) {
+      return orders.getVolume<std::greater_equal<uint64_t>>(price);
+    } else {
+      return orders.getVolume<std::less_equal<uint64_t>>(price);
+    }
+  }
+
+ private:
+  struct BookSideRaw {
+    MetaData metaData;
+    uint64_t bumpIndex;
+    uint64_t freeListLen;
+    uint32_t freeListHead;
+    uint32_t rootNode;
+    uint64_t leafCount;
+    AnyNode nodes[BOOK_SIZE];
+
+    struct iterator {
+      Side side;
+      const BookSideRaw &bookSide;
+      std::stack<uint32_t> stack;
+      uint32_t left, right;
+
+      iterator(Side side, const BookSideRaw &bookSide)
+          : side(side), bookSide(bookSide) {
+        stack.push(bookSide.rootNode);
+        left = side == Side::Buy ? 1 : 0;
+        right = side == Side::Buy ? 0 : 1;
+      }
+
+      bool operator==(const iterator &other) const {
+        return &bookSide == &other.bookSide && stack.top() == other.stack.top();
+      }
+
+      iterator &operator++() {
+        if (stack.size() > 0) {
+          const auto &elem = **this;
+          stack.pop();
+
+          if (elem.tag == NodeType::InnerNode) {
+            const auto innerNode =
+                reinterpret_cast<const struct InnerNode *>(&elem);
+            stack.push(innerNode->children[right]);
+            stack.push(innerNode->children[left]);
+          }
+        }
+        return *this;
+      }
+
+      const AnyNode &operator*() const { return bookSide.nodes[stack.top()]; }
+    };
   };
+
+  Side side;
+  BookSideRaw raw;
+  orderbook::order_container orders;
+  mutable std::mutex mtx;
 };
 
 #pragma pack(pop)

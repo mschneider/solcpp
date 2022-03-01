@@ -7,6 +7,8 @@
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_client.hpp>
 
+#include "mango_v3.hpp"
+
 typedef websocketpp::client<websocketpp::config::asio_tls_client> ws_client;
 typedef websocketpp::config::asio_client::message_type::ptr ws_message_ptr;
 typedef std::shared_ptr<boost::asio::ssl::context> context_ptr;
@@ -46,8 +48,7 @@ class wssSubscriber {
           websocketpp::lib::placeholders::_2));
 
       websocketpp::lib::error_code ec;
-      ws_client::connection_ptr con = c.get_connection(
-          "wss://mango.rpcpool.com/946ef7337da3f5b8d3e4a34e7f88", ec);
+      ws_client::connection_ptr con = c.get_connection(MAINNET.endpoint, ec);
       if (ec) {
         spdlog::error("could not create connection because: {}", ec.message());
       }
