@@ -59,7 +59,7 @@ class wssSubscriber {
         spdlog::error("could not create connection because: {}", ec.message());
       }
       c.connect(con);
-	    runThread = std::thread(&ws_client::run, &c);
+      runThread = std::thread(&ws_client::run, &c);
     } catch (websocketpp::exception const& e) {
       spdlog::error("{}", e.what());
     }
