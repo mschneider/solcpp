@@ -22,9 +22,14 @@ class trades {
     notifyCb = callback;
   }
 
+  void registerCloseCallback(std::function<void()> callback) {
+    closeCb = callback;
+  }
+
   void subscribe() {
     wssConnection.registerOnMessageCallback(
         std::bind(&trades::onMessage, this, std::placeholders::_1));
+    wssConnection.registerOnCloseCallback(std::bind(&trades::onClose, this));
     wssConnection.start();
   }
 
@@ -34,6 +39,12 @@ class trades {
   }
 
  private:
+  void onClose() {
+    if (closeCb) {
+      closeCb();
+    }
+  }
+
   void onMessage(const json &parsedMsg) {
     // ignore subscription confirmation
     const auto itResult = parsedMsg.find("result");
@@ -72,7 +83,9 @@ class trades {
     }
 
     if (gotLatest) {
-      notifyCb();
+      if (notifyCb) {
+        notifyCb();
+      }
     }
     lastSeqNum = events->header.seqNum;
   }
@@ -83,6 +96,7 @@ class trades {
   uint64_t latestTrade = 0;
   wssSubscriber wssConnection;
   std::function<void()> notifyCb;
+  std::function<void()> closeCb;
 };
 }  // namespace subscription
 }  // namespace mango_v3

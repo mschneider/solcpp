@@ -1,7 +1,7 @@
 #pragma once
 
 namespace mango_v3 {
-namespace orderbook {
+namespace book {
 
 struct levelOne {
   uint64_t highestBid;
@@ -17,5 +17,5 @@ struct levelOne {
   }
 };
 
-}  // namespace orderbook
+}  // namespace book
 }  // namespace mango_v3

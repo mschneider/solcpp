@@ -3,7 +3,7 @@
 #include <vector>
 
 namespace mango_v3 {
-namespace orderbook {
+namespace book {
 
 struct order {
   order(uint64_t price, uint64_t quantity) : price(price), quantity(quantity) {}
@@ -24,7 +24,7 @@ struct order_container {
   std::vector<order> orders;
 
   order getBest() const {
-    return (!orders.empty()) ? orders.front() : orderbook::order{0, 0};
+    return (!orders.empty()) ? orders.front() : order{0, 0};
   }
 
   template <typename Op>
@@ -41,5 +41,5 @@ struct order_container {
     return volume;
   }
 };
-}  // namespace orderbook
+}  // namespace book
 }  // namespace mango_v3

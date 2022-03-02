@@ -259,7 +259,7 @@ class BookSide {
     memcpy(&raw, decoded.data(), sizeof(BookSideRaw));
 
     auto iter = BookSide::BookSideRaw::iterator(side, raw);
-    orderbook::order_container newOrders;
+    book::order_container newOrders;
     while (iter.stack.size() > 0) {
       if ((*iter).tag == NodeType::LeafNode) {
         const auto leafNode =
@@ -288,7 +288,7 @@ class BookSide {
     }
   }
 
-  orderbook::order getBestOrder() const {
+  book::order getBestOrder() const {
     std::scoped_lock lock(mtx);
     return orders.getBest();
   }
@@ -350,7 +350,7 @@ class BookSide {
 
   Side side;
   BookSideRaw raw;
-  orderbook::order_container orders;
+  book::order_container orders;
   mutable std::mutex mtx;
 };
 

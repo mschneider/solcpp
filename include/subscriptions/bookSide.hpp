@@ -27,19 +27,30 @@ class bookSide {
     notifyCb = callback;
   }
 
+  void registerCloseCallback(std::function<void()> callback) {
+    closeCb = callback;
+  }
+
   void subscribe() {
     wssConnection.registerOnMessageCallback(
         std::bind(&bookSide::onMessage, this, std::placeholders::_1));
+    wssConnection.registerOnCloseCallback(std::bind(&bookSide::onClose, this));
     wssConnection.start();
   }
 
-  orderbook::order getBestOrder() const { return bookSide_.getBestOrder(); }
+  book::order getBestOrder() const { return bookSide_.getBestOrder(); }
 
   uint64_t getVolume(uint64_t price) const {
     return bookSide_.getVolume(price);
   }
 
  private:
+  void onClose() {
+    if (closeCb) {
+      closeCb();
+    }
+  }
+
   void onMessage(const json& parsedMsg) {
     // ignore subscription confirmation
     const auto itResult = parsedMsg.find("result");
@@ -53,13 +64,16 @@ class bookSide {
 
     const std::string decoded = solana::b64decode(encoded);
     if (bookSide_.update(decoded)) {
-      notifyCb();
+      if (notifyCb) {
+        notifyCb();
+      }
     }
   }
 
   wssSubscriber wssConnection;
   BookSide bookSide_;
   std::function<void()> notifyCb;
+  std::function<void()> closeCb;
 };
 }  // namespace subscription
 }  // namespace mango_v3

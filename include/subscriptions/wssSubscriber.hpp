@@ -22,43 +22,50 @@ class wssSubscriber {
  public:
   wssSubscriber(const std::string& account) : account(account) {}
 
-  ~wssSubscriber() { runThread.join(); }
+  ~wssSubscriber() {
+    if (runThread.joinable()) {
+      websocketpp::lib::error_code ec;
+      c.stop();
+      runThread.join();
+    }
+  }
 
   void registerOnMessageCallback(
       std::function<void(const json& message)> callback) {
     onMessageCb = callback;
   }
 
-  void start() {
-    runThread = std::thread(&wssSubscriber::subscriptionThread, this);
+  void registerOnCloseCallback(std::function<void()> callback) {
+    onCloseCb = callback;
   }
 
- private:
-  void subscriptionThread() {
+  void start() {
+    c.set_access_channels(websocketpp::log::alevel::all);
+    c.init_asio();
+    c.set_tls_init_handler(
+        websocketpp::lib::bind(&wssSubscriber::on_tls_init, this));
+    c.set_open_handler(websocketpp::lib::bind(
+        &wssSubscriber::on_open, this, websocketpp::lib::placeholders::_1));
+    c.set_message_handler(websocketpp::lib::bind(
+        &wssSubscriber::on_message, this, websocketpp::lib::placeholders::_1,
+        websocketpp::lib::placeholders::_2));
+    c.set_close_handler(websocketpp::lib::bind(
+        &wssSubscriber::on_close, this, websocketpp::lib::placeholders::_1));
+
     try {
-      c.set_access_channels(websocketpp::log::alevel::all);
-      c.init_asio();
-      c.set_tls_init_handler(
-          websocketpp::lib::bind(&wssSubscriber::on_tls_init, this));
-
-      c.set_open_handler(websocketpp::lib::bind(
-          &wssSubscriber::on_open, this, websocketpp::lib::placeholders::_1));
-      c.set_message_handler(websocketpp::lib::bind(
-          &wssSubscriber::on_message, this, websocketpp::lib::placeholders::_1,
-          websocketpp::lib::placeholders::_2));
-
       websocketpp::lib::error_code ec;
       ws_client::connection_ptr con = c.get_connection(MAINNET.endpoint, ec);
       if (ec) {
         spdlog::error("could not create connection because: {}", ec.message());
       }
       c.connect(con);
-      c.run();
+	    runThread = std::thread(&ws_client::run, &c);
     } catch (websocketpp::exception const& e) {
-      std::cout << e.what() << std::endl;
+      spdlog::error("{}", e.what());
     }
   }
 
+ private:
   context_ptr on_tls_init() {
     context_ptr ctx = std::make_shared<boost::asio::ssl::context>(
         boost::asio::ssl::context::sslv23);
@@ -87,6 +94,12 @@ class wssSubscriber {
     }
   }
 
+  void on_close(websocketpp::connection_hdl hdl) {
+    if (onCloseCb) {
+      onCloseCb();
+    }
+  }
+
   void on_message(websocketpp::connection_hdl hdl, ws_message_ptr msg) {
     const json parsedMsg = json::parse(msg->get_payload());
     onMessageCb(parsedMsg);
@@ -96,6 +109,7 @@ class wssSubscriber {
   const std::string account;
   std::thread runThread;
   std::function<void(const json&)> onMessageCb;
+  std::function<void()> onCloseCb;
 };
 }  // namespace subscription
 }  // namespace mango_v3
