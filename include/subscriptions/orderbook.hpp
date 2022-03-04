@@ -2,7 +2,6 @@
 #include <spdlog/spdlog.h>
 
 #include <functional>
-#include <mutex>
 
 #include "bookSide.hpp"
 #include "orderbook/levelOne.hpp"
@@ -33,8 +32,7 @@ class orderbook {
   }
 
   void updateCallback() {
-    const std::scoped_lock lock(callbackMtx);
-    decltype(level1) newL1;
+    book::levelOne newL1;
     auto bestBid = bids.getBestOrder();
     auto bestAsk = asks.getBestOrder();
     newL1.highestBid = bestBid.price;
@@ -46,31 +44,23 @@ class orderbook {
       newL1.midPoint = ((double)newL1.lowestAsk + newL1.highestBid) / 2;
       newL1.spreadBps =
           ((newL1.lowestAsk - newL1.highestBid) * 10000) / newL1.midPoint;
-      {
-        const std::scoped_lock lock(levelOneMtx);
-        level1 = newL1;
-      }
+        level1 = std::make_shared<book::levelOne>(std::move(newL1));
       onUpdateCb();
     }
   }
 
-  book::levelOne getLevel1() const {
-    const std::scoped_lock lock(levelOneMtx);
+  auto getLevel1() const {
     return level1;
   }
 
-  uint64_t getDepth(int8_t percent) {
-    const std::scoped_lock lock(levelOneMtx);
-    auto price = (level1.midPoint * (100 + percent)) / 100;
+  auto getDepth(int8_t percent) {
+    auto price = (level1->midPoint * (100 + percent)) / 100;
     return (percent > 0) ? asks.getVolume(price) : bids.getVolume(price);
   }
 
  private:
-  book::levelOne level1;
-  // todo:macos latomic not found issue, otherwise replace mtx with std::atomic
-  mutable std::mutex levelOneMtx;
+  std::shared_ptr<book::levelOne> level1 = std::make_shared<book::levelOne>();
   std::function<void()> onUpdateCb;
-  std::mutex callbackMtx;
   subscription::bookSide bids;
   subscription::bookSide asks;
 };

@@ -33,10 +33,7 @@ class trades {
     wssConnection.start();
   }
 
-  int64_t getLastTrade() const {
-    const std::scoped_lock lock(latestTradeMtx);
-    return latestTrade;
-  }
+  auto getLastTrade() const { return latestTrade; }
 
  private:
   void onClose() {
@@ -74,8 +71,7 @@ class trades {
 
         if (event.eventType == EventType::Fill) {
           const auto &fill = (FillEvent &)event;
-          const std::scoped_lock lock(latestTradeMtx);
-          latestTrade = fill.price;
+          latestTrade = std::make_shared<uint64_t>(fill.price);
           gotLatest = true;
         }
         // no break; let's iterate to the last fill to get the latest fill order
@@ -91,9 +87,7 @@ class trades {
   }
 
   uint64_t lastSeqNum = INT_MAX;
-  // todo:macos latomic not found issue, otherwise replace mtx with std::atomic
-  mutable std::mutex latestTradeMtx;
-  uint64_t latestTrade = 0;
+  std::shared_ptr<uint64_t> latestTrade = std::make_shared<uint64_t>(0);
   wssSubscriber wssConnection;
   std::function<void()> notifyCb;
   std::function<void()> closeCb;
