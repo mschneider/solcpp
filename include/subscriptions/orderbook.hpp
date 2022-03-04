@@ -44,14 +44,12 @@ class orderbook {
       newL1.midPoint = ((double)newL1.lowestAsk + newL1.highestBid) / 2;
       newL1.spreadBps =
           ((newL1.lowestAsk - newL1.highestBid) * 10000) / newL1.midPoint;
-        level1 = std::make_shared<book::levelOne>(std::move(newL1));
+      level1 = std::make_shared<book::levelOne>(std::move(newL1));
       onUpdateCb();
     }
   }
 
-  auto getLevel1() const {
-    return level1;
-  }
+  auto getLevel1() const { return level1; }
 
   auto getDepth(int8_t percent) {
     auto price = (level1->midPoint * (100 + percent)) / 100;
