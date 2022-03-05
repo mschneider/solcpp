@@ -1,13 +1,12 @@
 #pragma once
 
 #include <cstdint>
-#include <mutex>
+#include <memory>
 #include <stack>
 #include <string>
 
 #include "fixedp.h"
 #include "int128.hpp"
-#include "orderbook/order.hpp"
 #include "solana.hpp"
 
 namespace mango_v3 {
@@ -246,9 +245,68 @@ struct FreeNode {
   uint8_t padding[BOOK_NODE_SIZE - 8];
 };
 
+struct Order {
+  Order(uint64_t price, uint64_t quantity) : price(price), quantity(quantity) {}
+  uint64_t price = 0;
+  uint64_t quantity = 0;
+};
+
+struct L1Orderbook {
+  uint64_t highestBid = 0;
+  uint64_t highestBidSize = 0;
+  uint64_t lowestAsk = 0;
+  uint64_t lowestAskSize = 0;
+  double midPoint = 0.0;
+  double spreadBps = 0.0;
+
+  bool valid() const {
+    return ((highestBid && lowestAsk) && (lowestAsk > highestBid)) ? true
+                                                                   : false;
+  }
+};
+
 class BookSide {
  public:
   BookSide(Side side) : side(side) {}
+
+  bool handleMsg(const nlohmann::json &msg) {
+    // ignore subscription confirmation
+    const auto itResult = msg.find("result");
+    if (itResult != msg.end()) {
+      return false;
+    }
+
+    const std::string encoded = msg["params"]["result"]["value"]["data"][0];
+    const std::string decoded = solana::b64decode(encoded);
+    return update(decoded);
+  }
+
+  Order getBestOrder() const {
+    return (!orders->empty()) ? orders->front() : Order(0, 0);
+  }
+
+  uint64_t getVolume(uint64_t price) const {
+    if (side == Side::Buy) {
+      return getVolume<std::greater_equal<uint64_t>>(price);
+    } else {
+      return getVolume<std::less_equal<uint64_t>>(price);
+    }
+  }
+
+ private:
+  template <typename Op>
+  uint64_t getVolume(uint64_t price) const {
+    Op operation;
+    uint64_t volume = 0;
+    for (auto &&order : *orders) {
+      if (operation(order.price, price)) {
+        volume += order.quantity;
+      } else {
+        break;
+      }
+    }
+    return volume;
+  }
 
   bool update(const std::string decoded) {
     if (decoded.size() != sizeof(BookSideRaw)) {
@@ -256,10 +314,10 @@ class BookSide {
                                std::to_string(decoded.size()) + " expected " +
                                std::to_string(sizeof(BookSideRaw)));
     }
-    memcpy(&raw, decoded.data(), sizeof(BookSideRaw));
+    memcpy(&(*raw), decoded.data(), sizeof(BookSideRaw));
 
-    auto iter = BookSide::BookSideRaw::iterator(side, raw);
-    book::order_container newOrders;
+    auto iter = BookSide::BookSideRaw::iterator(side, *raw);
+    std::vector<Order> newOrders;
     while (iter.stack.size() > 0) {
       if ((*iter).tag == NodeType::LeafNode) {
         const auto leafNode =
@@ -272,37 +330,21 @@ class BookSide {
             !leafNode->timeInForce ||
             leafNode->timestamp + leafNode->timeInForce < nowUnix;
         if (isValid) {
-          newOrders.orders.emplace_back((uint64_t)(leafNode->key >> 64),
-                                        leafNode->quantity);
+          newOrders.emplace_back((uint64_t)(leafNode->key >> 64),
+                                 leafNode->quantity);
         }
       }
       ++iter;
     }
 
-    if (!newOrders.orders.empty()) {
-      std::scoped_lock lock(mtx);
-      orders = std::move(newOrders);
+    if (!newOrders.empty()) {
+      orders = std::make_shared<std::vector<Order>>(std::move(newOrders));
       return true;
     } else {
       return false;
     }
   }
 
-  book::order getBestOrder() const {
-    std::scoped_lock lock(mtx);
-    return orders.getBest();
-  }
-
-  uint64_t getVolume(uint64_t price) const {
-    std::scoped_lock lock(mtx);
-    if (side == Side::Buy) {
-      return orders.getVolume<std::greater_equal<uint64_t>>(price);
-    } else {
-      return orders.getVolume<std::less_equal<uint64_t>>(price);
-    }
-  }
-
- private:
   struct BookSideRaw {
     MetaData metaData;
     uint64_t bumpIndex;
@@ -348,10 +390,58 @@ class BookSide {
     };
   };
 
-  Side side;
-  BookSideRaw raw;
-  book::order_container orders;
-  mutable std::mutex mtx;
+  const Side side;
+  std::shared_ptr<BookSideRaw> raw = std::make_shared<BookSideRaw>();
+  std::shared_ptr<std::vector<Order>> orders =
+      std::make_shared<std::vector<Order>>();
+};
+
+class Trades {
+ public:
+  auto getLastTrade() const { return latestTrade; }
+
+  bool handleMsg(const nlohmann::json &msg) {
+    // ignore subscription confirmation
+    const auto itResult = msg.find("result");
+    if (itResult != msg.end()) {
+      return false;
+    }
+
+    // all other messages are event queue updates
+    const std::string method = msg["method"];
+    const int subscription = msg["params"]["subscription"];
+    const int slot = msg["params"]["result"]["context"]["slot"];
+    const std::string data = msg["params"]["result"]["value"]["data"][0];
+
+    const auto decoded = solana::b64decode(data);
+    const auto events = reinterpret_cast<const EventQueue *>(decoded.data());
+    const auto seqNumDiff = events->header.seqNum - lastSeqNum;
+    const auto lastSlot =
+        (events->header.head + events->header.count) % EVENT_QUEUE_SIZE;
+
+    bool gotLatest = false;
+    if (events->header.seqNum > lastSeqNum) {
+      for (int offset = seqNumDiff; offset > 0; --offset) {
+        const auto slot =
+            (lastSlot - offset + EVENT_QUEUE_SIZE) % EVENT_QUEUE_SIZE;
+        const auto &event = events->items[slot];
+
+        if (event.eventType == EventType::Fill) {
+          const auto &fill = (FillEvent &)event;
+          latestTrade = std::make_shared<uint64_t>(fill.price);
+          gotLatest = true;
+        }
+        // no break; let's iterate to the last fill to get the latest fill order
+      }
+    }
+
+    lastSeqNum = events->header.seqNum;
+    return gotLatest;
+  }
+
+ private:
+  uint64_t lastSeqNum = INT_MAX;
+  std::shared_ptr<uint64_t> latestTrade = std::make_shared<uint64_t>(0);
 };
 
 #pragma pack(pop)

@@ -3,27 +3,27 @@
 
 #include <functional>
 
-#include "bookSide.hpp"
-#include "orderbook/levelOne.hpp"
-#include "orderbook/order.hpp"
+#include "mango_v3.hpp"
 
 namespace mango_v3 {
 namespace subscription {
 class orderbook {
  public:
   orderbook(const std::string& bidsAccount, const std::string& asksAccount)
-      : bids(Buy, bidsAccount), asks(Sell, asksAccount) {
+      : bids(bidsAccount, Buy), asks(asksAccount, Sell) {
     bids.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
     asks.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
   }
 
-  void registerUpdateCallback(std::function<void()> callback) {
-    onUpdateCb = callback;
+  template <typename func>
+  void registerUpdateCallback(func&& callback) {
+    onUpdateCb = std::forward<func>(callback);
   }
 
-  void registerCloseCallback(std::function<void()> callback) {
+  template <typename func>
+  void registerCloseCallback(func&& callback) {
     bids.registerCloseCallback(callback);
-    asks.registerCloseCallback(callback);
+    asks.registerCloseCallback(std::forward<func>(callback));
   }
 
   void subscribe() {
@@ -32,9 +32,9 @@ class orderbook {
   }
 
   void updateCallback() {
-    book::levelOne newL1;
-    auto bestBid = bids.getBestOrder();
-    auto bestAsk = asks.getBestOrder();
+    L1Orderbook newL1;
+    auto bestBid = bids.getAccount()->getBestOrder();
+    auto bestAsk = asks.getAccount()->getBestOrder();
     newL1.highestBid = bestBid.price;
     newL1.highestBidSize = bestBid.quantity;
     newL1.lowestAsk = bestAsk.price;
@@ -44,7 +44,7 @@ class orderbook {
       newL1.midPoint = ((double)newL1.lowestAsk + newL1.highestBid) / 2;
       newL1.spreadBps =
           ((newL1.lowestAsk - newL1.highestBid) * 10000) / newL1.midPoint;
-      level1 = std::make_shared<book::levelOne>(std::move(newL1));
+      level1 = std::make_shared<L1Orderbook>(std::move(newL1));
       onUpdateCb();
     }
   }
@@ -53,14 +53,15 @@ class orderbook {
 
   auto getDepth(int8_t percent) {
     auto price = (level1->midPoint * (100 + percent)) / 100;
-    return (percent > 0) ? asks.getVolume(price) : bids.getVolume(price);
+    return (percent > 0) ? asks.getAccount()->getVolume(price)
+                         : bids.getAccount()->getVolume(price);
   }
 
  private:
-  std::shared_ptr<book::levelOne> level1 = std::make_shared<book::levelOne>();
+  std::shared_ptr<L1Orderbook> level1 = std::make_shared<L1Orderbook>();
   std::function<void()> onUpdateCb;
-  subscription::bookSide bids;
-  subscription::bookSide asks;
+  subscription::accountSubscriber<BookSide> bids;
+  subscription::accountSubscriber<BookSide> asks;
 };
 }  // namespace subscription
 }  // namespace mango_v3
