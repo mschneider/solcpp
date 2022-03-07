@@ -1,0 +1,61 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Conan
+        uses: turtlebrowser/get-conan@v1.0
+
+      - name: Create default profile
+        run: conan profile new default --detect --force
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.conan
+          key: ${{ runner.os }}-conan-${{ hashFiles('**/conanfile.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-conan-
+            
+      - name: Override default profile
+        run:
+          rsync --checksum
+          ${{github.workspace}}/conan_profile.linux
+          ~/.conan/profiles/default
+
+      - name: Install dependencies
+        run:
+          conan install . -s build_type=Release
+          --install-folder=${{github.workspace}}/build --build=missing -o:h
+          boost:without_fiber=True -o:h boost:without_python=True
+
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+
+      # Initialised pre-build to monitor the build process
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: 'cpp'
+          
+      - name: Build
+        run:
+          cmake --build ${{github.workspace}}/build --config Release --verbose
+
+      # Run security tests against build and log to the security center
+      - name: Perform CodeQL Analysis
+        continue-on-error: true
+        uses: github/codeql-action/analyze@v1
