@@ -5,17 +5,13 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    
 jobs:
   build:
     runs-on: ${{ matrix.config.os }}
-    permissions:
-      security-events: write
     strategy:
-      fail-fast: false
       matrix:
         config:
-          - { os: "ubuntu-latest", profile: "linux" }
+          - { os: "ubuntu-18.04", profile: "linux" }
           - { os: "macos-latest", profile: "macos" }
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +28,6 @@ jobs:
           key: ${{ runner.os }}-conan-${{ hashFiles('**/conanfile.txt') }}
           restore-keys: |
             ${{ runner.os }}-conan-
-
       - name: Override default profile
         run:
           rsync --checksum
@@ -48,22 +43,9 @@ jobs:
       - name: Configure CMake
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
 
-      # Initialised pre-build to monitor the build process
-      - name: Initialize CodeQL
-        if: ${{matrix.config.profile == 'linux'}}
-        uses: github/codeql-action/init@v1
-        with:
-          languages: 'cpp'
-          
       - name: Build
         run:
           cmake --build ${{github.workspace}}/build --config Release --verbose
-
-      # Run security tests against build and log to the security center
-      - name: Perform CodeQL Analysis
-        if: ${{matrix.config.profile == 'linux' }}
-        continue-on-error: true
-        uses: github/codeql-action/analyze@v1
 
       - name: Test
         run: cd ${{github.workspace}}/build && ./bin/tests
