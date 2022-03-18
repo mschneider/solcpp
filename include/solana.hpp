@@ -227,6 +227,10 @@ struct CompiledTransaction {
     }
   };
 };
+struct Blockhash {
+  PublicKey publicKey;
+  uint64_t lastValidBlockHeight;
+};
 
 namespace rpc {
 using json = nlohmann::json;
@@ -251,7 +255,8 @@ class Connection {
   json getAccountInfoRequest(const std::string &account,
                              const std::string &encoding = "base64",
                              const size_t offset = 0, const size_t length = 0);
-  json getRecentBlockhashRequest(const std::string &commitment = "finalized");
+  json getBlockhashRequest(const std::string &commitment = "finalized",
+                           const std::string &method = "getRecentBlockhash");
   json sendTransactionRequest(
       const std::string &transaction, const std::string &encoding = "base58",
       bool skipPreflight = false,
@@ -259,7 +264,9 @@ class Connection {
   ///
   /// 2. Invoke RPC endpoints
   ///
-  PublicKey getRecentBlockhash(const std::string &commitment = "finalized");
+  PublicKey getRecentBlockhash_DEPRECATED(
+      const std::string &commitment = "finalized");
+  Blockhash getLatestBlockhash(const std::string &commitment = "finalized");
   json getSignatureStatuses(const std::vector<std::string> &signatures,
                             bool searchTransactionHistory = false);
   std::string signAndSendTransaction(
