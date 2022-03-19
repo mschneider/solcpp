@@ -77,7 +77,7 @@ Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
   const std::string encoded = res["result"]["value"]["blockhash"];
   const uint64_t lastValidBlockHeight =
       static_cast<uint64_t>(res["result"]["value"]["lastValidBlockHeight"]);
-  return Blockhash{PublicKey::fromBase58(encoded), lastValidBlockHeight};
+  return {PublicKey::fromBase58(encoded), lastValidBlockHeight};
 }
 
 json Connection::getSignatureStatuses(

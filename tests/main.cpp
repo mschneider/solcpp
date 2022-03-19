@@ -94,5 +94,6 @@ TEST_CASE("compile memo transaction") {
 TEST_CASE("Test getLatestBlock") {
   auto connection = solana::rpc::Connection();
   auto blockHash = connection.getLatestBlockhash();
+  CHECK(!blockHash.publicKey.toBase58().empty());
   CHECK_GT(blockHash.lastValidBlockHeight, 0);
 }
