@@ -12,7 +12,7 @@ int main() {
   std::string rpc_url = "https://mango.devnet.rpcpool.com";
   auto connection = solana::rpc::Connection(rpc_url);
   // 1. fetch recent blockhash to anchor tx to
-  const json req = connection.getRecentBlockhashRequest();
+  const json req = connection.getBlockhashRequest();
   const std::string jsonSerialized = req.dump();
   spdlog::info("REQ: {}", jsonSerialized);
 
