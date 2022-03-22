@@ -21,7 +21,7 @@ int main(){
   json res = json::parse(r.text);
   const std::string encoded = res["result"]["value"]["data"][0];
   const std::string decoded = solana::b64decode(encoded);
-  const mango_v3::MangoAccount *account =
+  const auto *account =
       reinterpret_cast<const mango_v3::MangoAccount *>(decoded.data());
   spdlog::info(account->owner.toBase58());
   // TODO: #13

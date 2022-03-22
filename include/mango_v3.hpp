@@ -126,7 +126,7 @@ struct MangoAccount {
   // solana::PublicKey spotOpenOrdersAccounts[MAX_PAIRS];
   PerpAccount perpAccounts[MAX_PAIRS];
   uint8_t orderMarket[MAX_PERP_OPEN_ORDERS];
-  uint32_t orderSide[MAX_PERP_OPEN_ORDERS];
+  uint8_t orderSide[MAX_PERP_OPEN_ORDERS];
   __int128_t orders[MAX_PERP_OPEN_ORDERS];
   uint64_t clientOrderIds[MAX_PERP_OPEN_ORDERS];
   uint64_t msrmAmount;
