@@ -103,16 +103,16 @@ struct MangoGroup {
   uint8_t padding[24];
 };
 
-struct PerpAccount{
-   int64_t basePosition;
-   i80f48 quotePosition;
-   i80f48 longSettledFunding;
-   i80f48 shortSettledFunding;
-   int64_t bidsQuantity;
-   int64_t asksQuantity;
-   int64_t takerBase;
-   int64_t takerQuote;
-   uint64_t mngoAccrued;
+struct PerpAccount {
+  int64_t basePosition;
+  i80f48 quotePosition;
+  i80f48 longSettledFunding;
+  i80f48 shortSettledFunding;
+  int64_t bidsQuantity;
+  int64_t asksQuantity;
+  int64_t takerBase;
+  int64_t takerQuote;
+  uint64_t mngoAccrued;
 };
 struct MangoAccount {
   MetaData metaData;
