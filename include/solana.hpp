@@ -288,7 +288,7 @@ class Connection {
     json res = json::parse(r.text);
     const std::string encoded = res["result"]["value"]["data"][0];
     const std::string decoded = b64decode(encoded);
-    if (decoded.size() != sizeof(T)) // decoded should fit into T
+    if (decoded.size() != sizeof(T))  // decoded should fit into T
       throw std::runtime_error("invalid response length " +
                                std::to_string(decoded.size()) + " expected " +
                                std::to_string(sizeof(T)));
