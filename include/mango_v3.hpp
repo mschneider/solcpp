@@ -103,6 +103,8 @@ struct MangoGroup {
   uint8_t padding[24];
 };
 
+enum Side : uint8_t { Buy, Sell };
+
 struct PerpAccount {
   int64_t basePosition;
   i80f48 quotePosition;
@@ -123,10 +125,9 @@ struct MangoAccount {
   i80f48 deposits[MAX_TOKENS];
   i80f48 borrows[MAX_TOKENS];
   solana::PublicKey spotOpenOrders[MAX_PAIRS];
-  // solana::PublicKey spotOpenOrdersAccounts[MAX_PAIRS];
   PerpAccount perpAccounts[MAX_PAIRS];
   uint8_t orderMarket[MAX_PERP_OPEN_ORDERS];
-  uint8_t orderSide[MAX_PERP_OPEN_ORDERS];
+  Side orderSide[MAX_PERP_OPEN_ORDERS];
   __int128_t orders[MAX_PERP_OPEN_ORDERS];
   uint64_t clientOrderIds[MAX_PERP_OPEN_ORDERS];
   uint64_t msrmAmount;
@@ -134,8 +135,8 @@ struct MangoAccount {
   bool isBankrupt;
   uint8_t info[INFO_LEN];
   solana::PublicKey advancedOrdersKey;
-  // advancedOrders;
   bool notUpgradable;
+  solana::PublicKey delegate;
   uint8_t padding[5];
 };
 
@@ -174,8 +175,6 @@ struct EventQueueHeader {
 };
 
 enum EventType : uint8_t { Fill, Out, Liquidate };
-
-enum Side : uint8_t { Buy, Sell };
 
 struct AnyEvent {
   EventType eventType;
