@@ -12,6 +12,8 @@ using json = nlohmann::json;
 
 const int MAX_TOKENS = 16;
 const int MAX_PAIRS = 15;
+const int MAX_PERP_OPEN_ORDERS = 64;
+const int INFO_LEN = 32;
 const int QUOTE_INDEX = 15;
 const int EVENT_SIZE = 200;
 const int EVENT_QUEUE_SIZE = 256;
@@ -101,6 +103,43 @@ struct MangoGroup {
   uint8_t padding[24];
 };
 
+enum Side : uint8_t { Buy, Sell };
+
+struct PerpAccount {
+  int64_t basePosition;
+  i80f48 quotePosition;
+  i80f48 longSettledFunding;
+  i80f48 shortSettledFunding;
+  int64_t bidsQuantity;
+  int64_t asksQuantity;
+  int64_t takerBase;
+  int64_t takerQuote;
+  uint64_t mngoAccrued;
+};
+struct MangoAccount {
+  MetaData metaData;
+  solana::PublicKey mangoGroup;
+  solana::PublicKey owner;
+  bool inMarginBasket[MAX_PAIRS];
+  uint8_t numInMarginBasket;
+  i80f48 deposits[MAX_TOKENS];
+  i80f48 borrows[MAX_TOKENS];
+  solana::PublicKey spotOpenOrders[MAX_PAIRS];
+  PerpAccount perpAccounts[MAX_PAIRS];
+  uint8_t orderMarket[MAX_PERP_OPEN_ORDERS];
+  Side orderSide[MAX_PERP_OPEN_ORDERS];
+  __int128_t orders[MAX_PERP_OPEN_ORDERS];
+  uint64_t clientOrderIds[MAX_PERP_OPEN_ORDERS];
+  uint64_t msrmAmount;
+  bool beingLiquidated;
+  bool isBankrupt;
+  uint8_t info[INFO_LEN];
+  solana::PublicKey advancedOrdersKey;
+  bool notUpgradable;
+  solana::PublicKey delegate;
+  uint8_t padding[5];
+};
+
 struct LiquidityMiningInfo {
   i80f48 rate;
   i80f48 maxDepthBps;
@@ -136,8 +175,6 @@ struct EventQueueHeader {
 };
 
 enum EventType : uint8_t { Fill, Out, Liquidate };
-
-enum Side : uint8_t { Buy, Sell };
 
 struct AnyEvent {
   EventType eventType;
