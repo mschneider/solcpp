@@ -13,3 +13,5 @@ target_link_libraries(example-account-subscribe ${CONAN_LIBS} sol)
 target_link_libraries(example-send-transaction ${CONAN_LIBS} sol)
 target_link_libraries(example-place-order ${CONAN_LIBS} sol)
 target_link_libraries(example-positions ${CONAN_LIBS} sol)
+
+target_compile_definitions(example-place-order PUBLIC FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests/fixtures")
