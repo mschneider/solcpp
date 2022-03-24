@@ -105,7 +105,7 @@ struct MangoGroup {
 
 enum Side : uint8_t { Buy, Sell };
 
-struct PerpAccount {
+struct PerpAccountInfo {
   int64_t basePosition;
   i80f48 quotePosition;
   i80f48 longSettledFunding;
@@ -116,7 +116,8 @@ struct PerpAccount {
   int64_t takerQuote;
   uint64_t mngoAccrued;
 };
-struct MangoAccount {
+
+struct MangoAccountInfo {
   MetaData metaData;
   solana::PublicKey mangoGroup;
   solana::PublicKey owner;
@@ -125,7 +126,7 @@ struct MangoAccount {
   i80f48 deposits[MAX_TOKENS];
   i80f48 borrows[MAX_TOKENS];
   solana::PublicKey spotOpenOrders[MAX_PAIRS];
-  PerpAccount perpAccounts[MAX_PAIRS];
+  PerpAccountInfo perpAccounts[MAX_PAIRS];
   uint8_t orderMarket[MAX_PERP_OPEN_ORDERS];
   Side orderSide[MAX_PERP_OPEN_ORDERS];
   __int128_t orders[MAX_PERP_OPEN_ORDERS];
@@ -139,6 +140,38 @@ struct MangoAccount {
   solana::PublicKey delegate;
   uint8_t padding[5];
 };
+
+class MangoAccount {
+ // Creating a MangoAccount might involve non-trivial work like calling RPC methods,
+ // so we provide explict `MangoAccount::from()` overloaded set of functions and
+ // make the public constructor un-callable.
+  struct NotPubliclyConstructible {};
+ public:
+  MangoAccount(NotPubliclyConstructible /* npc */, const MangoAccountInfo&& accountInfo) noexcept
+      : accountInfo_(std::move(accountInfo)){}
+  // Use a prefetched accountInfo
+  static std::unique_ptr<MangoAccount> from(const MangoAccountInfo&& accountInfo) noexcept {
+    return std::make_unique<MangoAccount>(NotPubliclyConstructible{}, std::move(accountInfo));
+  }
+  // Fetch `accountInfo` from `endpoint` and decode it
+  static std::unique_ptr<MangoAccount> from(const solana::PublicKey& pubKey,
+               const std::string& endpoint = MAINNET.endpoint)
+  {
+    auto connection = solana::rpc::Connection(endpoint);
+    const auto accountInfo = connection.getAccountInfo<MangoAccountInfo>(pubKey.toBase58());
+    return std::make_unique<MangoAccount>(NotPubliclyConstructible{}, std::move(accountInfo));
+  }
+  i80f48 getLiquidationPrice(){
+    return {};
+  }
+  bool hasAnySpotOrders(){
+    return {};
+  }
+ private:
+  const MangoAccountInfo accountInfo_;
+  // TODO: Add `spotOpenOrdersAccounts` and `advancedOrders`
+};
+
 
 struct LiquidityMiningInfo {
   i80f48 rate;

@@ -7,8 +7,10 @@ using json = nlohmann::json;
 int main() {
   const auto& config = mango_v3::DEVNET;
   auto connection = solana::rpc::Connection(config.endpoint);
-  const auto& mangoAccount = connection.getAccountInfo<mango_v3::MangoAccount>(
+  const auto& mangoAccountInfo = connection.getAccountInfo<mango_v3::MangoAccountInfo>(
       "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
-  spdlog::info(mangoAccount.owner.toBase58());
+  const auto& mangoAccount = mango_v3::MangoAccount::from(std::move(mangoAccountInfo));
+  spdlog::info(mangoAccountInfo.owner.toBase58());
+  spdlog::info(mangoAccount->getLiquidationPrice().toDouble());
   // TODO: #13
 }
