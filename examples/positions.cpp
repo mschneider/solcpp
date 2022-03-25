@@ -9,7 +9,7 @@ int main() {
   auto connection = solana::rpc::Connection(config.endpoint);
   const auto& mangoAccountInfo = connection.getAccountInfo<mango_v3::MangoAccountInfo>(
       "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
-  const auto& mangoAccount = mango_v3::MangoAccount::from(std::move(mangoAccountInfo));
+  const auto& mangoAccount = mango_v3::MangoAccount::from(mangoAccountInfo);
   spdlog::info(mangoAccountInfo.owner.toBase58());
   spdlog::info(mangoAccount->getLiquidationPrice().toDouble());
   // TODO: #13
