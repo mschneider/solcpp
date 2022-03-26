@@ -1,13 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
-<<<<<<< HEAD
-#include <utility>
-=======
 #include <string>
 
->>>>>>> 159ac45 (style fixup)
 #include "fixedp.h"
 #include "int128.hpp"
 #include "solana.hpp"
@@ -148,17 +143,18 @@ struct MangoAccountInfo {
 
 struct MangoAccount {
   MangoAccountInfo accountInfo;
-  explicit MangoAccount(const MangoAccountInfo& accountInfo_) noexcept {
+  explicit MangoAccount(const MangoAccountInfo &accountInfo_) noexcept {
     accountInfo = accountInfo_;
   }
   // Fetch `accountInfo` from `endpoint` and decode it
-  explicit MangoAccount(const std::string& pubKey,
-               const std::string& endpoint = MAINNET.endpoint)
-  {
+  explicit MangoAccount(const std::string &pubKey,
+                        const std::string &endpoint = MAINNET.endpoint) {
     auto connection = solana::rpc::Connection(endpoint);
-    const auto& accountInfo_ = connection.getAccountInfo<MangoAccountInfo>(pubKey);
+    const auto &accountInfo_ =
+        connection.getAccountInfo<MangoAccountInfo>(pubKey);
     accountInfo = accountInfo_;
   }
+};
 
 struct LiquidityMiningInfo {
   i80f48 rate;
