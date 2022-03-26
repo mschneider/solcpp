@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <utility>
 #include "fixedp.h"
 #include "int128.hpp"
 #include "solana.hpp"
@@ -141,35 +142,20 @@ struct MangoAccountInfo {
   uint8_t padding[5];
 };
 
-class MangoAccount {
- // Creating a MangoAccount might involve non-trivial work like calling RPC methods,
- // so we provide explict `MangoAccount::from()` overloaded set of functions and
- // make the public constructor un-callable.
-  struct NotPubliclyConstructible {};
- public:
-  MangoAccount(NotPubliclyConstructible /* npc */, const MangoAccountInfo& accountInfo) noexcept
-      : accountInfo_(accountInfo)  {}
-  // Use a prefetched accountInfo
-  static std::unique_ptr<MangoAccount> from(const MangoAccountInfo& accountInfo) noexcept {
-    return std::make_unique<MangoAccount>(NotPubliclyConstructible{}, accountInfo);
+struct MangoAccount {
+  MangoAccountInfo accountInfo;
+  explicit MangoAccount(const MangoAccountInfo& accountInfo_) noexcept {
+    accountInfo = accountInfo_;
   }
   // Fetch `accountInfo` from `endpoint` and decode it
-  static std::unique_ptr<MangoAccount> from(const solana::PublicKey& pubKey,
+  explicit MangoAccount(const std::string& pubKey,
                const std::string& endpoint = MAINNET.endpoint)
   {
     auto connection = solana::rpc::Connection(endpoint);
-    const auto& accountInfo = connection.getAccountInfo<MangoAccountInfo>(pubKey.toBase58());
-    return std::make_unique<MangoAccount>(NotPubliclyConstructible{}, accountInfo);
+    const auto& accountInfo_ = connection.getAccountInfo<MangoAccountInfo>(pubKey);
+    accountInfo = accountInfo_;
   }
-  i80f48 getLiquidationPrice(){
-    return {};
-  }
-  // TODO: Add methods to calculate health ratio
- private:
-  const MangoAccountInfo& accountInfo_;
-  // TODO: Add `spotOpenOrdersAccounts` and `advancedOrders`
 };
-
 
 struct LiquidityMiningInfo {
   i80f48 rate;

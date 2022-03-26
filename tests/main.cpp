@@ -100,16 +100,13 @@ TEST_CASE("Test getLatestBlock") {
 TEST_CASE("MangoAccount is correctly created"){
   const std::string& key = "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW";
   auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
+  // Test prefetched account info
   const auto& mangoAccountInfo =
       connection.getAccountInfo<mango_v3::MangoAccountInfo>(key);
-  // Test prefetched account info
-  REQUIRE_NOTHROW(mango_v3::MangoAccount::from(mangoAccountInfo));
-  const auto& mangoAccountInfo_ =
-      connection.getAccountInfo<mango_v3::MangoAccountInfo>(key);
-   const auto& mangoAccount = mango_v3::MangoAccount::from(mangoAccountInfo_);
-  CHECK(!std::is_null_pointer<decltype(mangoAccount)>::value);
+  const auto& mangoAccount = mango_v3::MangoAccount(mangoAccountInfo);
+  CHECK(!mangoAccount.accountInfo.owner.toBase58().empty());
   // Test fetching account info in construction
-  REQUIRE_NOTHROW(mango_v3::MangoAccount::from(solana::PublicKey::fromBase58(key), mango_v3::DEVNET.endpoint));
-  const auto& account = mango_v3::MangoAccount::from(solana::PublicKey::fromBase58(key), mango_v3::DEVNET.endpoint);
-  CHECK(!std::is_null_pointer<decltype(account)>::value);
+  REQUIRE_NOTHROW(mango_v3::MangoAccount(key, mango_v3::DEVNET.endpoint));
+  const auto& account = mango_v3::MangoAccount(key, mango_v3::DEVNET.endpoint);
+  CHECK(!account.accountInfo.owner.toBase58().empty());
 }
