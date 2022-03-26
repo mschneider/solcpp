@@ -12,7 +12,7 @@ TEST_CASE("base58 decode & encode") {
       "14ivtgssEBoBjuZJtSAPKYgpUK7DmnSwuPMqJoVTSgKJ"};
 
   std::string resources_dir = FIXTURES_DIR;
-  for (const auto &bs58 : bs58s) {
+  for (const auto& bs58 : bs58s) {
     const auto decoded = solana::b58decode(bs58);
     const auto encoded = solana::b58encode(decoded);
     const auto redecoded = solana::b58decode(encoded);
@@ -45,7 +45,7 @@ TEST_CASE("decode mango_v3 Fill") {
       "Tgm1NbL9IaU3AQAAAADOMAYAAAAAAAAAAAAAAAAA46WbxCAAAAAAAAAAAAAAAHJYBgAAAAAA"
       "AQAAAAAAAAA=");
   const std::string decoded = solana::b64decode(encoded);
-  const mango_v3::FillEvent *event = (mango_v3::FillEvent *)decoded.data();
+  const mango_v3::FillEvent* event = (mango_v3::FillEvent*)decoded.data();
   CHECK_EQ(event->eventType, mango_v3::EventType::Fill);
   CHECK_EQ(event->takerSide, mango_v3::Side::Sell);
   CHECK_EQ(event->makerOut, 0);
@@ -97,7 +97,7 @@ TEST_CASE("Test getLatestBlock") {
   CHECK(!blockHash.publicKey.toBase58().empty());
   CHECK_GT(blockHash.lastValidBlockHeight, 0);
 }
-TEST_CASE("MangoAccount is correctly created"){
+TEST_CASE("MangoAccount is correctly created") {
   const std::string& key = "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW";
   auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
   // Test prefetched account info

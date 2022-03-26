@@ -1,9 +1,13 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <memory>
+<<<<<<< HEAD
 #include <utility>
+=======
+#include <string>
+
+>>>>>>> 159ac45 (style fixup)
 #include "fixedp.h"
 #include "int128.hpp"
 #include "solana.hpp"
@@ -155,7 +159,6 @@ struct MangoAccount {
     const auto& accountInfo_ = connection.getAccountInfo<MangoAccountInfo>(pubKey);
     accountInfo = accountInfo_;
   }
-};
 
 struct LiquidityMiningInfo {
   i80f48 rate;
