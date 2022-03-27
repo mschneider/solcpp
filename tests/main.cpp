@@ -110,3 +110,15 @@ TEST_CASE("MangoAccount is correctly created") {
   const auto& account = mango_v3::MangoAccount(key, mango_v3::DEVNET.endpoint);
   CHECK(!account.accountInfo.owner.toBase58().empty());
 }
+TEST_CASE("Test getMultipleAccounts") {
+  const std::vector<std::string> accounts {
+      "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW",
+      "DRUZRfLQtki4ZYvRXhi5yGmyqCf6iMfTzxtBpxo6rbHu",
+  };
+  auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
+  auto accountInfoVec = connection.getMultipleAccounts<mango_v3::MangoAccountInfo>(accounts);
+  REQUIRE_EQ(accountInfoVec.size(), accounts.size());
+  for (const auto& accountInfo : accountInfoVec) {
+    CHECK(!(accountInfo.owner==solana::PublicKey::empty()));
+  }
+}

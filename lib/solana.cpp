@@ -31,6 +31,24 @@ json Connection::getAccountInfoRequest(const std::string &account,
 
   return jsonRequest("getAccountInfo", params);
 }
+json Connection::getMultipleAccountsRequest(const std::vector<std::string>& accounts,
+                                const std::string &encoding,
+                                const size_t offset, const size_t length){
+  json pubKeys = json::array();
+  for(auto& account: accounts){
+    pubKeys.emplace_back(account);
+  }
+  json params = {};
+  params.emplace_back(pubKeys);
+  json options = {{"encoding", encoding}};
+  if (offset && length) {
+    json dataSlice = {"dataSlice", {{"offset", offset}, {"length", length}}};
+    options.emplace(dataSlice);
+  }
+  params.emplace_back(options);
+
+  return jsonRequest("getMultipleAccounts", params);
+}
 json Connection::getBlockhashRequest(const std::string &commitment,
                                      const std::string &method) {
   const json params = {{{"commitment", commitment}}};
