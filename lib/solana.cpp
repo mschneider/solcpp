@@ -31,11 +31,11 @@ json Connection::getAccountInfoRequest(const std::string &account,
 
   return jsonRequest("getAccountInfo", params);
 }
-json Connection::getMultipleAccountsRequest(const std::vector<std::string>& accounts,
-                                const std::string &encoding,
-                                const size_t offset, const size_t length){
+json Connection::getMultipleAccountsRequest(
+    const std::vector<std::string> &accounts, const std::string &encoding,
+    const size_t offset, const size_t length) {
   json pubKeys = json::array();
-  for(auto& account: accounts){
+  for (auto &account : accounts) {
     pubKeys.emplace_back(account);
   }
   json params = {};

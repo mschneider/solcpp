@@ -255,9 +255,10 @@ class Connection {
   json getAccountInfoRequest(const std::string &account,
                              const std::string &encoding = "base64",
                              const size_t offset = 0, const size_t length = 0);
-  json getMultipleAccountsRequest(const std::vector<std::string>& accounts,
+  json getMultipleAccountsRequest(const std::vector<std::string> &accounts,
                                   const std::string &encoding = "base64",
-                                  const size_t offset = 0, const size_t length = 0);
+                                  const size_t offset = 0,
+                                  const size_t length = 0);
   json getBlockhashRequest(const std::string &commitment = "finalized",
                            const std::string &method = "getRecentBlockhash");
   json sendTransactionRequest(
@@ -302,10 +303,12 @@ class Connection {
   }
   /// Returns account information for a list of pubKeys
   template <typename T>
-  inline std::vector<T> getMultipleAccounts(const std::vector<std::string>& accounts,
-                          const std::string &encoding = "base64",
-                          const size_t offset = 0, const size_t length = 0){
-    const json req = getMultipleAccountsRequest(accounts, encoding, offset, length);
+  inline std::vector<T> getMultipleAccounts(
+      const std::vector<std::string> &accounts,
+      const std::string &encoding = "base64", const size_t offset = 0,
+      const size_t length = 0) {
+    const json req =
+        getMultipleAccountsRequest(accounts, encoding, offset, length);
     cpr::Response r =
         cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
                   cpr::Header{{"Content-Type", "application/json"}});
@@ -314,11 +317,11 @@ class Connection {
                                std::to_string(r.status_code));
 
     json res = json::parse(r.text);
-    const auto& account_info_vec = res["result"]["value"];
+    const auto &account_info_vec = res["result"]["value"];
     std::vector<T> result(account_info_vec.size());
     int i = 0;
-    for(const auto& account_info: account_info_vec){
-      assert(!account_info.is_null()); // Account doesn't exist
+    for (const auto &account_info : account_info_vec) {
+      assert(!account_info.is_null());  // Account doesn't exist
       const std::string encoded = account_info["data"][0];
       const std::string decoded = b64decode(encoded);
       if (decoded.size() != sizeof(T))
