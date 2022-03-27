@@ -302,8 +302,10 @@ class Connection {
     return result;
   }
   /// Returns account information for a list of pubKeys
+  /// Returns a map of {pubKey : AccountInfo} for accounts that exist.
+  /// Accounts that don't exist return a `null` result and are skipped
   template <typename T>
-  inline std::vector<T> getMultipleAccounts(
+  inline std::map<std::string, T> getMultipleAccounts(
       const std::vector<std::string> &accounts,
       const std::string &encoding = "base64", const size_t offset = 0,
       const size_t length = 0) {
@@ -318,10 +320,12 @@ class Connection {
 
     json res = json::parse(r.text);
     const auto &account_info_vec = res["result"]["value"];
-    std::vector<T> result(account_info_vec.size());
-    int i = 0;
+    std::map<std::string, T> result;
+    int index = -1;
     for (const auto &account_info : account_info_vec) {
-      assert(!account_info.is_null());  // Account doesn't exist
+      ++index;
+      if(account_info.is_null())
+        continue;   // Account doesn't exist
       const std::string encoded = account_info["data"][0];
       const std::string decoded = b64decode(encoded);
       if (decoded.size() != sizeof(T))
@@ -330,8 +334,8 @@ class Connection {
                                  std::to_string(sizeof(T)));
       T account;
       memcpy(&account, decoded.data(), sizeof(T));
-      result[i] = account;
-      ++i;
+      result[req["params"][0][index]] = account; // Retrieve the corresponding
+                                                 // pubKey from the request
     }
     return result;
   }
