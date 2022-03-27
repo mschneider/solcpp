@@ -324,8 +324,7 @@ class Connection {
     int index = -1;
     for (const auto &account_info : account_info_vec) {
       ++index;
-      if(account_info.is_null())
-        continue;   // Account doesn't exist
+      if (account_info.is_null()) continue;  // Account doesn't exist
       const std::string encoded = account_info["data"][0];
       const std::string decoded = b64decode(encoded);
       if (decoded.size() != sizeof(T))
@@ -334,8 +333,8 @@ class Connection {
                                  std::to_string(sizeof(T)));
       T account;
       memcpy(&account, decoded.data(), sizeof(T));
-      result[req["params"][0][index]] = account; // Retrieve the corresponding
-                                                 // pubKey from the request
+      result[req["params"][0][index]] = account;  // Retrieve the corresponding
+                                                  // pubKey from the request
     }
     return result;
   }

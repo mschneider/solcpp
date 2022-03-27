@@ -126,7 +126,7 @@ TEST_CASE("Test getMultipleAccounts") {
   it = accountInfoMap.find(accounts[1]);
   CHECK_NE(it, accountInfoMap.end());
   // Check AccountInfo is non-empty
-  for (const auto& [pubKey, accountInfo]: accountInfoMap) {
+  for (const auto& [pubKey, accountInfo] : accountInfoMap) {
     auto owner = accountInfo.owner;
     CHECK(!(owner == solana::PublicKey::empty()));
   }
