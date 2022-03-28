@@ -105,7 +105,7 @@ struct MangoGroup {
 
 enum Side : uint8_t { Buy, Sell };
 
-struct PerpAccount {
+struct PerpAccountInfo {
   int64_t basePosition;
   i80f48 quotePosition;
   i80f48 longSettledFunding;
@@ -116,7 +116,8 @@ struct PerpAccount {
   int64_t takerQuote;
   uint64_t mngoAccrued;
 };
-struct MangoAccount {
+
+struct MangoAccountInfo {
   MetaData metaData;
   solana::PublicKey mangoGroup;
   solana::PublicKey owner;
@@ -125,7 +126,7 @@ struct MangoAccount {
   i80f48 deposits[MAX_TOKENS];
   i80f48 borrows[MAX_TOKENS];
   solana::PublicKey spotOpenOrders[MAX_PAIRS];
-  PerpAccount perpAccounts[MAX_PAIRS];
+  PerpAccountInfo perpAccounts[MAX_PAIRS];
   uint8_t orderMarket[MAX_PERP_OPEN_ORDERS];
   Side orderSide[MAX_PERP_OPEN_ORDERS];
   __int128_t orders[MAX_PERP_OPEN_ORDERS];
@@ -138,6 +139,21 @@ struct MangoAccount {
   bool notUpgradable;
   solana::PublicKey delegate;
   uint8_t padding[5];
+};
+
+struct MangoAccount {
+  MangoAccountInfo accountInfo;
+  explicit MangoAccount(const MangoAccountInfo &accountInfo_) noexcept {
+    accountInfo = accountInfo_;
+  }
+  // Fetch `accountInfo` from `endpoint` and decode it
+  explicit MangoAccount(const std::string &pubKey,
+                        const std::string &endpoint = MAINNET.endpoint) {
+    auto connection = solana::rpc::Connection(endpoint);
+    const auto &accountInfo_ =
+        connection.getAccountInfo<MangoAccountInfo>(pubKey);
+    accountInfo = accountInfo_;
+  }
 };
 
 struct LiquidityMiningInfo {
