@@ -56,7 +56,7 @@ class orderbook {
     if (level1) {
       auto price = (level1->midPoint * (100 + percent)) / 100;
       depth = (percent > 0) ? asks.getAccount()->getVolume(price)
-                           : bids.getAccount()->getVolume(price);
+                            : bids.getAccount()->getVolume(price);
     }
     return depth;
   }
