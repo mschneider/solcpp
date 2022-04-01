@@ -12,7 +12,7 @@ TEST_CASE("base58 decode & encode") {
       "14ivtgssEBoBjuZJtSAPKYgpUK7DmnSwuPMqJoVTSgKJ"};
 
   std::string resources_dir = FIXTURES_DIR;
-  for (const auto &bs58 : bs58s) {
+  for (const auto& bs58 : bs58s) {
     const auto decoded = solana::b58decode(bs58);
     const auto encoded = solana::b58encode(decoded);
     const auto redecoded = solana::b58decode(encoded);
@@ -45,7 +45,7 @@ TEST_CASE("decode mango_v3 Fill") {
       "Tgm1NbL9IaU3AQAAAADOMAYAAAAAAAAAAAAAAAAA46WbxCAAAAAAAAAAAAAAAHJYBgAAAAAA"
       "AQAAAAAAAAA=");
   const std::string decoded = solana::b64decode(encoded);
-  const mango_v3::FillEvent *event = (mango_v3::FillEvent *)decoded.data();
+  const mango_v3::FillEvent* event = (mango_v3::FillEvent*)decoded.data();
   CHECK_EQ(event->eventType, mango_v3::EventType::Fill);
   CHECK_EQ(event->takerSide, mango_v3::Side::Sell);
   CHECK_EQ(event->makerOut, 0);
@@ -89,4 +89,52 @@ TEST_CASE("compile memo transaction") {
   CHECK_EQ(1, ctx.requiredSignatures);
   CHECK_EQ(0, ctx.readOnlySignedAccounts);
   CHECK_EQ(1, ctx.readOnlyUnsignedAccounts);
+}
+
+TEST_CASE("Test getLatestBlock") {
+  auto connection = solana::rpc::Connection();
+  auto blockHash = connection.getLatestBlockhash();
+  CHECK(!blockHash.publicKey.toBase58().empty());
+  CHECK_GT(blockHash.lastValidBlockHeight, 0);
+}
+TEST_CASE("MangoAccount is correctly created") {
+  const std::string& key = "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW";
+  auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
+  // Test prefetched account info
+  const auto& mangoAccountInfo =
+      connection.getAccountInfo<mango_v3::MangoAccountInfo>(key);
+  const auto& mangoAccount = mango_v3::MangoAccount(mangoAccountInfo);
+  CHECK(!mangoAccount.accountInfo.owner.toBase58().empty());
+  // Test fetching account info in construction
+  REQUIRE_NOTHROW(mango_v3::MangoAccount(key, mango_v3::DEVNET.endpoint));
+  const auto& account = mango_v3::MangoAccount(key, mango_v3::DEVNET.endpoint);
+  CHECK(!account.accountInfo.owner.toBase58().empty());
+}
+TEST_CASE("Test getMultipleAccounts") {
+  // Existing accounts
+  std::vector<std::string> accounts{
+      "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW",
+      "DRUZRfLQtki4ZYvRXhi5yGmyqCf6iMfTzxtBpxo6rbHu",
+  };
+  auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
+  auto accountInfoMap =
+      connection.getMultipleAccounts<mango_v3::MangoAccountInfo>(accounts);
+  REQUIRE_EQ(accountInfoMap.size(), accounts.size());
+  // Check results have the initial pubKeys
+  auto it = accountInfoMap.find(accounts[0]);
+  CHECK_NE(it, accountInfoMap.end());
+  it = accountInfoMap.find(accounts[1]);
+  CHECK_NE(it, accountInfoMap.end());
+  // Check AccountInfo is non-empty
+  for (const auto& [pubKey, accountInfo] : accountInfoMap) {
+    auto owner = accountInfo.owner;
+    CHECK(!(owner == solana::PublicKey::empty()));
+  }
+  // Introduce an account that doesn't exist
+  accounts.push_back("9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
+  accountInfoMap =
+      connection.getMultipleAccounts<mango_v3::MangoAccountInfo>(accounts);
+  REQUIRE_NE(accountInfoMap.size(), accounts.size());
+  it = accountInfoMap.find("9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
+  CHECK_EQ(it, accountInfoMap.end());
 }

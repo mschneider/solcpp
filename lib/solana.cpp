@@ -31,10 +31,29 @@ json Connection::getAccountInfoRequest(const std::string &account,
 
   return jsonRequest("getAccountInfo", params);
 }
-json Connection::getRecentBlockhashRequest(const std::string &commitment) {
+json Connection::getMultipleAccountsRequest(
+    const std::vector<std::string> &accounts, const std::string &encoding,
+    const size_t offset, const size_t length) {
+  json pubKeys = json::array();
+  for (auto &account : accounts) {
+    pubKeys.emplace_back(account);
+  }
+  json params = {};
+  params.emplace_back(pubKeys);
+  json options = {{"encoding", encoding}};
+  if (offset && length) {
+    json dataSlice = {"dataSlice", {{"offset", offset}, {"length", length}}};
+    options.emplace(dataSlice);
+  }
+  params.emplace_back(options);
+
+  return jsonRequest("getMultipleAccounts", params);
+}
+json Connection::getBlockhashRequest(const std::string &commitment,
+                                     const std::string &method) {
   const json params = {{{"commitment", commitment}}};
 
-  return jsonRequest("getRecentBlockhash", params);
+  return jsonRequest(method, params);
 }
 
 json Connection::sendTransactionRequest(
@@ -51,8 +70,9 @@ json Connection::sendTransactionRequest(
 ///
 /// 2. Invoke RPC endpoints
 ///
-PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
-  const json req = getRecentBlockhashRequest(commitment);
+PublicKey Connection::getRecentBlockhash_DEPRECATED(
+    const std::string &commitment) {
+  const json req = getBlockhashRequest(commitment);
   cpr::Response r =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
@@ -62,6 +82,20 @@ PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
   json res = json::parse(r.text);
   const std::string encoded = res["result"]["value"]["blockhash"];
   return PublicKey::fromBase58(encoded);
+}
+Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
+  const json req = getBlockhashRequest(commitment, "getLatestBlockhash");
+  cpr::Response r =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+  json res = json::parse(r.text);
+  const std::string encoded = res["result"]["value"]["blockhash"];
+  const uint64_t lastValidBlockHeight =
+      static_cast<uint64_t>(res["result"]["value"]["lastValidBlockHeight"]);
+  return {PublicKey::fromBase58(encoded), lastValidBlockHeight};
 }
 
 json Connection::getSignatureStatuses(

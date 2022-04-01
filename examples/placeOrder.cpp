@@ -3,6 +3,7 @@
 #include "mango_v3.hpp"
 
 int main() {
+  std::string resources_dir = FIXTURES_DIR;
   const auto &config = mango_v3::DEVNET;
   auto connection = solana::rpc::Connection(config.endpoint);
   const auto group =
@@ -19,11 +20,11 @@ int main() {
       connection.getAccountInfo<mango_v3::PerpMarket>(perpMarketPk.toBase58());
   assert(market.mangoGroup.toBase58() == config.group);
 
-  const auto recentBlockhash = connection.getRecentBlockhash();
+  const auto recentBlockhash = connection.getRecentBlockhash_DEPRECATED();
   const auto groupPk = solana::PublicKey::fromBase58(config.group);
   const auto programPk = solana::PublicKey::fromBase58(config.program);
   const auto keypair =
-      solana::Keypair::fromFile("../tests/fixtures/solana/id.json");
+      solana::Keypair::fromFile(resources_dir + "/solana/id.json");
   const auto mangoAccount = solana::PublicKey::fromBase58(
       "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
 
