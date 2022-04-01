@@ -52,13 +52,17 @@ class orderbook {
   auto getLevel1() const { return level1; }
 
   auto getDepth(int8_t percent) {
-    auto price = (level1->midPoint * (100 + percent)) / 100;
-    return (percent > 0) ? asks.getAccount()->getVolume(price)
-                         : bids.getAccount()->getVolume(price);
+    uint64_t depth = 0;
+    if (level1) {
+      auto price = (level1->midPoint * (100 + percent)) / 100;
+      depth = (percent > 0) ? asks.getAccount()->getVolume(price)
+                           : bids.getAccount()->getVolume(price);
+    }
+    return depth;
   }
 
  private:
-  std::shared_ptr<L1Orderbook> level1 = std::make_shared<L1Orderbook>();
+  std::shared_ptr<L1Orderbook> level1;
   std::function<void()> onUpdateCb;
   subscription::accountSubscriber<BookSide> bids;
   subscription::accountSubscriber<BookSide> asks;

@@ -31,19 +31,25 @@ class updateLogger {
   void logUpdate() {
     std::scoped_lock lock(logMtx);
     auto level1Snapshot = orderbook.getLevel1();
-    if (level1Snapshot->valid()) {
-      auto latestTrade = trades.getAccount()->getLastTrade();
-      spdlog::info("============Update============");
-      spdlog::info("Latest trade: {}",
-                   *latestTrade ? to_string(*latestTrade) : "not received yet");
-      spdlog::info("Bid-Ask {}-{}", level1Snapshot->highestBid,
-                   level1Snapshot->lowestAsk);
-      spdlog::info("MidPrice: {}", level1Snapshot->midPoint);
-      spdlog::info("Spread: {0:.2f} bps", level1Snapshot->spreadBps);
+    if (level1Snapshot) {
+      if (level1Snapshot->valid()) {
+        spdlog::info("============Update============");
+        auto latestTrade = trades.getAccount()->getLastTrade();
+        if (latestTrade) {
+          spdlog::info("Latest trade: {}", to_string(*latestTrade));
+        } else {
+          spdlog::info("Latest trade not yet received");
+        }
+        spdlog::info("Bid-Ask {}-{}", level1Snapshot->highestBid,
+                     level1Snapshot->lowestAsk);
+        spdlog::info("MidPrice: {}", level1Snapshot->midPoint);
+        spdlog::info("Spread: {0:.2f} bps", level1Snapshot->spreadBps);
 
-      constexpr auto depth = 2;
-      spdlog::info("Market depth -{}%: {}", depth, orderbook.getDepth(-depth));
-      spdlog::info("Market depth +{}%: {}", depth, orderbook.getDepth(depth));
+        constexpr auto depth = 2;
+        spdlog::info("Market depth -{}%: {}", depth,
+                     orderbook.getDepth(-depth));
+        spdlog::info("Market depth +{}%: {}", depth, orderbook.getDepth(depth));
+      }
     }
   }
 

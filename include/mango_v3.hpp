@@ -441,7 +441,7 @@ class Trades {
 
  private:
   uint64_t lastSeqNum = INT_MAX;
-  std::shared_ptr<uint64_t> latestTrade = std::make_shared<uint64_t>(0);
+  std::shared_ptr<uint64_t> latestTrade;
 };
 
 #pragma pack(pop)
