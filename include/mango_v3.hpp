@@ -1,9 +1,9 @@
 #pragma once
 
+#include <bitset>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
-#include <bitset>
 
 #include "fixedp.h"
 #include "int128.hpp"
@@ -48,11 +48,10 @@ const std::unordered_map<std::string, size_t> SERUM_PROGRAM_LAYOUT_VERSIONS = {
     {"4ckmDgGdxQoPDLUkDT3vHgSAkzA3QRdNq5ywwY4sUSJn", 1},
     {"BJ3jrUzddfuSrZHXSCxMUUQsjKEyLmuuyZebkcaFp2fg", 1},
     {"EUqojwWA2rd19FZrzeBncJsm38Jm1hEhE3zsmX3bRc2o", 2},
-    {"9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin", 3}
-};
-size_t  getLayoutVersion(std::string programId){
+    {"9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin", 3}};
+size_t getLayoutVersion(std::string programId) {
   auto it = SERUM_PROGRAM_LAYOUT_VERSIONS.find(programId);
-  return (it != SERUM_PROGRAM_LAYOUT_VERSIONS.end())?it->second:3;
+  return (it != SERUM_PROGRAM_LAYOUT_VERSIONS.end()) ? it->second : 3;
 }
 // all rust structs assume padding to 8
 #pragma pack(push, 8)
@@ -182,7 +181,8 @@ struct OpenOrders {
 
 struct MangoAccount {
   MangoAccountInfo accountInfo;
-  std::map<std::string, OpenOrders> spotOpenOrdersAccounts; // Address, AccountInfo
+  std::map<std::string, OpenOrders>
+      spotOpenOrdersAccounts;  // Address, AccountInfo
   explicit MangoAccount(const MangoAccountInfo &accountInfo_) noexcept {
     accountInfo = accountInfo_;
   }
@@ -194,25 +194,29 @@ struct MangoAccount {
         connection.getAccountInfo<MangoAccountInfo>(pubKey);
     accountInfo = accountInfo_;
   }
-  std::map<std::string, OpenOrders> loadOpenOrders(solana::rpc::Connection& connection);
+  std::map<std::string, OpenOrders> loadOpenOrders(
+      solana::rpc::Connection &connection);
 };
-std::map<std::string, OpenOrders> MangoAccount::loadOpenOrders(solana::rpc::Connection &connection) {
+std::map<std::string, OpenOrders> MangoAccount::loadOpenOrders(
+    solana::rpc::Connection &connection) {
   // Filter only non-empty open orders
   std::vector<std::string> filteredOpenOrders;
-  for(auto item: accountInfo.spotOpenOrders){
-    if(item == solana::PublicKey::empty())
-      continue;
+  for (auto item : accountInfo.spotOpenOrders) {
+    if (item == solana::PublicKey::empty()) continue;
     filteredOpenOrders.emplace_back(std::move(item.toBase58()));
   }
   // Fetch account info, OpenOrdersV2
-  const auto accountsInfo = connection.getMultipleAccounts<OpenOrders>(filteredOpenOrders);
+  const auto accountsInfo =
+      connection.getMultipleAccounts<OpenOrders>(filteredOpenOrders);
   spotOpenOrdersAccounts.clear();
-  std::copy_if(accountsInfo.begin(), accountsInfo.end(),
-               std::inserter(spotOpenOrdersAccounts, spotOpenOrdersAccounts.end()), [](auto& accountInfo){
-    // Check initialized and OpenOrders account flags
-    return !(!accountInfo.second.accountFlags[0]
-           || !accountInfo.second.accountFlags[2]);
-  });
+  std::copy_if(
+      accountsInfo.begin(), accountsInfo.end(),
+      std::inserter(spotOpenOrdersAccounts, spotOpenOrdersAccounts.end()),
+      [](auto &accountInfo) {
+        // Check initialized and OpenOrders account flags
+        return !(!accountInfo.second.accountFlags[0] ||
+                 !accountInfo.second.accountFlags[2]);
+      });
   return spotOpenOrdersAccounts;
 }
 
