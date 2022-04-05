@@ -13,7 +13,6 @@ int main() {
   mango_v3::MangoAccount mangoAccount =
       mango_v3::MangoAccount(mangoAccountInfo);
   spdlog::info("Owner: ", mangoAccountInfo.owner.toBase58());
-  ;
   auto openOrders = mangoAccount.loadOpenOrders(connection);
   spdlog::info("---OpenOrders:{}---", openOrders.size());
   for (auto& openOrder : openOrders) {
