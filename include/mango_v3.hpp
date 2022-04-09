@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <string>
-#include <unordered_map>
 
 #include "fixedp.h"
 #include "int128.hpp"

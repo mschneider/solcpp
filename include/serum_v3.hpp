@@ -13,7 +13,7 @@ enum class AccountFlags : uint64_t {
   Asks = 1 << 6,
   Disabled = 1 << 7
 };
-inline AccountFlags operator&(AccountFlags a, AccountFlags b) {
+constexpr AccountFlags operator&(AccountFlags a, AccountFlags b) {
   return (AccountFlags)((uint64_t)a & (uint64_t)b);
 }
 #pragma pack(push, 1)
