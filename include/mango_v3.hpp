@@ -6,8 +6,8 @@
 
 #include "fixedp.h"
 #include "int128.hpp"
-#include "solana.hpp"
 #include "serum_v3.hpp"
+#include "solana.hpp"
 
 namespace mango_v3 {
 using json = nlohmann::json;
@@ -143,7 +143,6 @@ struct MangoAccountInfo {
   uint8_t padding[5];
 };
 
-
 struct MangoAccount {
   MangoAccountInfo accountInfo;
   std::map<std::string, serum_v3::OpenOrders>
@@ -179,8 +178,12 @@ std::map<std::string, serum_v3::OpenOrders> MangoAccount::loadOpenOrders(
       std::inserter(spotOpenOrdersAccounts, spotOpenOrdersAccounts.end()),
       [](auto &accountInfo) {
         // Check initialized and OpenOrders account flags
-        return !((accountInfo.second.accountFlags & serum_v3::AccountFlag::Initialized) != serum_v3::AccountFlag::Initialized ||
-                 (accountInfo.second.accountFlags & serum_v3::AccountFlag::OpenOrders) != serum_v3::AccountFlag::OpenOrders);
+        return !((accountInfo.second.accountFlags &
+                  serum_v3::AccountFlag::Initialized) !=
+                     serum_v3::AccountFlag::Initialized ||
+                 (accountInfo.second.accountFlags &
+                  serum_v3::AccountFlag::OpenOrders) !=
+                     serum_v3::AccountFlag::OpenOrders);
       });
   return spotOpenOrdersAccounts;
 }
