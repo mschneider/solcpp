@@ -21,14 +21,6 @@ inline AccountFlag operator&(AccountFlag a, AccountFlag b) {
 #pragma pack(push, 1)
 struct OpenOrders {
   uint8_t padding0[5];
-  // Account Flags:
-  //  accountFlags[0] = "initialized"
-  //  accountFlags[1] = "market"
-  //  accountFlags[2] = "openOrders"
-  //  accountFlags[3] = "requestQueue"
-  //  accountFlags[4] = "eventQueue"
-  //  accountFlags[5] = "bids"
-  //  accountFlags[6] = "asks"
   AccountFlag accountFlags;
   solana::PublicKey market;
   solana::PublicKey owner;
