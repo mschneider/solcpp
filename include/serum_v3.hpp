@@ -11,7 +11,10 @@ enum class AccountFlags : uint64_t {
   EventQueue = 1 << 4,
   Bids = 1 << 5,
   Asks = 1 << 6,
-  Disabled = 1 << 7
+  Disabled = 1 << 7,
+  Closed = 1 << 8,
+  Permissioned = 1 << 9,
+  CrankAuthorityRequired = 1 << 10
 };
 constexpr AccountFlags operator&(AccountFlags a, AccountFlags b) {
   return (AccountFlags)((uint64_t)a & (uint64_t)b);
