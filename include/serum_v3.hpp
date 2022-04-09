@@ -1,7 +1,5 @@
 #pragma once
 
-#include <bitset>
-
 #include "solana.hpp"
 
 namespace serum_v3 {
