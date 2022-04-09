@@ -179,11 +179,11 @@ std::map<std::string, serum_v3::OpenOrders> MangoAccount::loadOpenOrders(
       [](auto &accountInfo) {
         // Check initialized and OpenOrders account flags
         return !((accountInfo.second.accountFlags &
-                  serum_v3::AccountFlag::Initialized) !=
-                     serum_v3::AccountFlag::Initialized ||
+                  serum_v3::AccountFlags::Initialized) !=
+                     serum_v3::AccountFlags::Initialized ||
                  (accountInfo.second.accountFlags &
-                  serum_v3::AccountFlag::OpenOrders) !=
-                     serum_v3::AccountFlag::OpenOrders);
+                  serum_v3::AccountFlags::OpenOrders) !=
+                     serum_v3::AccountFlags::OpenOrders);
       });
   return spotOpenOrdersAccounts;
 }

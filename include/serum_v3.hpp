@@ -5,7 +5,7 @@
 #include "solana.hpp"
 
 namespace serum_v3 {
-enum class AccountFlag : uint64_t {
+enum class AccountFlags : uint64_t {
   Initialized = 1 << 0,
   Market = 1 << 1,
   OpenOrders = 1 << 2,
@@ -15,13 +15,13 @@ enum class AccountFlag : uint64_t {
   Asks = 1 << 6,
   Disabled = 1 << 7
 };
-inline AccountFlag operator&(AccountFlag a, AccountFlag b) {
-  return (AccountFlag)((uint64_t)a & (uint64_t)b);
+inline AccountFlags operator&(AccountFlags a, AccountFlags b) {
+  return (AccountFlags)((uint64_t)a & (uint64_t)b);
 }
 #pragma pack(push, 1)
 struct OpenOrders {
   uint8_t padding0[5];
-  AccountFlag accountFlags;
+  AccountFlags accountFlags;
   solana::PublicKey market;
   solana::PublicKey owner;
   uint64_t baseTokenFree;
