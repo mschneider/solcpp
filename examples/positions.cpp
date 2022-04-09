@@ -19,7 +19,6 @@ int main() {
     spdlog::info("Address: {}", openOrder.first);
     spdlog::info("Owner: {}", openOrder.second.owner.toBase58());
     spdlog::info("Market: {}", openOrder.second.market.toBase58());
-    spdlog::info("AccountFlags: {}", openOrder.second.accountFlags.to_string());
     spdlog::info("baseTokenFree: {}", openOrder.second.baseTokenFree);
     spdlog::info("baseTokenTotal: {}", openOrder.second.baseTokenTotal);
     spdlog::info("quoteTokenFree: {}", openOrder.second.quoteTokenFree);

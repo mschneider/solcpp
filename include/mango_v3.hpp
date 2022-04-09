@@ -1,6 +1,5 @@
 #pragma once
 
-#include <bitset>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -8,6 +7,7 @@
 #include "fixedp.h"
 #include "int128.hpp"
 #include "solana.hpp"
+#include "serum_v3.hpp"
 
 namespace mango_v3 {
 using json = nlohmann::json;
@@ -44,15 +44,6 @@ const Config DEVNET = {
     {"MNGO", "BTC", "ETH", "SOL", "SRM", "RAY", "USDT", "ADA", "FTT", "AVAX",
      "LUNA", "BNB", "MATIC", "", "", "USDC"}};
 
-const std::unordered_map<std::string, size_t> SERUM_PROGRAM_LAYOUT_VERSIONS = {
-    {"4ckmDgGdxQoPDLUkDT3vHgSAkzA3QRdNq5ywwY4sUSJn", 1},
-    {"BJ3jrUzddfuSrZHXSCxMUUQsjKEyLmuuyZebkcaFp2fg", 1},
-    {"EUqojwWA2rd19FZrzeBncJsm38Jm1hEhE3zsmX3bRc2o", 2},
-    {"9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin", 3}};
-size_t getLayoutVersion(std::string programId) {
-  auto it = SERUM_PROGRAM_LAYOUT_VERSIONS.find(programId);
-  return (it != SERUM_PROGRAM_LAYOUT_VERSIONS.end()) ? it->second : 3;
-}
 // all rust structs assume padding to 8
 #pragma pack(push, 8)
 
@@ -152,36 +143,10 @@ struct MangoAccountInfo {
   uint8_t padding[5];
 };
 
-// https://github.com/project-serum/serum-dex/blob/master/dex/src/state.rs#L587
-#pragma pack(1)
-struct OpenOrders {
-  uint8_t padding0[5];
-  // Account Flags:
-  //  accountFlags[0] = "initialized"
-  //  accountFlags[1] = "market"
-  //  accountFlags[2] = "openOrders"
-  //  accountFlags[3] = "requestQueue"
-  //  accountFlags[4] = "eventQueue"
-  //  accountFlags[5] = "bids"
-  //  accountFlags[6] = "asks"
-  std::bitset<64> accountFlags;
-  solana::PublicKey market;
-  solana::PublicKey owner;
-  uint64_t baseTokenFree;
-  uint64_t baseTokenTotal;
-  uint64_t quoteTokenFree;
-  uint64_t quoteTokenTotal;
-  __uint128_t freeSlotBits;
-  __uint128_t isBidBits;
-  __uint128_t orders[128];
-  uint64_t clientIds[128];
-  uint64_t referrerRebatesAccrued;
-  uint8_t padding1[7];
-};
 
 struct MangoAccount {
   MangoAccountInfo accountInfo;
-  std::map<std::string, OpenOrders>
+  std::map<std::string, serum_v3::OpenOrders>
       spotOpenOrdersAccounts;  // Address, AccountInfo
   explicit MangoAccount(const MangoAccountInfo &accountInfo_) noexcept {
     accountInfo = accountInfo_;
@@ -194,10 +159,10 @@ struct MangoAccount {
         connection.getAccountInfo<MangoAccountInfo>(pubKey);
     accountInfo = accountInfo_;
   }
-  std::map<std::string, OpenOrders> loadOpenOrders(
+  std::map<std::string, serum_v3::OpenOrders> loadOpenOrders(
       solana::rpc::Connection &connection);
 };
-std::map<std::string, OpenOrders> MangoAccount::loadOpenOrders(
+std::map<std::string, serum_v3::OpenOrders> MangoAccount::loadOpenOrders(
     solana::rpc::Connection &connection) {
   // Filter only non-empty open orders
   std::vector<std::string> filteredOpenOrders;
@@ -207,15 +172,15 @@ std::map<std::string, OpenOrders> MangoAccount::loadOpenOrders(
   }
   // Fetch account info, OpenOrdersV2
   const auto accountsInfo =
-      connection.getMultipleAccounts<OpenOrders>(filteredOpenOrders);
+      connection.getMultipleAccounts<serum_v3::OpenOrders>(filteredOpenOrders);
   spotOpenOrdersAccounts.clear();
   std::copy_if(
       accountsInfo.begin(), accountsInfo.end(),
       std::inserter(spotOpenOrdersAccounts, spotOpenOrdersAccounts.end()),
       [](auto &accountInfo) {
         // Check initialized and OpenOrders account flags
-        return !(!accountInfo.second.accountFlags[0] ||
-                 !accountInfo.second.accountFlags[2]);
+        return !((accountInfo.second.accountFlags & serum_v3::AccountFlag::Initialized) != serum_v3::AccountFlag::Initialized ||
+                 (accountInfo.second.accountFlags & serum_v3::AccountFlag::OpenOrders) != serum_v3::AccountFlag::OpenOrders);
       });
   return spotOpenOrdersAccounts;
 }
