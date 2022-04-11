@@ -16,9 +16,12 @@ int main() {
   auto group = connection.getAccountInfo<mango_v3::MangoGroup>(config.group);
   auto cache = mango_v3::loadCache(connection, group.mangoCache.toBase58());
   spdlog::info("Owner: ", mangoAccountInfo.owner.toBase58());
-  auto maintHealth = mangoAccount.getHealth(&group, &cache, mango_v3::HealthType::Maint);
-  auto initHealth = mangoAccount.getHealth(&group, &cache, mango_v3::HealthType::Init);
-  auto maintHealthRatio = mangoAccount.getHealthRatio(&group, &cache, mango_v3::HealthType::Maint);
+  auto maintHealth =
+      mangoAccount.getHealth(&group, &cache, mango_v3::HealthType::Maint);
+  auto initHealth =
+      mangoAccount.getHealth(&group, &cache, mango_v3::HealthType::Init);
+  auto maintHealthRatio =
+      mangoAccount.getHealthRatio(&group, &cache, mango_v3::HealthType::Maint);
   spdlog::info("Maint Health Ratio: {:.4f}", maintHealthRatio.toDouble());
   spdlog::info("Maint Health: {:.4f}", maintHealth.toDouble());
   spdlog::info("Init Health: {:.4f}", initHealth.toDouble());

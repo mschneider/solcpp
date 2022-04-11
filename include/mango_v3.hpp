@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <map>
+#include <string>
 
 #include "fixedp.h"
 #include "int128.hpp"
@@ -44,11 +44,7 @@ const Config DEVNET = {
     {"MNGO", "BTC", "ETH", "SOL", "SRM", "RAY", "USDT", "ADA", "FTT", "AVAX",
      "LUNA", "BNB", "MATIC", "", "", "USDC"}};
 
-enum HealthType {
-  Unknown,
-  Init,
-  Maint
-};
+enum HealthType { Unknown, Init, Maint };
 
 // all rust structs assume padding to 8
 #pragma pack(push, 8)
@@ -131,7 +127,6 @@ struct MangoCache {
   PerpMarketCache perp_market_cache[MAX_PAIRS];
 };
 
-
 enum Side : uint8_t { Buy, Sell };
 
 struct PerpAccountInfo {
@@ -169,34 +164,40 @@ struct MangoAccountInfo {
   solana::PublicKey delegate;
   uint8_t padding[5];
 };
-namespace
-{
-MangoCache loadCache(solana::rpc::Connection& connection, const std::string& mangoCachePubKey){
-  auto account = connection.getAccountInfo<MangoCache>( mangoCachePubKey);
+namespace {
+MangoCache loadCache(solana::rpc::Connection& connection,
+                     const std::string& mangoCachePubKey) {
+  auto account = connection.getAccountInfo<MangoCache>(mangoCachePubKey);
   return std::move(account);
 }
 // quoteFree, quoteLocked, baseFree, baseLocked
-std::tuple<i80f48, i80f48, i80f48, i80f48>
-    splitOpenOrders(const serum_v3::OpenOrders* openOrders){
-  const auto quoteFree = i80f48((unsigned  int)(openOrders->quoteTokenFree
-                                + openOrders->referrerRebatesAccrued));
-  const auto quoteLocked = i80f48((unsigned  int)(openOrders->quoteTokenTotal
-                                  - openOrders->quoteTokenFree));
-  const auto baseFree = i80f48((unsigned  int)(openOrders->baseTokenFree));
-  const auto baseLocked = i80f48((unsigned  int)(openOrders->baseTokenTotal
-                                 - openOrders->baseTokenFree));
+std::tuple<i80f48, i80f48, i80f48, i80f48> splitOpenOrders(
+    const serum_v3::OpenOrders* openOrders) {
+  const auto quoteFree =
+      i80f48((unsigned int)(openOrders->quoteTokenFree +
+                            openOrders->referrerRebatesAccrued));
+  const auto quoteLocked = i80f48(
+      (unsigned int)(openOrders->quoteTokenTotal - openOrders->quoteTokenFree));
+  const auto baseFree = i80f48((unsigned int)(openOrders->baseTokenFree));
+  const auto baseLocked = i80f48(
+      (unsigned int)(openOrders->baseTokenTotal - openOrders->baseTokenFree));
   return std::make_tuple(quoteFree, quoteLocked, baseFree, baseLocked);
 }
-i80f48 getUnsettledFunding(const PerpAccountInfo* accountInfo, const PerpMarketCache* perpMarketCache){
-  if(accountInfo->basePosition < 0) {
-    return i80f48((unsigned  int)accountInfo->basePosition) * (perpMarketCache->short_funding - accountInfo->shortSettledFunding);
+i80f48 getUnsettledFunding(const PerpAccountInfo* accountInfo,
+                           const PerpMarketCache* perpMarketCache) {
+  if (accountInfo->basePosition < 0) {
+    return i80f48((unsigned int)accountInfo->basePosition) *
+           (perpMarketCache->short_funding - accountInfo->shortSettledFunding);
   } else {
-    return i80f48((unsigned  int)accountInfo->basePosition) * (perpMarketCache->long_funding - accountInfo->longSettledFunding);
+    return i80f48((unsigned int)accountInfo->basePosition) *
+           (perpMarketCache->long_funding - accountInfo->longSettledFunding);
   }
 }
 // Return the quote position after adjusting for unsettled funding
-i80f48 getQuotePosition(const PerpAccountInfo* accountInfo, const PerpMarketCache* perpMarketCache){
-  return accountInfo->quotePosition - getUnsettledFunding(accountInfo, perpMarketCache);
+i80f48 getQuotePosition(const PerpAccountInfo* accountInfo,
+                        const PerpMarketCache* perpMarketCache) {
+  return accountInfo->quotePosition -
+         getUnsettledFunding(accountInfo, perpMarketCache);
 }
 /**
  * Return weights corresponding to health type;
@@ -204,67 +205,68 @@ i80f48 getQuotePosition(const PerpAccountInfo* accountInfo, const PerpMarketCach
  * @return
  * <spotAssetWeight, spotLiabWeight,perpAssetWeight, perpLiabWeight>
  */
-std::tuple<i80f48, i80f48, i80f48, i80f48> getWeights(MangoGroup* mangoGroup,
-                                                      size_t marketIndex,
-                                                      HealthType healthType = Unknown){
-  if(healthType == Maint){
-    return  std::make_tuple(mangoGroup->spotMarkets[marketIndex].maintAssetWeight,
-                           mangoGroup->spotMarkets[marketIndex].maintLiabWeight,
-                           mangoGroup->perpMarkets[marketIndex].maintAssetWeight,
-                           mangoGroup->perpMarkets[marketIndex].maintLiabWeight);
+std::tuple<i80f48, i80f48, i80f48, i80f48> getWeights(
+    MangoGroup* mangoGroup, size_t marketIndex,
+    HealthType healthType = Unknown) {
+  if (healthType == Maint) {
+    return std::make_tuple(
+        mangoGroup->spotMarkets[marketIndex].maintAssetWeight,
+        mangoGroup->spotMarkets[marketIndex].maintLiabWeight,
+        mangoGroup->perpMarkets[marketIndex].maintAssetWeight,
+        mangoGroup->perpMarkets[marketIndex].maintLiabWeight);
   } else if (healthType == Init) {
-    return  std::make_tuple(mangoGroup->spotMarkets[marketIndex].initAssetWeight,
+    return std::make_tuple(mangoGroup->spotMarkets[marketIndex].initAssetWeight,
                            mangoGroup->spotMarkets[marketIndex].initLiabWeight,
                            mangoGroup->perpMarkets[marketIndex].initAssetWeight,
                            mangoGroup->perpMarkets[marketIndex].initLiabWeight);
   } else {
-    return std::make_tuple(1,1,1,1);
+    return std::make_tuple(1, 1, 1, 1);
   }
 }
-}
+}  // namespace
 struct MangoAccount {
   MangoAccountInfo accountInfo;
   std::map<std::string, serum_v3::OpenOrders>
       spotOpenOrdersAccounts;  // Address, AccountInfo
-  explicit MangoAccount(const MangoAccountInfo &accountInfo_) noexcept {
+  explicit MangoAccount(const MangoAccountInfo& accountInfo_) noexcept {
     accountInfo = accountInfo_;
   }
   // Fetch `accountInfo` from `endpoint` and decode it
-  explicit MangoAccount(const std::string &pubKey,
-                        const std::string &endpoint = MAINNET.endpoint) {
+  explicit MangoAccount(const std::string& pubKey,
+                        const std::string& endpoint = MAINNET.endpoint) {
     auto connection = solana::rpc::Connection(endpoint);
-    const auto &accountInfo_ =
+    const auto& accountInfo_ =
         connection.getAccountInfo<MangoAccountInfo>(pubKey);
     accountInfo = accountInfo_;
   }
   std::map<std::string, serum_v3::OpenOrders> loadOpenOrders(
-      solana::rpc::Connection &connection);
+      solana::rpc::Connection& connection);
   // Return the spot, perps and quote currency values after adjusting for
   // worst case open orders scenarios. These values are not adjusted for health
   // type
   // TODO: Change `spot` and `perps` from vec to array for use in `getHealth()`
   std::tuple<std::vector<i80f48>, std::vector<i80f48>, i80f48>
-      getHealthComponents(MangoGroup* mangoGroup, MangoCache* mangoCache);
+  getHealthComponents(MangoGroup* mangoGroup, MangoCache* mangoCache);
   i80f48 getHealthFromComponents(MangoGroup* mangoGroup, MangoCache* mangoCache,
-                                 std::vector<i80f48> spot, std::vector<i80f48> perps,
-                                 i80f48 quote, HealthType healthType);
+                                 std::vector<i80f48> spot,
+                                 std::vector<i80f48> perps, i80f48 quote,
+                                 HealthType healthType);
   // deposits - borrows in native terms
-  i80f48 getNet(RootBankCache rootBankCache, size_t tokenIndex){
-    return accountInfo.deposits[tokenIndex] * rootBankCache.deposit_index
-        - (accountInfo.borrows[tokenIndex] * rootBankCache.borrow_index);
+  i80f48 getNet(RootBankCache rootBankCache, size_t tokenIndex) {
+    return accountInfo.deposits[tokenIndex] * rootBankCache.deposit_index -
+           (accountInfo.borrows[tokenIndex] * rootBankCache.borrow_index);
   }
-  i80f48 getHealth(MangoGroup* mangoGroup, MangoCache* mangoCache, HealthType healthType);
+  i80f48 getHealth(MangoGroup* mangoGroup, MangoCache* mangoCache,
+                   HealthType healthType);
   // Take health components and return the assets and liabs weighted
-  std::pair<i80f48, i80f48> getWeightedAssetsLiabsVals(MangoGroup* mangoGroup,
-                                                       MangoCache* mangoCache,
-                                                       std::vector<i80f48> spot,
-                                                       std::vector<i80f48> perps,
-                                                       i80f48 quote,
-                                                       HealthType healthType = Unknown);
-  i80f48 getHealthRatio(MangoGroup* mangoGroup, MangoCache* mangoCache, HealthType healthType = Unknown);
+  std::pair<i80f48, i80f48> getWeightedAssetsLiabsVals(
+      MangoGroup* mangoGroup, MangoCache* mangoCache, std::vector<i80f48> spot,
+      std::vector<i80f48> perps, i80f48 quote, HealthType healthType = Unknown);
+  i80f48 getHealthRatio(MangoGroup* mangoGroup, MangoCache* mangoCache,
+                        HealthType healthType = Unknown);
 };
 std::map<std::string, serum_v3::OpenOrders> MangoAccount::loadOpenOrders(
-    solana::rpc::Connection &connection) {
+    solana::rpc::Connection& connection) {
   // Filter only non-empty open orders
   std::vector<std::string> filteredOpenOrders;
   for (auto item : accountInfo.spotOpenOrders) {
@@ -278,7 +280,7 @@ std::map<std::string, serum_v3::OpenOrders> MangoAccount::loadOpenOrders(
   std::copy_if(
       accountsInfo.begin(), accountsInfo.end(),
       std::inserter(spotOpenOrdersAccounts, spotOpenOrdersAccounts.end()),
-      [](auto &accountInfo) {
+      [](auto& accountInfo) {
         // Check initialized and OpenOrders account flags
         return !((accountInfo.second.accountFlags &
                   serum_v3::AccountFlags::Initialized) !=
@@ -292,31 +294,31 @@ std::map<std::string, serum_v3::OpenOrders> MangoAccount::loadOpenOrders(
 
 std::tuple<std::vector<i80f48>, std::vector<i80f48>, i80f48>
 MangoAccount::getHealthComponents(MangoGroup* mangoGroup,
-                                  MangoCache* mangoCache){
+                                  MangoCache* mangoCache) {
   std::vector<i80f48> spot(mangoGroup->numOracles, i80f48(0));
   std::vector<i80f48> perps(mangoGroup->numOracles, i80f48(0));
-  auto quote
-      = getNet(mangoCache->root_bank_cache[QUOTE_INDEX],
-               QUOTE_INDEX);
-  for(int i = 0; i < mangoGroup->numOracles; i++){
+  auto quote = getNet(mangoCache->root_bank_cache[QUOTE_INDEX], QUOTE_INDEX);
+  for (int i = 0; i < mangoGroup->numOracles; i++) {
     const auto bankCache = mangoCache->root_bank_cache[i];
     const auto price = mangoCache->price_cache[i].price;
     const auto baseNet = getNet(bankCache, i);
 
     // Evaluate spot first
     auto spotOpenOrdersKey = accountInfo.spotOpenOrders[i].toBase58();
-    if ((spotOpenOrdersAccounts.find(spotOpenOrdersKey) != spotOpenOrdersAccounts.end())
-        && accountInfo.inMarginBasket[i]){
+    if ((spotOpenOrdersAccounts.find(spotOpenOrdersKey) !=
+         spotOpenOrdersAccounts.end()) &&
+        accountInfo.inMarginBasket[i]) {
       const auto openOrders = spotOpenOrdersAccounts.at(spotOpenOrdersKey);
       // C++17 structured bindings
-      auto [quoteFree, quoteLocked, baseFree, baseLocked]
-          = splitOpenOrders(&openOrders);
+      auto [quoteFree, quoteLocked, baseFree, baseLocked] =
+          splitOpenOrders(&openOrders);
       // base total if all bids were executed
-      const auto bidsBaseNet = baseNet + (quoteLocked/price) + baseFree + baseLocked;
+      const auto bidsBaseNet =
+          baseNet + (quoteLocked / price) + baseFree + baseLocked;
       // base total if all asks were executed
       const auto asksBaseNet = baseNet + baseFree;
       // bids case worse if it has a higher absolute position
-      if(abs(bidsBaseNet.toDouble()) > abs(asksBaseNet.toDouble())){
+      if (abs(bidsBaseNet.toDouble()) > abs(asksBaseNet.toDouble())) {
         spot[i] = bidsBaseNet;
         quote += quoteFree;
       } else {
@@ -327,24 +329,31 @@ MangoAccount::getHealthComponents(MangoGroup* mangoGroup,
       spot[i] = baseNet;
     }
     // Evaluate perps
-    if(!mangoGroup->perpMarkets[i].perpMarket.toBase58().empty()){
+    if (!mangoGroup->perpMarkets[i].perpMarket.toBase58().empty()) {
       const auto perpMarketCache = mangoCache->perp_market_cache[i];
       const auto perpAccount = accountInfo.perpAccounts[i];
       const auto baseLotSize = mangoGroup->perpMarkets[i].baseLotSize;
       const auto quoteLotSize = mangoGroup->perpMarkets[i].quoteLotSize;
-      const auto takerQuote = i80f48(((unsigned  int)(perpAccount.takerQuote * quoteLotSize)));
-      const auto basePos = i80f48((unsigned  int)((perpAccount.basePosition + perpAccount.takerBase) * baseLotSize));
-      auto bidsQuantity = i80f48((unsigned  int)(perpAccount.bidsQuantity * baseLotSize));
-      auto asksQuantity = i80f48((unsigned  int)(perpAccount.asksQuantity * baseLotSize));
+      const auto takerQuote =
+          i80f48(((unsigned int)(perpAccount.takerQuote * quoteLotSize)));
+      const auto basePos = i80f48(
+          (unsigned int)((perpAccount.basePosition + perpAccount.takerBase) *
+                         baseLotSize));
+      auto bidsQuantity =
+          i80f48((unsigned int)(perpAccount.bidsQuantity * baseLotSize));
+      auto asksQuantity =
+          i80f48((unsigned int)(perpAccount.asksQuantity * baseLotSize));
       const auto bidsBaseNet = basePos + bidsQuantity;
       const auto asksBaseNet = basePos - asksQuantity;
-      if (abs(bidsBaseNet.toDouble()) > abs(asksBaseNet.toDouble())){
+      if (abs(bidsBaseNet.toDouble()) > abs(asksBaseNet.toDouble())) {
         const auto quotePos =
-            (getQuotePosition(&perpAccount, &perpMarketCache) + takerQuote) - (bidsQuantity * price);
+            (getQuotePosition(&perpAccount, &perpMarketCache) + takerQuote) -
+            (bidsQuantity * price);
         quote += quotePos;
         perps[i] = bidsBaseNet;
       } else {
-        const auto quotePos = getQuotePosition(&perpAccount, &perpMarketCache) + takerQuote + (asksQuantity * price);
+        const auto quotePos = getQuotePosition(&perpAccount, &perpMarketCache) +
+                              takerQuote + (asksQuantity * price);
         quote += quotePos;
         perps[i] = asksBaseNet;
       }
@@ -355,50 +364,53 @@ MangoAccount::getHealthComponents(MangoGroup* mangoGroup,
   }
   return std::make_tuple(spot, perps, quote);
 }
-i80f48 MangoAccount::getHealthFromComponents(MangoGroup* mangoGroup,
-                                             MangoCache* mangoCache,
-                                             std::vector<i80f48> spot, std::vector<i80f48> perps,
-                                             i80f48 quote,
-                                             HealthType healthType){
+i80f48 MangoAccount::getHealthFromComponents(
+    MangoGroup* mangoGroup, MangoCache* mangoCache, std::vector<i80f48> spot,
+    std::vector<i80f48> perps, i80f48 quote, HealthType healthType) {
   auto health = quote;
-  for(int i = 0; i < mangoGroup->numOracles; i++){
-    const auto [spotAssetWeight, spotLiabWeight, perpAssetWeight, perpLiabWeight] = getWeights(mangoGroup, i, healthType);
+  for (int i = 0; i < mangoGroup->numOracles; i++) {
+    const auto [spotAssetWeight, spotLiabWeight, perpAssetWeight,
+                perpLiabWeight] = getWeights(mangoGroup, i, healthType);
     const auto price = mangoCache->price_cache[i].price;
-    const auto spotHealth = (spot[i] * price) * (spot[i] > i80f48(0) ? spotAssetWeight : spotLiabWeight);
-    const auto perpHealth = (perps[i] * price) * (perps[i] > i80f48(0) ? perpAssetWeight: perpLiabWeight);
+    const auto spotHealth =
+        (spot[i] * price) *
+        (spot[i] > i80f48(0) ? spotAssetWeight : spotLiabWeight);
+    const auto perpHealth =
+        (perps[i] * price) *
+        (perps[i] > i80f48(0) ? perpAssetWeight : perpLiabWeight);
     health += spotHealth;
     health += perpHealth;
   }
   return health;
 }
-i80f48 MangoAccount::getHealth(MangoGroup* mangoGroup, MangoCache* mangoCache, HealthType healthType){
+i80f48 MangoAccount::getHealth(MangoGroup* mangoGroup, MangoCache* mangoCache,
+                               HealthType healthType) {
   const auto [spot, perps, quote] = getHealthComponents(mangoGroup, mangoCache);
-  const auto health = getHealthFromComponents(mangoGroup, mangoCache, spot, perps, quote, healthType);
+  const auto health = getHealthFromComponents(mangoGroup, mangoCache, spot,
+                                              perps, quote, healthType);
   return health;
 }
-std::pair<i80f48, i80f48> MangoAccount::getWeightedAssetsLiabsVals(MangoGroup* mangoGroup,
-                                                     MangoCache* mangoCache,
-                                                     std::vector<i80f48> spot,
-                                                     std::vector<i80f48> perps,
-                                                     i80f48 quote,
-                                                     HealthType healthType){
+std::pair<i80f48, i80f48> MangoAccount::getWeightedAssetsLiabsVals(
+    MangoGroup* mangoGroup, MangoCache* mangoCache, std::vector<i80f48> spot,
+    std::vector<i80f48> perps, i80f48 quote, HealthType healthType) {
   auto assets = i80f48(0);
   auto liabs = i80f48(0);
-  if(quote > 0){
+  if (quote > 0) {
     assets = assets + quote;
   } else {
     liabs = liabs + (quote * i80f48(-1));
   }
-  for(int i = 0; i < mangoGroup->numOracles; i++){
-    const auto [spotAssetWeight, spotLiabWeight, perpAssetWeight, perpLiabWeight] = getWeights(mangoGroup, i, healthType);
+  for (int i = 0; i < mangoGroup->numOracles; i++) {
+    const auto [spotAssetWeight, spotLiabWeight, perpAssetWeight,
+                perpLiabWeight] = getWeights(mangoGroup, i, healthType);
     const auto price = mangoCache->price_cache[i].price;
-    if(spot[i] > 0){
+    if (spot[i] > 0) {
       assets = (spot[i] * price * spotAssetWeight) + assets;
     } else {
       liabs = ((spot[i] * i80f48(-1)) * price * spotLiabWeight) + liabs;
     }
 
-    if(perps[i] > 0){
+    if (perps[i] > 0) {
       assets = (perps[i] * price * perpAssetWeight) + assets;
     } else {
       liabs = ((perps[i] * i80f48(-1)) * price * perpLiabWeight) + liabs;
@@ -406,16 +418,17 @@ std::pair<i80f48, i80f48> MangoAccount::getWeightedAssetsLiabsVals(MangoGroup* m
   }
   return std::make_pair(assets, liabs);
 }
-i80f48 MangoAccount::getHealthRatio(MangoGroup* mangoGroup, MangoCache* mangoCache,
-                      HealthType healthType){
+i80f48 MangoAccount::getHealthRatio(MangoGroup* mangoGroup,
+                                    MangoCache* mangoCache,
+                                    HealthType healthType) {
   auto [spot, perps, quote] = getHealthComponents(mangoGroup, mangoCache);
-  auto [assets, liabs] = getWeightedAssetsLiabsVals(mangoGroup, mangoCache, spot, perps, quote, healthType);
-  if(liabs > i80f48(0)){
+  auto [assets, liabs] = getWeightedAssetsLiabsVals(
+      mangoGroup, mangoCache, spot, perps, quote, healthType);
+  if (liabs > i80f48(0)) {
     return ((assets / liabs) - i80f48(1)) * i80f48(100);
   } else {
     return i80f48(100);
   }
-
 }
 
 struct LiquidityMiningInfo {
@@ -519,16 +532,16 @@ struct EventQueue {
 
 namespace ix {
 template <typename T>
-std::vector<uint8_t> toBytes(const T &ref) {
-  const auto bytePtr = (uint8_t *)&ref;
+std::vector<uint8_t> toBytes(const T& ref) {
+  const auto bytePtr = (uint8_t*)&ref;
   return std::vector<uint8_t>(bytePtr, bytePtr + sizeof(T));
 }
 
 std::pair<int64_t, int64_t> uiToNativePriceQuantity(double price,
                                                     double quantity,
-                                                    const Config &config,
+                                                    const Config& config,
                                                     const int marketIndex,
-                                                    const PerpMarket &market) {
+                                                    const PerpMarket& market) {
   const int64_t baseUnit = pow(10LL, config.decimals[marketIndex]);
   const int64_t quoteUnit = pow(10LL, config.decimals[QUOTE_INDEX]);
   const auto nativePrice = ((int64_t)(price * quoteUnit)) * market.baseLotSize /
@@ -558,10 +571,10 @@ struct PlacePerpOrder {
 };
 
 solana::Instruction placePerpOrderInstruction(
-    const PlacePerpOrder &ixData, const solana::PublicKey &ownerPk,
-    const solana::PublicKey &accountPk, const solana::PublicKey &marketPk,
-    const PerpMarket &market, const solana::PublicKey &groupPk,
-    const MangoGroup &group, const solana::PublicKey &programPk) {
+    const PlacePerpOrder& ixData, const solana::PublicKey& ownerPk,
+    const solana::PublicKey& accountPk, const solana::PublicKey& marketPk,
+    const PerpMarket& market, const solana::PublicKey& groupPk,
+    const MangoGroup& group, const solana::PublicKey& programPk) {
   std::vector<solana::AccountMeta> accs = {
       {groupPk, false, false},    {accountPk, false, true},
       {ownerPk, true, false},     {group.mangoCache, false, false},
@@ -582,10 +595,10 @@ struct CancelAllPerpOrders {
 };
 
 solana::Instruction cancelAllPerpOrdersInstruction(
-    const CancelAllPerpOrders &ixData, const solana::PublicKey &ownerPk,
-    const solana::PublicKey &accountPk, const solana::PublicKey &marketPk,
-    const PerpMarket &market, const solana::PublicKey &groupPk,
-    const solana::PublicKey &programPk) {
+    const CancelAllPerpOrders& ixData, const solana::PublicKey& ownerPk,
+    const solana::PublicKey& accountPk, const solana::PublicKey& marketPk,
+    const PerpMarket& market, const solana::PublicKey& groupPk,
+    const solana::PublicKey& programPk) {
   const std::vector<solana::AccountMeta> accs = {
       {groupPk, false, false},    {accountPk, false, true},
       {ownerPk, true, false},     {marketPk, false, true},
