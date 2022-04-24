@@ -240,6 +240,19 @@ inline json jsonRequest(const std::string &method,
   if (params != nullptr) req["params"] = params;
   return req;
 }
+template<typename T>
+static T fromFile(const std::string& path){
+  std::ifstream fileStream(path);
+  std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
+  auto response = json::parse(fileContent);
+  const std::string encoded = response["data"][0];
+  const std::string decoded = solana::b64decode(encoded);
+  if (decoded.size() != sizeof(T))
+    throw std::runtime_error("Invalid account data");
+  T accountInfo;
+  memcpy(&accountInfo, decoded.data(), sizeof(T));
+  return accountInfo;
+}
 ///
 /// RPC HTTP Endpoints
 class Connection {

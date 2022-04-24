@@ -103,6 +103,9 @@ class fixedp {
   explicit fixedp(float n) : data(static_cast<ValType>(n * one)) {}
   explicit fixedp(double n) : data(static_cast<ValType>(n * one)) {}
   explicit fixedp(unsigned int n) : data(ValType(n) << FRACT_SIZE) {}
+  explicit fixedp(long int n) : data(ValType(n) << FRACT_SIZE) {}
+  explicit fixedp(long long int n) : data(ValType(n) << FRACT_SIZE) {}
+  explicit fixedp(unsigned long long int n) : data(ValType(n) << FRACT_SIZE) {}
 
 
 #define FIXEDP_MK_CMP_OP(op) \
