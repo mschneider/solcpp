@@ -44,11 +44,7 @@ const Config DEVNET = {
     {"MNGO", "BTC", "ETH", "SOL", "SRM", "RAY", "USDT", "ADA", "FTT", "AVAX",
      "LUNA", "BNB", "MATIC", "", "", "USDC"}};
 
-enum class HealthType {
-  Unknown,
-  Init,
-  Maint
-};
+enum class HealthType { Unknown, Init, Maint };
 
 // all rust structs assume padding to 8
 #pragma pack(push, 8)

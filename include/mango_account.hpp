@@ -275,9 +275,7 @@ i80f48 MangoAccount::getAssetsVal(MangoGroup* mangoGroup,
   return assetsVal;
 }
 i80f48 MangoAccount::getLiabsVal(MangoGroup* mangoGroup, MangoCache* mangoCache,
-                                 HealthType healthType) {
-
-}
+                                 HealthType healthType) {}
 i80f48 MangoAccount::getUiBorrow(RootBankCache* rootBankCache,
                                  size_t tokenIndex) {}
 i80f48 MangoAccount::getNativeBorrow(RootBankCache* rootBankCache,
@@ -288,4 +286,4 @@ i80f48 MangoAccount::getUiDeposit(RootBankCache* rootBankCache,
 i80f48 MangoAccount::getSpotVal(MangoGroup* mangoGroup, MangoCache* mangoCache,
                                 size_t index, i80f48 assetWeight) {}
 
-} // namespace mango_v3
+}  // namespace mango_v3

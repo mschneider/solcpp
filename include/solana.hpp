@@ -240,8 +240,8 @@ inline json jsonRequest(const std::string &method,
   if (params != nullptr) req["params"] = params;
   return req;
 }
-template<typename T>
-static T fromFile(const std::string& path){
+template <typename T>
+static T fromFile(const std::string &path) {
   std::ifstream fileStream(path);
   std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
   auto response = json::parse(fileContent);

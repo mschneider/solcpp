@@ -14,7 +14,8 @@ int main() {
       mango_v3::MangoAccount(mangoAccountInfo);
   auto openOrders = mangoAccount.loadOpenOrders(connection);
   auto group = connection.getAccountInfo<mango_v3::MangoGroup>(config.group);
-  auto cache = connection.getAccountInfo<mango_v3::MangoCache>( group.mangoCache.toBase58());
+  auto cache = connection.getAccountInfo<mango_v3::MangoCache>(
+      group.mangoCache.toBase58());
   spdlog::info("Owner: ", mangoAccountInfo.owner.toBase58());
   auto maintHealth =
       mangoAccount.getHealth(&group, &cache, mango_v3::HealthType::Maint);
