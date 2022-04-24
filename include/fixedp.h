@@ -107,7 +107,6 @@ class fixedp {
   explicit fixedp(long long int n) : data(ValType(n) << FRACT_SIZE) {}
   explicit fixedp(unsigned long long int n) : data(ValType(n) << FRACT_SIZE) {}
 
-
 #define FIXEDP_MK_CMP_OP(op) \
   inline bool operator op(const fixedp &o) const { return data op o.data; }
   FIXEDP_MK_CMP_OP(==)
@@ -158,7 +157,6 @@ class fixedp {
     x *= n;
     return x;
   }
-
 
   inline fixedp &operator/=(const fixedp &n) {
     NextValType t(data);

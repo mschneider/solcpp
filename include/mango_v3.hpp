@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <map>
+#include <string>
 
 #include "fixedp.h"
 #include "int128.hpp"
@@ -131,7 +131,6 @@ struct MangoCache {
   PerpMarketCache perp_market_cache[MAX_PAIRS];
 };
 
-
 enum Side : uint8_t { Buy, Sell };
 
 struct PerpAccountInfo {
@@ -169,7 +168,6 @@ struct MangoAccountInfo {
   solana::PublicKey delegate;
   uint8_t padding[5];
 };
-
 
 struct LiquidityMiningInfo {
   i80f48 rate;
@@ -272,16 +270,16 @@ struct EventQueue {
 
 namespace ix {
 template <typename T>
-std::vector<uint8_t> toBytes(const T &ref) {
-  const auto bytePtr = (uint8_t *)&ref;
+std::vector<uint8_t> toBytes(const T& ref) {
+  const auto bytePtr = (uint8_t*)&ref;
   return std::vector<uint8_t>(bytePtr, bytePtr + sizeof(T));
 }
 
 std::pair<int64_t, int64_t> uiToNativePriceQuantity(double price,
                                                     double quantity,
-                                                    const Config &config,
+                                                    const Config& config,
                                                     const int marketIndex,
-                                                    const PerpMarket &market) {
+                                                    const PerpMarket& market) {
   const int64_t baseUnit = pow(10LL, config.decimals[marketIndex]);
   const int64_t quoteUnit = pow(10LL, config.decimals[QUOTE_INDEX]);
   const auto nativePrice = ((int64_t)(price * quoteUnit)) * market.baseLotSize /
@@ -311,10 +309,10 @@ struct PlacePerpOrder {
 };
 
 solana::Instruction placePerpOrderInstruction(
-    const PlacePerpOrder &ixData, const solana::PublicKey &ownerPk,
-    const solana::PublicKey &accountPk, const solana::PublicKey &marketPk,
-    const PerpMarket &market, const solana::PublicKey &groupPk,
-    const MangoGroup &group, const solana::PublicKey &programPk) {
+    const PlacePerpOrder& ixData, const solana::PublicKey& ownerPk,
+    const solana::PublicKey& accountPk, const solana::PublicKey& marketPk,
+    const PerpMarket& market, const solana::PublicKey& groupPk,
+    const MangoGroup& group, const solana::PublicKey& programPk) {
   std::vector<solana::AccountMeta> accs = {
       {groupPk, false, false},    {accountPk, false, true},
       {ownerPk, true, false},     {group.mangoCache, false, false},
@@ -335,10 +333,10 @@ struct CancelAllPerpOrders {
 };
 
 solana::Instruction cancelAllPerpOrdersInstruction(
-    const CancelAllPerpOrders &ixData, const solana::PublicKey &ownerPk,
-    const solana::PublicKey &accountPk, const solana::PublicKey &marketPk,
-    const PerpMarket &market, const solana::PublicKey &groupPk,
-    const solana::PublicKey &programPk) {
+    const CancelAllPerpOrders& ixData, const solana::PublicKey& ownerPk,
+    const solana::PublicKey& accountPk, const solana::PublicKey& marketPk,
+    const PerpMarket& market, const solana::PublicKey& groupPk,
+    const solana::PublicKey& programPk) {
   const std::vector<solana::AccountMeta> accs = {
       {groupPk, false, false},    {accountPk, false, true},
       {ownerPk, true, false},     {marketPk, false, true},
