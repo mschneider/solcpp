@@ -55,6 +55,7 @@ work well with the rest of the code base.
 - Subscribe to account updates (fills)
 - Send Transaction
 - Build complex transactions (atomic cancel and replace)
+- MangoAccount Health info and calculations
 
 ## TODO
 
@@ -67,4 +68,3 @@ work well with the rest of the code base.
 
 - [ ] Improve liquidity on mango markets
 - [ ] Remove/replace deprecated methods
-- [ ] Remove the pragma warnings

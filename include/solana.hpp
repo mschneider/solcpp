@@ -240,6 +240,7 @@ inline json jsonRequest(const std::string &method,
   if (params != nullptr) req["params"] = params;
   return req;
 }
+// Read AccountInfo dumped in a file
 template <typename T>
 static T fromFile(const std::string &path) {
   std::ifstream fileStream(path);

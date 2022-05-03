@@ -1,33 +1,35 @@
 #pragma once
+#include <fmt/format.h>
+
 #include "mango_v3.hpp"
 
 namespace mango_v3 {
 // quoteFree, quoteLocked, baseFree, baseLocked
-std::tuple<i80f48, i80f48, i80f48, i80f48> splitOpenOrders(
+auto splitOpenOrders(
     const serum_v3::OpenOrders* openOrders) {
   const auto quoteFree =
-      i80f48((openOrders->quoteTokenFree + openOrders->referrerRebatesAccrued));
+      openOrders->quoteTokenFree + openOrders->referrerRebatesAccrued;
   const auto quoteLocked =
-      i80f48((openOrders->quoteTokenTotal - openOrders->quoteTokenFree));
-  const auto baseFree = i80f48((openOrders->baseTokenFree));
+      (openOrders->quoteTokenTotal - openOrders->quoteTokenFree);
+  const auto baseFree = openOrders->baseTokenFree;
   const auto baseLocked =
-      i80f48((openOrders->baseTokenTotal - openOrders->baseTokenFree));
+      openOrders->baseTokenTotal - openOrders->baseTokenFree;
   return std::make_tuple(quoteFree, quoteLocked, baseFree, baseLocked);
 }
-i80f48 getUnsettledFunding(const PerpAccountInfo* accountInfo,
+double getUnsettledFunding(const PerpAccountInfo* accountInfo,
                            const PerpMarketCache* perpMarketCache) {
   if (accountInfo->basePosition < 0) {
-    return i80f48(accountInfo->basePosition) *
-           (perpMarketCache->short_funding - accountInfo->shortSettledFunding);
+    return accountInfo->basePosition *
+           (perpMarketCache->short_funding.toDouble() - accountInfo->shortSettledFunding.toDouble());
   } else {
-    return i80f48(accountInfo->basePosition) *
-           (perpMarketCache->long_funding - accountInfo->longSettledFunding);
+    return accountInfo->basePosition *
+           (perpMarketCache->long_funding.toDouble() - accountInfo->longSettledFunding.toDouble());
   }
 }
 // Return the quote position after adjusting for unsettled funding
-i80f48 getQuotePosition(const PerpAccountInfo* accountInfo,
+double getQuotePosition(const PerpAccountInfo* accountInfo,
                         const PerpMarketCache* perpMarketCache) {
-  return accountInfo->quotePosition -
+  return accountInfo->quotePosition.toDouble() -
          getUnsettledFunding(accountInfo, perpMarketCache);
 }
 /**
@@ -36,7 +38,7 @@ i80f48 getQuotePosition(const PerpAccountInfo* accountInfo,
  * @return
  * <spotAssetWeight, spotLiabWeight,perpAssetWeight, perpLiabWeight>
  */
-std::tuple<i80f48, i80f48, i80f48, i80f48> getWeights(
+auto getMangoGroupWeights(
     MangoGroup* mangoGroup, size_t marketIndex,
     HealthType healthType = HealthType::Unknown) {
   if (healthType == HealthType::Maint) {
@@ -51,59 +53,84 @@ std::tuple<i80f48, i80f48, i80f48, i80f48> getWeights(
                            mangoGroup->perpMarkets[marketIndex].initAssetWeight,
                            mangoGroup->perpMarkets[marketIndex].initLiabWeight);
   } else {
-    return std::make_tuple(i80f48(1L), i80f48(1L), i80f48(1L), i80f48(1L));
+    return std::make_tuple(i80f48(1.0), i80f48(1.0), i80f48(1.0), i80f48(1.0));
   }
 }
-i80f48 nativeI80F48ToUi(i80f48 amount, uint8_t decimals) {
-  return amount / i80f48(std::pow(10, decimals));
+double nativeI80F48ToUi(double amount, uint8_t decimals) {
+  return amount / pow(10, decimals);
 }
-i80f48 getAssetVal(PerpAccountInfo* perpAccountInfo,
-                   PerpMarketInfo* perpMarketInfo, i80f48 price,
-                   i80f48 shortFunding, i80f48 longFunding) {
-  auto assetsVal = i80f48(0ULL);
+double getPerpAccountAssetVal(PerpAccountInfo* perpAccountInfo,
+                   PerpMarketInfo* perpMarketInfo, double price,
+                   double shortFunding, double longFunding) {
+  double assetsVal = 0;
   if (perpAccountInfo->basePosition > 0) {
-    assetsVal +=
-        (i80f48(perpAccountInfo->basePosition * perpMarketInfo->baseLotSize) *
-         price);
+    assetsVal += (perpAccountInfo->basePosition * perpMarketInfo->baseLotSize * price);
   }
-  auto realQuotePosition = perpAccountInfo->quotePosition;
+  double realQuotePosition = perpAccountInfo->quotePosition.toDouble();
   if (perpAccountInfo->basePosition > 0) {
-    realQuotePosition = perpAccountInfo->quotePosition -
-                        ((longFunding - perpAccountInfo->longSettledFunding) *
-                         i80f48(perpAccountInfo->basePosition));
+    realQuotePosition = perpAccountInfo->quotePosition.toDouble() -
+                        ((longFunding - perpAccountInfo->longSettledFunding.toDouble()) *
+                         perpAccountInfo->basePosition);
   } else if (perpAccountInfo->basePosition < 0) {
-    realQuotePosition = perpAccountInfo->quotePosition -
-                        ((shortFunding - perpAccountInfo->shortSettledFunding) *
-                         i80f48(perpAccountInfo->basePosition));
+    realQuotePosition = perpAccountInfo->quotePosition.toDouble() -
+                        ((shortFunding - perpAccountInfo->shortSettledFunding.toDouble()) *
+                         perpAccountInfo->basePosition);
   }
 
-  if (realQuotePosition > i80f48(0ULL)) {
+  if (realQuotePosition > 0) {
     assetsVal += realQuotePosition;
   }
   return assetsVal;
 }
-i80f48 getLiabsVal(PerpAccountInfo* perpAccountInfo,
-                   PerpMarketInfo* perpMarketInfo, i80f48 price,
-                   i80f48 shortFunding, i80f48 longFunding) {
-  auto liabsVal = i80f48(0ULL);
-  if (perpAccountInfo->basePosition < 0) {
+double getPerpAccountLiabsVal(PerpAccountInfo perpAccountInfo,
+                   PerpMarketInfo perpMarketInfo, double price,
+                   double shortFunding, double longFunding) {
+  double liabsVal = 0;
+  if (perpAccountInfo.basePosition < 0) {
     liabsVal +=
-        (i80f48(perpAccountInfo->basePosition * perpMarketInfo->baseLotSize) *
-         price);
+        (perpAccountInfo.basePosition * perpMarketInfo.baseLotSize * price);
   }
-  auto realQuotePosition = perpAccountInfo->quotePosition;
-  if (perpAccountInfo->basePosition > 0) {
-    realQuotePosition = perpAccountInfo->quotePosition -
-                        ((longFunding - perpAccountInfo->longSettledFunding) *
-                         i80f48(perpAccountInfo->basePosition));
-  } else if (perpAccountInfo->basePosition < 0) {
-    realQuotePosition = perpAccountInfo->quotePosition -
-                        ((shortFunding - perpAccountInfo->shortSettledFunding) *
-                         i80f48(perpAccountInfo->basePosition));
+  auto realQuotePosition = perpAccountInfo.quotePosition.toDouble();
+  if (perpAccountInfo.basePosition > 0) {
+    realQuotePosition = perpAccountInfo.quotePosition.toDouble() -
+                        ((longFunding - perpAccountInfo.longSettledFunding.toDouble()) *
+                         perpAccountInfo.basePosition);
+  } else if (perpAccountInfo.basePosition < 0) {
+    realQuotePosition = perpAccountInfo.quotePosition.toDouble() -
+                        ((shortFunding - perpAccountInfo.shortSettledFunding.toDouble()) *
+                         perpAccountInfo.basePosition);
   }
-  if (realQuotePosition < i80f48(0ULL)) {
+  if (realQuotePosition < 0) {
     liabsVal += realQuotePosition;
   }
-  return liabsVal * i80f48(-1ULL);
+  return liabsVal * -1;
+}
+/**
+   * Return the decimals in TokenInfo;
+   * If it's not QUOTE_INDEX and there is an oracle for this index but no SPL-Token, this will default to 6
+   * Otherwise throw error
+ */
+uint8_t getMangoGroupTokenDecimals(MangoGroup* mangoGroup, size_t tokenIndex){
+  const auto tokenInfo = mangoGroup->tokens[tokenIndex];
+  if(tokenInfo.decimals == 0){
+    if(mangoGroup->oracles[tokenIndex] == solana::PublicKey::empty()){
+      throw std::runtime_error(fmt::format("No oracle for this tokenIndex: {}", tokenIndex));
+    } else {
+      return 6;
+    }
+  } else {
+    return tokenInfo.decimals;
+  }
+}
+double getMangoGroupPrice(MangoGroup* mangoGroup, size_t tokenIndex, MangoCache* mangoCache){
+  if (tokenIndex == QUOTE_INDEX){
+    return 1;
+  }
+  const auto decimalAdj = pow(10, getMangoGroupTokenDecimals(mangoGroup, tokenIndex)
+                                           - getMangoGroupTokenDecimals(mangoGroup, QUOTE_INDEX)) ;
+  return mangoCache->price_cache[tokenIndex].price.toDouble() * decimalAdj;
+}
+double nativeToUi(uint64_t amount, uint8_t decimals){
+  return amount / pow(10, decimals);
 }
 }  // namespace mango_v3

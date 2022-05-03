@@ -103,9 +103,6 @@ class fixedp {
   explicit fixedp(float n) : data(static_cast<ValType>(n * one)) {}
   explicit fixedp(double n) : data(static_cast<ValType>(n * one)) {}
   explicit fixedp(unsigned int n) : data(ValType(n) << FRACT_SIZE) {}
-  explicit fixedp(long int n) : data(ValType(n) << FRACT_SIZE) {}
-  explicit fixedp(long long int n) : data(ValType(n) << FRACT_SIZE) {}
-  explicit fixedp(unsigned long long int n) : data(ValType(n) << FRACT_SIZE) {}
 
 #define FIXEDP_MK_CMP_OP(op) \
   inline bool operator op(const fixedp &o) const { return data op o.data; }
@@ -153,9 +150,10 @@ class fixedp {
     return *this;
   }
   inline fixedp operator*(const fixedp &n) {
-    fixedp x(*this);
-    x *= n;
-    return x;
+      fixedp x(*this);
+      x *= n;
+      return x;
+  // return (this->toDouble())*n.toDouble();
   }
 
   inline fixedp &operator/=(const fixedp &n) {
