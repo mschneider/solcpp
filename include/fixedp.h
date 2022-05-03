@@ -150,10 +150,10 @@ class fixedp {
     return *this;
   }
   inline fixedp operator*(const fixedp &n) {
-      fixedp x(*this);
-      x *= n;
-      return x;
-  // return (this->toDouble())*n.toDouble();
+    fixedp x(*this);
+    x *= n;
+    return x;
+    // return (this->toDouble())*n.toDouble();
   }
 
   inline fixedp &operator/=(const fixedp &n) {
