@@ -143,10 +143,9 @@ TEST_CASE("Empty MangoAccount") {
   auto path = resources_dir + "/mango_v3/empty";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
   auto mangoCache =
       solana::rpc::fromFile<mango_v3::MangoCache>(path + "/cache.json");
   auto initHealth = mangoAccount.getHealth(&mangoGroup, &mangoCache,
@@ -173,10 +172,9 @@ TEST_CASE("1deposit") {
   auto path = resources_dir + "/mango_v3/1deposit";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
   auto mangoCache =
       solana::rpc::fromFile<mango_v3::MangoCache>(path + "/cache.json");
   auto initHealth = mangoAccount.getHealth(&mangoGroup, &mangoCache,
@@ -203,10 +201,9 @@ TEST_CASE("account1") {
   auto path = resources_dir + "/mango_v3/account1";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
 
   auto openOrders3 =
       solana::rpc::fromFile<serum_v3::OpenOrders>(path + "/openorders3.json");
@@ -256,10 +253,9 @@ TEST_CASE("account2") {
   auto path = resources_dir + "/mango_v3/account2";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
 
   auto openOrders2 =
       solana::rpc::fromFile<serum_v3::OpenOrders>(path + "/openorders2.json");
@@ -304,10 +300,9 @@ TEST_CASE("account3") {
   auto path = resources_dir + "/mango_v3/account3";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
   auto mangoCache =
       solana::rpc::fromFile<mango_v3::MangoCache>(path + "/cache.json");
   auto initHealth = mangoAccount.getHealth(&mangoGroup, &mangoCache,
@@ -333,10 +328,9 @@ TEST_CASE("account4") {
   auto path = resources_dir + "/mango_v3/account4";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
   auto mangoCache =
       solana::rpc::fromFile<mango_v3::MangoCache>(path + "/cache.json");
   auto initHealth = mangoAccount.getHealth(&mangoGroup, &mangoCache,
@@ -363,10 +357,9 @@ TEST_CASE("account5") {
   auto path = resources_dir + "/mango_v3/account5";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
 
   auto openOrders0 =
       solana::rpc::fromFile<serum_v3::OpenOrders>(path + "/openorders0.json");
@@ -424,10 +417,9 @@ TEST_CASE("account6") {
   auto path = resources_dir + "/mango_v3/account6";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
 
   auto openOrders0 =
       solana::rpc::fromFile<serum_v3::OpenOrders>(path + "/openorders0.json");
@@ -485,10 +477,9 @@ TEST_CASE("account7") {
   auto path = resources_dir + "/mango_v3/account7";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
 
   auto openOrders3 =
       solana::rpc::fromFile<serum_v3::OpenOrders>(path + "/openorders3.json");
@@ -530,10 +521,9 @@ TEST_CASE("account8") {
   auto path = resources_dir + "/mango_v3/account8";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
 
   auto openOrders3 =
       solana::rpc::fromFile<serum_v3::OpenOrders>(path + "/openorders3.json");
@@ -575,10 +565,9 @@ TEST_CASE("account9") {
   auto path = resources_dir + "/mango_v3/account9";
   auto mangoGroup =
       solana::rpc::fromFile<mango_v3::MangoGroup>(path + "/group.json");
-  auto accountInfo = solana::rpc::fromFile<mango_v3::MangoAccountInfo>(
-      path + "/account.json");
-  auto mangoAccount =
-      mango_v3::MangoAccount(accountInfo);
+  auto accountInfo =
+      solana::rpc::fromFile<mango_v3::MangoAccountInfo>(path + "/account.json");
+  auto mangoAccount = mango_v3::MangoAccount(accountInfo);
 
   auto openOrders1 =
       solana::rpc::fromFile<serum_v3::OpenOrders>(path + "/openorders1.json");
