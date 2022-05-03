@@ -153,7 +153,6 @@ class fixedp {
     fixedp x(*this);
     x *= n;
     return x;
-    // return (this->toDouble())*n.toDouble();
   }
 
   inline fixedp &operator/=(const fixedp &n) {
