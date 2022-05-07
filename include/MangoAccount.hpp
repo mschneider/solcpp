@@ -1,7 +1,7 @@
 #pragma once
 
 #include "mango_v3.hpp"
-#include "utils.h"
+#include "utils.hpp"
 
 namespace mango_v3 {
 struct MangoAccount {
