@@ -27,7 +27,8 @@ int main() {
   spdlog::info("Maint Health Ratio: {:.4f}", maintHealthRatio.to_double());
   spdlog::info("Maint Health: {:.4f}", maintHealth.to_double());
   spdlog::info("Init Health: {:.4f}", initHealth.to_double());
-  spdlog::info("Equity: {:.4f}", mangoAccount.computeValue(group, cache).to_double());
+  spdlog::info("Equity: {:.4f}",
+               mangoAccount.computeValue(group, cache).to_double());
   spdlog::info("isBankrupt: {}", mangoAccount.mangoAccountInfo.isBankrupt);
   spdlog::info("beingLiquidated: {}",
                mangoAccount.mangoAccountInfo.beingLiquidated);

@@ -15,20 +15,18 @@ auto splitOpenOrders(const serum_v3::OpenOrders& openOrders) {
   return std::make_tuple(quoteFree, quoteLocked, baseFree, baseLocked);
 }
 auto getUnsettledFunding(const PerpAccountInfo& accountInfo,
-                           const PerpMarketCache& perpMarketCache) {
+                         const PerpMarketCache& perpMarketCache) {
   if (accountInfo.basePosition < 0) {
     return accountInfo.basePosition *
-           (perpMarketCache.short_funding -
-            accountInfo.shortSettledFunding);
+           (perpMarketCache.short_funding - accountInfo.shortSettledFunding);
   } else {
     return accountInfo.basePosition *
-           (perpMarketCache.long_funding -
-            accountInfo.longSettledFunding);
+           (perpMarketCache.long_funding - accountInfo.longSettledFunding);
   }
 }
 // Return the quote position after adjusting for unsettled funding
 auto getQuotePosition(const PerpAccountInfo& accountInfo,
-                        const PerpMarketCache& perpMarketCache) {
+                      const PerpMarketCache& perpMarketCache) {
   return accountInfo.quotePosition -
          getUnsettledFunding(accountInfo, perpMarketCache);
 }
@@ -58,9 +56,8 @@ auto nativeI80F48ToUi(i80f48 amount, uint8_t decimals) {
   return amount / pow(10, decimals);
 }
 auto getPerpAccountAssetVal(const PerpAccountInfo& perpAccountInfo,
-                              const PerpMarketInfo& perpMarketInfo,
-                              i80f48 price, i80f48 shortFunding,
-                              i80f48 longFunding) {
+                            const PerpMarketInfo& perpMarketInfo, i80f48 price,
+                            i80f48 shortFunding, i80f48 longFunding) {
   i80f48 assetsVal = 0.0;
   if (perpAccountInfo.basePosition > 0) {
     assetsVal +=
@@ -68,15 +65,13 @@ auto getPerpAccountAssetVal(const PerpAccountInfo& perpAccountInfo,
   }
   auto realQuotePosition = perpAccountInfo.quotePosition;
   if (perpAccountInfo.basePosition > 0) {
-    realQuotePosition =
-        perpAccountInfo.quotePosition -
-        ((longFunding - perpAccountInfo.longSettledFunding) *
-         perpAccountInfo.basePosition);
+    realQuotePosition = perpAccountInfo.quotePosition -
+                        ((longFunding - perpAccountInfo.longSettledFunding) *
+                         perpAccountInfo.basePosition);
   } else if (perpAccountInfo.basePosition < 0) {
-    realQuotePosition =
-        perpAccountInfo.quotePosition -
-        ((shortFunding - perpAccountInfo.shortSettledFunding) *
-         perpAccountInfo.basePosition);
+    realQuotePosition = perpAccountInfo.quotePosition -
+                        ((shortFunding - perpAccountInfo.shortSettledFunding) *
+                         perpAccountInfo.basePosition);
   }
 
   if (realQuotePosition > 0) {
@@ -85,9 +80,8 @@ auto getPerpAccountAssetVal(const PerpAccountInfo& perpAccountInfo,
   return assetsVal;
 }
 auto getPerpAccountLiabsVal(const PerpAccountInfo& perpAccountInfo,
-                              const PerpMarketInfo& perpMarketInfo,
-                              i80f48 price, i80f48 shortFunding,
-                              i80f48 longFunding) {
+                            const PerpMarketInfo& perpMarketInfo, i80f48 price,
+                            i80f48 shortFunding, i80f48 longFunding) {
   i80f48 liabsVal = 0.0;
   if (perpAccountInfo.basePosition < 0) {
     liabsVal +=
@@ -95,15 +89,13 @@ auto getPerpAccountLiabsVal(const PerpAccountInfo& perpAccountInfo,
   }
   auto realQuotePosition = perpAccountInfo.quotePosition;
   if (perpAccountInfo.basePosition > 0) {
-    realQuotePosition =
-        perpAccountInfo.quotePosition -
-        ((longFunding - perpAccountInfo.longSettledFunding) *
-         perpAccountInfo.basePosition);
+    realQuotePosition = perpAccountInfo.quotePosition -
+                        ((longFunding - perpAccountInfo.longSettledFunding) *
+                         perpAccountInfo.basePosition);
   } else if (perpAccountInfo.basePosition < 0) {
-    realQuotePosition =
-        perpAccountInfo.quotePosition -
-        ((shortFunding - perpAccountInfo.shortSettledFunding) *
-         perpAccountInfo.basePosition);
+    realQuotePosition = perpAccountInfo.quotePosition -
+                        ((shortFunding - perpAccountInfo.shortSettledFunding) *
+                         perpAccountInfo.basePosition);
   }
   if (realQuotePosition < 0) {
     liabsVal += realQuotePosition;
