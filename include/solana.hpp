@@ -250,7 +250,7 @@ static T fromFile(const std::string &path) {
   const std::string decoded = solana::b64decode(encoded);
   if (decoded.size() != sizeof(T))
     throw std::runtime_error("Invalid account data");
-  T accountInfo;
+  T accountInfo{};
   memcpy(&accountInfo, decoded.data(), sizeof(T));
   return accountInfo;
 }
@@ -311,7 +311,7 @@ class Connection {
                                std::to_string(decoded.size()) + " expected " +
                                std::to_string(sizeof(T)));
 
-    T result;
+    T result{};
     memcpy(&result, decoded.data(), sizeof(T));
     return result;
   }
@@ -345,7 +345,7 @@ class Connection {
         throw std::runtime_error("invalid response length " +
                                  std::to_string(decoded.size()) + " expected " +
                                  std::to_string(sizeof(T)));
-      T account;
+      T account{};
       memcpy(&account, decoded.data(), sizeof(T));
       result[req["params"][0][index]] = account;  // Retrieve the corresponding
                                                   // pubKey from the request

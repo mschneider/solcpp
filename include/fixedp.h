@@ -1,211 +1,672 @@
+// From: https://github.com/eteran/cpp-utilities/blob/master/fixed/include/cpp-utilities/fixed.h
+// See also: http://stackoverflow.com/questions/79677/whats-the-best-way-to-do-fixed-point-math
 /*
- * "fixed.h" by David Flemström is licensed under a
- * Creative Commons Attribution-Share Alike 3.0 Unported License.
+ * The MIT License (MIT)
  *
- * Based on a work at http://www.codef00.com/code/, which is:
- * Copyright (c) 2008
- * Evan Teran
- * See the above link for the full copyright text.
+ * Copyright (c) 2015 Evan Teran
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
-#ifndef FIXEDP_H
-#define FIXEDP_H
+#ifndef FIXED_H_
+#define FIXED_H_
 
-#include <stdint.h>
+#if __cplusplus >= 201402L
+#define CONSTEXPR14 constexpr
+#else
+#define CONSTEXPR14
+#endif
 
-#include <cstddef>
+#include <cstddef> // for size_t
+#include <cstdint>
+#include <exception>
+#include <ostream>
+#include <type_traits>
 
-using namespace std;
+namespace numeric {
 
-// There must exist a SizeInfo implementation for your wanted fixed point size.
-// It should e.g. not be possible to do fixed<2, 3> since there is no 5-bit type
-// to store the value in. (it is possible for the user to add additional
-// SizeInfo implementations of course)
-template <bool S, size_t A>
-struct FixedPSizeInfo;
+template <size_t I, size_t F>
+class fixed;
 
-#define FIXEDP_SIZE(x) (sizeof(x) * 8)
-#define FIXEDP_NEXT_SIZE(x) (sizeof(x) * 16)
-#define FIXEDP_PREV_SIZE(x) (sizeof(x) * 4)
+namespace detail {
 
-// Declares a SizeInfo with the given signedness S and base type T
-#define FIXEDP_MK_SIZE_INFO(S, T)                                 \
-  template <>                                                     \
-  struct FixedPSizeInfo<S, FIXEDP_SIZE(T)> {                      \
-    typedef T ValType;                                            \
-    static const size_t VAL_SIZE = FIXEDP_SIZE(T);                \
-    typedef FixedPSizeInfo<S, FIXEDP_NEXT_SIZE(T)> NEXT_SIZEINFO; \
-    typedef FixedPSizeInfo<S, FIXEDP_PREV_SIZE(T)> PREV_SIZEINFO; \
-  }
-
-#define FIXEDP_MK_DOUBLE_SIZE_INFO(S, T)                          \
-  template <>                                                     \
-  struct FixedPSizeInfo<S, FIXEDP_SIZE(T) * 2> {                  \
-    typedef T ValType;                                            \
-    static const size_t VAL_SIZE = FIXEDP_SIZE(T) * 2;            \
-    typedef FixedPSizeInfo<S, FIXEDP_NEXT_SIZE(T)> NEXT_SIZEINFO; \
-    typedef FixedPSizeInfo<S, FIXEDP_PREV_SIZE(T)> PREV_SIZEINFO; \
-  }
-
-// fake sizeinfo
-FIXEDP_MK_DOUBLE_SIZE_INFO(true, __int128_t);
-FIXEDP_MK_DOUBLE_SIZE_INFO(false, __uint128_t);
-
-// Implicit SizeInfos for default types (128, 64, 32, 16 and 8-bit)
-FIXEDP_MK_SIZE_INFO(true, __int128_t);
-FIXEDP_MK_SIZE_INFO(false, __uint128_t);
-FIXEDP_MK_SIZE_INFO(true, int64_t);
-FIXEDP_MK_SIZE_INFO(false, uint64_t);
-FIXEDP_MK_SIZE_INFO(true, int32_t);
-FIXEDP_MK_SIZE_INFO(false, uint32_t);
-FIXEDP_MK_SIZE_INFO(true, int16_t);
-FIXEDP_MK_SIZE_INFO(false, uint16_t);
-FIXEDP_MK_SIZE_INFO(true, int8_t);
-FIXEDP_MK_SIZE_INFO(false, uint8_t);
-
-#undef FIXEDP_SIZE
-#undef FIXEDP_NEXT_SIZE
-#undef FIXEDP_PREV_SIZE
-#undef FIXEDP_MK_SIZE_INFO
-
-template <class B, class N>
-struct FixedPConvert {
-  static B convert(const N &rhs) { return static_cast<B>(rhs); }
+// helper templates to make magic with types :)
+// these allow us to determine resonable types from
+// a desired size, they also let us infer the next largest type
+// from a type which is nice for the division op
+template <size_t T>
+struct type_from_size {
+  using value_type                     = void;
+  using unsigned_type                  = void;
+  using signed_type                    = void;
+  static constexpr bool is_specialized = false;
 };
 
-template <bool S, size_t I, size_t F>
-class fixedp {
+#if defined(__GNUC__) && defined(__x86_64__) && !defined(__STRICT_ANSI__)
+template <>
+struct type_from_size<128> {
+  static constexpr bool is_specialized = true;
+  static constexpr size_t size         = 128;
+
+  using value_type    = __int128;
+  using unsigned_type = unsigned __int128;
+  using signed_type   = __int128;
+  using next_size     = type_from_size<256>;
+};
+#endif
+
+template <>
+struct type_from_size<64> {
+  static constexpr bool is_specialized = true;
+  static constexpr size_t size         = 64;
+
+  using value_type    = int64_t;
+  using unsigned_type = std::make_unsigned<value_type>::type;
+  using signed_type   = std::make_signed<value_type>::type;
+  using next_size     = type_from_size<128>;
+};
+
+template <>
+struct type_from_size<32> {
+  static constexpr bool is_specialized = true;
+  static constexpr size_t size         = 32;
+
+  using value_type    = int32_t;
+  using unsigned_type = std::make_unsigned<value_type>::type;
+  using signed_type   = std::make_signed<value_type>::type;
+  using next_size     = type_from_size<64>;
+};
+
+template <>
+struct type_from_size<16> {
+  static constexpr bool is_specialized = true;
+  static constexpr size_t size         = 16;
+
+  using value_type    = int16_t;
+  using unsigned_type = std::make_unsigned<value_type>::type;
+  using signed_type   = std::make_signed<value_type>::type;
+  using next_size     = type_from_size<32>;
+};
+
+template <>
+struct type_from_size<8> {
+  static constexpr bool is_specialized = true;
+  static constexpr size_t size         = 8;
+
+  using value_type    = int8_t;
+  using unsigned_type = std::make_unsigned<value_type>::type;
+  using signed_type   = std::make_signed<value_type>::type;
+  using next_size     = type_from_size<16>;
+};
+
+// this is to assist in adding support for non-native base
+// types (for adding big-int support), this should be fine
+// unless your bit-int class doesn't nicely support casting
+template <class B, class N>
+constexpr B next_to_base(N rhs) {
+  return static_cast<B>(rhs);
+}
+
+struct divide_by_zero : std::exception {
+};
+
+template <size_t I, size_t F>
+CONSTEXPR14 fixed<I, F> divide(fixed<I, F> numerator, fixed<I, F> denominator, fixed<I, F> &remainder, typename std::enable_if<type_from_size<I + F>::next_size::is_specialized>::type * = nullptr) {
+
+  using next_type                  = typename fixed<I, F>::next_type;
+  using base_type                  = typename fixed<I, F>::base_type;
+  constexpr size_t fractional_bits = fixed<I, F>::fractional_bits;
+
+  next_type t(numerator.to_raw());
+  t <<= fractional_bits;
+
+  fixed<I, F> quotient;
+
+  quotient  = fixed<I, F>::from_base(next_to_base<base_type>(t / denominator.to_raw()));
+  remainder = fixed<I, F>::from_base(next_to_base<base_type>(t % denominator.to_raw()));
+
+  return quotient;
+}
+
+template <size_t I, size_t F>
+CONSTEXPR14 fixed<I, F> divide(fixed<I, F> numerator, fixed<I, F> denominator, fixed<I, F> &remainder, typename std::enable_if<!type_from_size<I + F>::next_size::is_specialized>::type * = nullptr) {
+
+  using base_type     = typename fixed<I, F>::base_type;
+  using unsigned_type = typename fixed<I, F>::unsigned_type;
+
+  constexpr int bits = fixed<I, F>::total_bits;
+
+  if (denominator == 0) {
+    throw divide_by_zero();
+  } else {
+
+    int sign = 0;
+
+    fixed<I, F> quotient;
+
+    if (numerator < 0) {
+      sign ^= 1;
+      numerator = -numerator;
+    }
+
+    if (denominator < 0) {
+      sign ^= 1;
+      denominator = -denominator;
+    }
+
+    unsigned_type n      = numerator.to_raw();
+    unsigned_type d      = denominator.to_raw();
+    unsigned_type x      = 1;
+    unsigned_type answer = 0;
+
+    // egyptian division algorithm
+    while ((n >= d) && (((d >> (bits - 1)) & 1) == 0)) {
+      x <<= 1;
+      d <<= 1;
+    }
+
+    while (x != 0) {
+      if (n >= d) {
+        n -= d;
+        answer += x;
+      }
+
+      x >>= 1;
+      d >>= 1;
+    }
+
+    unsigned_type l1 = n;
+    unsigned_type l2 = denominator.to_raw();
+
+    // calculate the lower bits (needs to be unsigned)
+    while (l1 >> (bits - F) > 0) {
+      l1 >>= 1;
+      l2 >>= 1;
+    }
+    const unsigned_type lo = (l1 << F) / l2;
+
+    quotient  = fixed<I, F>::from_base((answer << F) | lo);
+    remainder = n;
+
+    if (sign) {
+      quotient = -quotient;
+    }
+
+    return quotient;
+  }
+}
+
+// this is the usual implementation of multiplication
+template <size_t I, size_t F>
+CONSTEXPR14 fixed<I, F> multiply(fixed<I, F> lhs, fixed<I, F> rhs, typename std::enable_if<type_from_size<I + F>::next_size::is_specialized>::type * = nullptr) {
+
+  using next_type = typename fixed<I, F>::next_type;
+  using base_type = typename fixed<I, F>::base_type;
+
+  constexpr size_t fractional_bits = fixed<I, F>::fractional_bits;
+
+  next_type t(static_cast<next_type>(lhs.to_raw()) * static_cast<next_type>(rhs.to_raw()));
+  t >>= fractional_bits;
+
+  return fixed<I, F>::from_base(next_to_base<base_type>(t));
+}
+
+// this is the fall back version we use when we don't have a next size
+// it is slightly slower, but is more robust since it doesn't
+// require and upgraded type
+template <size_t I, size_t F>
+CONSTEXPR14 fixed<I, F> multiply(fixed<I, F> lhs, fixed<I, F> rhs, typename std::enable_if<!type_from_size<I + F>::next_size::is_specialized>::type * = nullptr) {
+
+  using base_type = typename fixed<I, F>::base_type;
+
+  constexpr size_t fractional_bits    = fixed<I, F>::fractional_bits;
+  constexpr base_type integer_mask    = fixed<I, F>::integer_mask;
+  constexpr base_type fractional_mask = fixed<I, F>::fractional_mask;
+
+  // more costly but doesn't need a larger type
+  const base_type a_hi = (lhs.to_raw() & integer_mask) >> fractional_bits;
+  const base_type b_hi = (rhs.to_raw() & integer_mask) >> fractional_bits;
+  const base_type a_lo = (lhs.to_raw() & fractional_mask);
+  const base_type b_lo = (rhs.to_raw() & fractional_mask);
+
+  const base_type x1 = a_hi * b_hi;
+  const base_type x2 = a_hi * b_lo;
+  const base_type x3 = a_lo * b_hi;
+  const base_type x4 = a_lo * b_lo;
+
+  return fixed<I, F>::from_base((x1 << fractional_bits) + (x3 + x2) + (x4 >> fractional_bits));
+}
+}
+
+template <size_t I, size_t F>
+class fixed {
+  static_assert(detail::type_from_size<I + F>::is_specialized, "invalid combination of sizes");
+
  public:
-  // Define some values that can be used from the outside for polymorphism:
-  static const size_t INT_SIZE = I;
-  static const size_t FRACT_SIZE = F;
-  static const size_t TOTAL_SIZE = I + F;
-  static const bool SIGNED = S;
+  static constexpr size_t fractional_bits = F;
+  static constexpr size_t integer_bits    = I;
+  static constexpr size_t total_bits      = I + F;
 
-  // Get a SizeInfo for our size
-  typedef FixedPSizeInfo<SIGNED, TOTAL_SIZE> ValTypeInfo;
+  using base_type_info = detail::type_from_size<total_bits>;
 
-  // Get a type with the correct size to use for storing stuff
-  typedef typename ValTypeInfo::ValType ValType;
-  typedef typename ValTypeInfo::NEXT_SIZEINFO::ValType NextValType;
+  using base_type     = typename base_type_info::value_type;
+  using next_type     = typename base_type_info::next_size::value_type;
+  using unsigned_type = typename base_type_info::unsigned_type;
 
-  // Size of the valType in bits
-  static const size_t VAL_SIZE = ValTypeInfo::VAL_SIZE;
+ public:
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverflow"
+#endif
+  static constexpr base_type fractional_mask = ~(static_cast<unsigned_type>(~base_type(0)) << fractional_bits);
+  static constexpr base_type integer_mask    = ~fractional_mask;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
-  // 1 in our fixed's format
-  static const ValType one = ValType(1) << FRACT_SIZE;
+ public:
+  static constexpr base_type one = base_type(1) << fractional_bits;
 
-  fixedp() {}  // DON'T initialize data here; that's the users job!
-  fixedp(const fixedp &other) : data(other.data) {}
-  fixedp(const ValType &rhs) : data(rhs) {}
+ public: // constructors
+  fixed()              = default;
+  fixed(const fixed &) = default;
+  fixed &operator=(const fixed &) = default;
+  explicit fixed(float n) : data_(static_cast<base_type>(n * one)) {}
+  explicit fixed(double n) : data_(static_cast<base_type>(n * one)) {}
 
-  explicit fixedp(int n) : data(n << FRACT_SIZE) {}
-  explicit fixedp(float n) : data(static_cast<ValType>(n * one)) {}
-  explicit fixedp(double n) : data(static_cast<ValType>(n * one)) {}
-  explicit fixedp(unsigned int n) : data(ValType(n) << FRACT_SIZE) {}
-
-#define FIXEDP_MK_CMP_OP(op) \
-  inline bool operator op(const fixedp &o) const { return data op o.data; }
-  FIXEDP_MK_CMP_OP(==)
-  FIXEDP_MK_CMP_OP(!=)
-  FIXEDP_MK_CMP_OP(<)
-  FIXEDP_MK_CMP_OP(>)
-  FIXEDP_MK_CMP_OP(>=)
-  FIXEDP_MK_CMP_OP(<=)
-#undef FIXEDP_MK_CMP_OP
-
-  inline bool operator!() const { return !data; }
-  inline fixedp operator~() const { return fixedp(~data); }
-  inline fixedp &operator++() {
-    data += one;
-    return *this;
-  }
-  inline fixedp &operator--() {
-    data -= one;
-    return *this;
+  template <class Number>
+  constexpr fixed(Number n, typename std::enable_if<std::is_arithmetic<Number>::value>::type * = nullptr)
+      : data_(static_cast<base_type>(n * one)) {
   }
 
-#define FIXEDP_MK_BIN_OP(op)                         \
-  inline fixedp &operator op##=(const fixedp &n) {   \
-    data op## = n.data;                              \
-    return *this;                                    \
-  }                                                  \
-  inline fixedp operator op(const fixedp &n) const { \
-    fixedp x(*this);                                 \
-    x op## = n;                                      \
-    return x;                                        \
-  }
-  FIXEDP_MK_BIN_OP(+)
-  FIXEDP_MK_BIN_OP(-)
-  FIXEDP_MK_BIN_OP(&)
-  FIXEDP_MK_BIN_OP(|)
-  FIXEDP_MK_BIN_OP(^)
-#undef FIXEDP_MK_BIN_OP
+ public: // conversion
+  template <size_t I2, size_t F2>
+  CONSTEXPR14 explicit fixed(fixed<I2, F2> other) {
+    static_assert(I2 <= I && F2 <= F, "Scaling conversion can only upgrade types");
+    using T = fixed<I2, F2>;
 
-  inline fixedp &operator*=(const fixedp &n) {
-    NextValType t(static_cast<NextValType>(data) *
-                  static_cast<NextValType>(n.data));
-    t >>= FRACT_SIZE;
-    data = FixedPConvert<ValType, NextValType>::convert(t);
-    return *this;
+    const base_type fractional = (other.data_ & T::fractional_mask);
+    const base_type integer    = (other.data_ & T::integer_mask) >> T::fractional_bits;
+    data_                      = (integer << fractional_bits) | (fractional << (fractional_bits - T::fractional_bits));
   }
-  inline fixedp operator*(const fixedp &n) {
-    fixedp x(*this);
-    x *= n;
-    return x;
-  }
-
-  inline fixedp &operator/=(const fixedp &n) {
-    NextValType t(data);
-    t <<= FRACT_SIZE;
-    t /= n.data;
-    data = FixedPConvert<ValType, NextValType>::convert(t);
-    return *this;
-  }
-  inline fixedp operator/(const fixedp &n) {
-    fixedp x(*this);
-    x /= n;
-    return x;
-  }
-
-  inline fixedp &operator>>=(const fixedp &n) {
-    data >>= n.toInt();
-    return *this;
-  }
-  inline fixedp operator>>(const fixedp &n) {
-    fixedp x(*this);
-    x >>= n;
-    return x;
-  }
-
-  inline fixedp &operator<<=(const fixedp &n) {
-    data <<= n.toInt();
-    return *this;
-  }
-  inline fixedp operator<<(const fixedp &n) {
-    fixedp x(*this);
-    x <<= n;
-    return x;
-  }
-
-  int toInt() const { return data & (ValType(-1) << FRACT_SIZE); }
-  float toFloat() const { return static_cast<float>(data) / one; }
-  double toDouble() const { return static_cast<double>(data) / one; }
-  ValType raw() const { return data; }
 
  private:
-  ValType data;
+  // this makes it simpler to create a fixed point object from
+  // a native type without scaling
+  // use "fixed::from_base" in order to perform this.
+  struct NoScale {};
+
+  constexpr fixed(base_type n, const NoScale &)
+      : data_(n) {
+  }
+
+ public:
+  constexpr static fixed from_base(base_type n) {
+    return fixed(n, NoScale());
+  }
+
+ public: // comparison operators
+  constexpr bool operator==(fixed rhs) const {
+    return data_ == rhs.data_;
+  }
+
+  constexpr bool operator!=(fixed rhs) const {
+    return data_ != rhs.data_;
+  }
+
+  constexpr bool operator<(fixed rhs) const {
+    return data_ < rhs.data_;
+  }
+
+  constexpr bool operator>(fixed rhs) const {
+    return data_ > rhs.data_;
+  }
+
+  constexpr bool operator<=(fixed rhs) const {
+    return data_ <= rhs.data_;
+  }
+
+  constexpr bool operator>=(fixed rhs) const {
+    return data_ >= rhs.data_;
+  }
+
+ public: // unary operators
+  constexpr bool operator!() const {
+    return !data_;
+  }
+
+  constexpr fixed operator~() const {
+    // NOTE(eteran): this will often appear to "just negate" the value
+    // that is not an error, it is because -x == (~x+1)
+    // and that "+1" is adding an infinitesimally small fraction to the
+    // complimented value
+    return fixed::from_base(~data_);
+  }
+
+  constexpr fixed operator-() const {
+    return fixed::from_base(-data_);
+  }
+
+  constexpr fixed operator+() const {
+    return fixed::from_base(+data_);
+  }
+
+  CONSTEXPR14 fixed &operator++() {
+    data_ += one;
+    return *this;
+  }
+
+  CONSTEXPR14 fixed &operator--() {
+    data_ -= one;
+    return *this;
+  }
+
+  CONSTEXPR14 fixed operator++(int) {
+    fixed tmp(*this);
+    data_ += one;
+    return tmp;
+  }
+
+  CONSTEXPR14 fixed operator--(int) {
+    fixed tmp(*this);
+    data_ -= one;
+    return tmp;
+  }
+
+ public: // basic math operators
+  CONSTEXPR14 fixed &operator+=(fixed n) {
+    data_ += n.data_;
+    return *this;
+  }
+
+  CONSTEXPR14 fixed &operator-=(fixed n) {
+    data_ -= n.data_;
+    return *this;
+  }
+
+  CONSTEXPR14 fixed &operator*=(fixed n) {
+    return assign(detail::multiply(*this, n));
+  }
+
+  CONSTEXPR14 fixed &operator/=(fixed n) {
+    fixed temp;
+    return assign(detail::divide(*this, n, temp));
+  }
+
+ private:
+  CONSTEXPR14 fixed &assign(fixed rhs) {
+    data_ = rhs.data_;
+    return *this;
+  }
+
+ public: // binary math operators, effects underlying bit pattern since these
+          // don't really typically make sense for non-integer values
+  CONSTEXPR14 fixed &operator&=(fixed n) {
+    data_ &= n.data_;
+    return *this;
+  }
+
+  CONSTEXPR14 fixed &operator|=(fixed n) {
+    data_ |= n.data_;
+    return *this;
+  }
+
+  CONSTEXPR14 fixed &operator^=(fixed n) {
+    data_ ^= n.data_;
+    return *this;
+  }
+
+  template <class Integer, class = typename std::enable_if<std::is_integral<Integer>::value>::type>
+  CONSTEXPR14 fixed &operator>>=(Integer n) {
+    data_ >>= n;
+    return *this;
+  }
+
+  template <class Integer, class = typename std::enable_if<std::is_integral<Integer>::value>::type>
+  CONSTEXPR14 fixed &operator<<=(Integer n) {
+    data_ <<= n;
+    return *this;
+  }
+
+ public: // conversion to basic types
+  constexpr int to_int() const {
+    return (data_ & integer_mask) >> fractional_bits;
+  }
+
+  constexpr unsigned int to_uint() const {
+    return static_cast<unsigned int>(data_ & integer_mask) >> fractional_bits;
+  }
+
+  constexpr float to_float() const {
+    return static_cast<float>(data_) / fixed::one;
+  }
+
+  constexpr double to_double() const {
+    return static_cast<double>(data_) / fixed::one;
+  }
+
+  constexpr base_type to_raw() const {
+    return data_;
+  }
+
+ public:
+  CONSTEXPR14 void swap(fixed &rhs) {
+    using std::swap;
+    swap(data_, rhs.data_);
+  }
+
+ public:
+  base_type data_ = 0;
 };
 
-typedef fixedp<true, 4, 4> sfix8;
-typedef fixedp<false, 4, 4> ufix8;
+// if we have the same fractional portion, but differing integer portions, we trivially upgrade the smaller type
+template <size_t I1, size_t I2, size_t F>
+CONSTEXPR14 typename std::conditional<I1 >= I2, fixed<I1, F>, fixed<I2, F>>::type operator+(fixed<I1, F> lhs, fixed<I2, F> rhs) {
 
-typedef fixedp<true, 8, 8> sfix16;
-typedef fixedp<false, 8, 8> ufix16;
+  using T = typename std::conditional<
+      I1 >= I2,
+      fixed<I1, F>,
+      fixed<I2, F>>::type;
 
-typedef fixedp<true, 16, 16> sfix32;
-typedef fixedp<false, 16, 16> ufix32;
+  const T l = T::from_base(lhs.to_raw());
+  const T r = T::from_base(rhs.to_raw());
+  return l + r;
+}
 
-typedef fixedp<true, 80, 48> i80f48;
+template <size_t I1, size_t I2, size_t F>
+CONSTEXPR14 typename std::conditional<I1 >= I2, fixed<I1, F>, fixed<I2, F>>::type operator-(fixed<I1, F> lhs, fixed<I2, F> rhs) {
 
-#endif  // FIXEDP_H
+  using T = typename std::conditional<
+      I1 >= I2,
+      fixed<I1, F>,
+      fixed<I2, F>>::type;
+
+  const T l = T::from_base(lhs.to_raw());
+  const T r = T::from_base(rhs.to_raw());
+  return l - r;
+}
+
+template <size_t I1, size_t I2, size_t F>
+CONSTEXPR14 typename std::conditional<I1 >= I2, fixed<I1, F>, fixed<I2, F>>::type operator*(fixed<I1, F> lhs, fixed<I2, F> rhs) {
+
+  using T = typename std::conditional<
+      I1 >= I2,
+      fixed<I1, F>,
+      fixed<I2, F>>::type;
+
+  const T l = T::from_base(lhs.to_raw());
+  const T r = T::from_base(rhs.to_raw());
+  return l * r;
+}
+
+template <size_t I1, size_t I2, size_t F>
+CONSTEXPR14 typename std::conditional<I1 >= I2, fixed<I1, F>, fixed<I2, F>>::type operator/(fixed<I1, F> lhs, fixed<I2, F> rhs) {
+
+  using T = typename std::conditional<
+      I1 >= I2,
+      fixed<I1, F>,
+      fixed<I2, F>>::type;
+
+  const T l = T::from_base(lhs.to_raw());
+  const T r = T::from_base(rhs.to_raw());
+  return l / r;
+}
+
+template <size_t I, size_t F>
+std::ostream &operator<<(std::ostream &os, fixed<I, F> f) {
+  os << f.to_double();
+  return os;
+}
+
+// basic math operators
+template <size_t I, size_t F>
+CONSTEXPR14 fixed<I, F> operator+(fixed<I, F> lhs, fixed<I, F> rhs) {
+  lhs += rhs;
+  return lhs;
+}
+template <size_t I, size_t F>
+CONSTEXPR14 fixed<I, F> operator-(fixed<I, F> lhs, fixed<I, F> rhs) {
+  lhs -= rhs;
+  return lhs;
+}
+template <size_t I, size_t F>
+CONSTEXPR14 fixed<I, F> operator*(fixed<I, F> lhs, fixed<I, F> rhs) {
+  lhs *= rhs;
+  return lhs;
+}
+template <size_t I, size_t F>
+CONSTEXPR14 fixed<I, F> operator/(fixed<I, F> lhs, fixed<I, F> rhs) {
+  lhs /= rhs;
+  return lhs;
+}
+
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+CONSTEXPR14 fixed<I, F> operator+(fixed<I, F> lhs, Number rhs) {
+  lhs += fixed<I, F>(rhs);
+  return lhs;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+CONSTEXPR14 fixed<I, F> operator-(fixed<I, F> lhs, Number rhs) {
+  lhs -= fixed<I, F>(rhs);
+  return lhs;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+CONSTEXPR14 fixed<I, F> operator*(fixed<I, F> lhs, Number rhs) {
+  lhs *= fixed<I, F>(rhs);
+  return lhs;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+CONSTEXPR14 fixed<I, F> operator/(fixed<I, F> lhs, Number rhs) {
+  lhs /= fixed<I, F>(rhs);
+  return lhs;
+}
+
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+CONSTEXPR14 fixed<I, F> operator+(Number lhs, fixed<I, F> rhs) {
+  fixed<I, F> tmp(lhs);
+  tmp += rhs;
+  return tmp;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+CONSTEXPR14 fixed<I, F> operator-(Number lhs, fixed<I, F> rhs) {
+  fixed<I, F> tmp(lhs);
+  tmp -= rhs;
+  return tmp;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+CONSTEXPR14 fixed<I, F> operator*(Number lhs, fixed<I, F> rhs) {
+  fixed<I, F> tmp(lhs);
+  tmp *= rhs;
+  return tmp;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+CONSTEXPR14 fixed<I, F> operator/(Number lhs, fixed<I, F> rhs) {
+  fixed<I, F> tmp(lhs);
+  tmp /= rhs;
+  return tmp;
+}
+
+// shift operators
+template <size_t I, size_t F, class Integer, class = typename std::enable_if<std::is_integral<Integer>::value>::type>
+CONSTEXPR14 fixed<I, F> operator<<(fixed<I, F> lhs, Integer rhs) {
+  lhs <<= rhs;
+  return lhs;
+}
+template <size_t I, size_t F, class Integer, class = typename std::enable_if<std::is_integral<Integer>::value>::type>
+CONSTEXPR14 fixed<I, F> operator>>(fixed<I, F> lhs, Integer rhs) {
+  lhs >>= rhs;
+  return lhs;
+}
+
+// comparison operators
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator>(fixed<I, F> lhs, Number rhs) {
+  return lhs > fixed<I, F>(rhs);
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator<(fixed<I, F> lhs, Number rhs) {
+  return lhs < fixed<I, F>(rhs);
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator>=(fixed<I, F> lhs, Number rhs) {
+  return lhs >= fixed<I, F>(rhs);
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator<=(fixed<I, F> lhs, Number rhs) {
+  return lhs <= fixed<I, F>(rhs);
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator==(fixed<I, F> lhs, Number rhs) {
+  return lhs == fixed<I, F>(rhs);
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator!=(fixed<I, F> lhs, Number rhs) {
+  return lhs != fixed<I, F>(rhs);
+}
+
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator>(Number lhs, fixed<I, F> rhs) {
+  return fixed<I, F>(lhs) > rhs;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator<(Number lhs, fixed<I, F> rhs) {
+  return fixed<I, F>(lhs) < rhs;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator>=(Number lhs, fixed<I, F> rhs) {
+  return fixed<I, F>(lhs) >= rhs;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator<=(Number lhs, fixed<I, F> rhs) {
+  return fixed<I, F>(lhs) <= rhs;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator==(Number lhs, fixed<I, F> rhs) {
+  return fixed<I, F>(lhs) == rhs;
+}
+template <size_t I, size_t F, class Number, class = typename std::enable_if<std::is_arithmetic<Number>::value>::type>
+constexpr bool operator!=(Number lhs, fixed<I, F> rhs) {
+  return fixed<I, F>(lhs) != rhs;
+}
+}
+
+#undef CONSTEXPR14
+typedef numeric::fixed<80, 48> i80f48;
+#endif
+

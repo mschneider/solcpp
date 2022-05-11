@@ -48,11 +48,11 @@ struct MangoAccount {
   /**
    * deposits - borrows in native terms
    */
-  double getNet(const RootBankCache& cache, uint64_t tokenIndex) {
-    return (mangoAccountInfo.deposits[tokenIndex].toDouble() *
-            cache.deposit_index.toDouble()) -
-           (mangoAccountInfo.borrows[tokenIndex].toDouble() *
-            cache.borrow_index.toDouble());
+  i80f48 getNet(const RootBankCache& cache, uint64_t tokenIndex) {
+    return (mangoAccountInfo.deposits[tokenIndex] *
+            cache.deposit_index) -
+           (mangoAccountInfo.borrows[tokenIndex] *
+            cache.borrow_index);
   }
   /**
    * Return the spot, perps and quote currency values after adjusting for
@@ -63,12 +63,12 @@ struct MangoAccount {
    */
   auto getHealthComponents(const MangoGroup& mangoGroup,
                            const MangoCache& mangoCache) {
-    std::vector<double> spot(mangoGroup.numOracles, 0);
-    std::vector<double> perps(mangoGroup.numOracles, 0);
+    std::vector<i80f48> spot(mangoGroup.numOracles, 0.0);
+    std::vector<i80f48> perps(mangoGroup.numOracles, 0.0);
     auto quote = getNet(mangoCache.root_bank_cache[QUOTE_INDEX], QUOTE_INDEX);
     for (uint64_t i = 0; i < mangoGroup.numOracles; i++) {
       const auto bankCache = mangoCache.root_bank_cache[i];
-      const auto price = mangoCache.price_cache[i].price.toDouble();
+      const auto price = mangoCache.price_cache[i].price;
       const auto baseNet = getNet(bankCache, i);
 
       // Evaluate spot first
@@ -87,7 +87,7 @@ struct MangoAccount {
         // base total if all asks were executed
         const auto asksBaseNet = baseNet + baseFree;
         // bids case worse if it has a higher absolute position
-        if (abs(bidsBaseNet) > abs(asksBaseNet)) {
+        if (abs(bidsBaseNet.to_double()) > abs(asksBaseNet.to_double())) {
           spot[i] = bidsBaseNet;
           quote += quoteFree;
         } else {
@@ -130,33 +130,33 @@ struct MangoAccount {
     }
     return std::make_tuple(spot, perps, quote);
   }
-  double getHealthFromComponents(const MangoGroup& mangoGroup,
+  static auto getHealthFromComponents(const MangoGroup& mangoGroup,
                                  const MangoCache& mangoCache,
-                                 std::vector<double> spot,
-                                 std::vector<double> perps, double quote,
+                                 std::vector<i80f48> spot,
+                                 std::vector<i80f48> perps, i80f48 quote,
                                  HealthType healthType) {
     auto health = quote;
     for (uint64_t i = 0; i < mangoGroup.numOracles; i++) {
       const auto [spotAssetWeight, spotLiabWeight, perpAssetWeight,
                   perpLiabWeight] =
           getMangoGroupWeights(mangoGroup, i, healthType);
-      const auto price = mangoCache.price_cache[i].price.toDouble();
+      const auto price = mangoCache.price_cache[i].price;
       const auto spotHealth =
-          (spot[i] * price) * (spot[i] > 0 ? spotAssetWeight.toDouble()
-                                           : spotLiabWeight.toDouble());
+          (spot[i] * price) * (spot[i] > 0 ? spotAssetWeight
+                                           : spotLiabWeight);
       const auto perpHealth =
-          (perps[i] * price) * (perps[i] > 0 ? perpAssetWeight.toDouble()
-                                             : perpLiabWeight.toDouble());
+          (perps[i] * price) * (perps[i] > 0 ? perpAssetWeight
+                                             : perpLiabWeight);
       health += spotHealth;
       health += perpHealth;
       auto a = spot[i];
       a *= price;
-      a *= (spot[i] > 0 ? spotAssetWeight.toDouble()
-                        : spotLiabWeight.toDouble());
+      a *= (spot[i] > 0 ? spotAssetWeight
+                        : spotLiabWeight);
     }
     return health;
   }
-  double getHealth(const MangoGroup& mangoGroup, const MangoCache& mangoCache,
+  auto getHealth(const MangoGroup& mangoGroup, const MangoCache& mangoCache,
                    HealthType healthType) {
     const auto [spot, perps, quote] =
         getHealthComponents(mangoGroup, mangoCache);
@@ -167,13 +167,13 @@ struct MangoAccount {
   /**
    * Take health components and return the assets and liabs weighted
    */
-  auto getWeightedAssetsLiabsVals(const MangoGroup& mangoGroup,
+  static auto getWeightedAssetsLiabsVals(const MangoGroup& mangoGroup,
                                   const MangoCache& mangoCache,
-                                  std::vector<double> spot,
-                                  std::vector<double> perps, double quote,
+                                  std::vector<i80f48> spot,
+                                  std::vector<i80f48> perps, i80f48 quote,
                                   HealthType healthType) {
-    double assets = 0;
-    double liabs = 0;
+    i80f48 assets = 0.0;
+    i80f48 liabs = 0.0;
     if (quote > 0) {
       assets += quote;
     } else {
@@ -183,22 +183,22 @@ struct MangoAccount {
       const auto [spotAssetWeight, spotLiabWeight, perpAssetWeight,
                   perpLiabWeight] =
           getMangoGroupWeights(mangoGroup, i, healthType);
-      const auto price = mangoCache.price_cache[i].price.toDouble();
+      const auto price = mangoCache.price_cache[i].price;
       if (spot[i] > 0) {
-        assets += ((spot[i] * price * spotAssetWeight.toDouble()));
+        assets += ((spot[i] * price * spotAssetWeight));
       } else {
-        liabs += ((spot[i] * -1) * price * spotLiabWeight.toDouble());
+        liabs += ((spot[i] * -1) * price * spotLiabWeight);
       }
 
       if (perps[i] > 0) {
-        assets += (perps[i] * price * perpAssetWeight.toDouble());
+        assets += (perps[i] * price * perpAssetWeight);
       } else {
-        liabs += (perps[i] * -1 * price * perpLiabWeight.toDouble());
+        liabs += (perps[i] * -1 * price * perpLiabWeight);
       }
     }
     return std::make_pair(assets, liabs);
   }
-  double getHealthRatio(const MangoGroup& mangoGroup,
+  i80f48 getHealthRatio(const MangoGroup& mangoGroup,
                         const MangoCache& mangoCache, HealthType healthType) {
     auto [spot, perps, quote] = getHealthComponents(mangoGroup, mangoCache);
     auto [assets, liabs] = getWeightedAssetsLiabsVals(
@@ -217,13 +217,13 @@ struct MangoAccount {
     return ((mangoAccountInfo.beingLiquidated && initHealth < 0) ||
             (maintHealth < 0));
   }
-  double computeValue(const MangoGroup& mangoGroup,
+  i80f48 computeValue(const MangoGroup& mangoGroup,
                       const MangoCache& mangoCache) {
     auto a = getAssetsVal(mangoGroup, mangoCache, HealthType::Unknown);
     auto b = getLiabsVal(mangoGroup, mangoCache, HealthType::Unknown);
     return a - b;
   }
-  double getLeverage(const MangoGroup& mangoGroup,
+  i80f48 getLeverage(const MangoGroup& mangoGroup,
                      const MangoCache& mangoCache) {
     auto liabs = getLiabsVal(mangoGroup, mangoCache, HealthType::Unknown);
     auto assets = getAssetsVal(mangoGroup, mangoCache, HealthType::Unknown);
@@ -232,85 +232,85 @@ struct MangoAccount {
     }
     return 0;
   }
-  double getAssetsVal(const MangoGroup& mangoGroup,
+  i80f48 getAssetsVal(const MangoGroup& mangoGroup,
                       const MangoCache& mangoCache, HealthType healthType) {
-    double assetsVal = 0;
+    i80f48 assetsVal = 0.0;
     // quote currency deposits
     assetsVal += getUiDeposit(mangoCache.root_bank_cache[QUOTE_INDEX],
                               mangoGroup, QUOTE_INDEX);
     for (uint64_t i = 0; i < mangoGroup.numOracles; i++) {
-      double assetWeight = 1;
+      i80f48 assetWeight = 1;
       if (healthType == HealthType::Maint) {
-        assetWeight = mangoGroup.spotMarkets[i].maintAssetWeight.toDouble();
+        assetWeight = mangoGroup.spotMarkets[i].maintAssetWeight;
       } else if (healthType == HealthType::Init) {
-        assetWeight = mangoGroup.spotMarkets[i].initAssetWeight.toDouble();
+        assetWeight = mangoGroup.spotMarkets[i].initAssetWeight;
       }
       auto spotVal = getSpotVal(mangoGroup, mangoCache, i, assetWeight);
       assetsVal += spotVal;
 
-      const auto price = mangoCache.price_cache[i].price.toDouble();
+      const auto price = mangoCache.price_cache[i].price;
       auto perpAssetVal = getPerpAccountAssetVal(
           mangoAccountInfo.perpAccounts[i], mangoGroup.perpMarkets[i], price,
-          mangoCache.perp_market_cache[i].short_funding.toDouble(),
-          mangoCache.perp_market_cache[i].long_funding.toDouble());
+          mangoCache.perp_market_cache[i].short_funding,
+          mangoCache.perp_market_cache[i].long_funding);
       const auto perpsUiAssetVal = nativeI80F48ToUi(
           perpAssetVal, mangoGroup.tokens[QUOTE_INDEX].decimals);
       assetsVal += perpsUiAssetVal;
     }
     return assetsVal;
   }
-  double getLiabsVal(const MangoGroup& mangoGroup, const MangoCache& mangoCache,
+  i80f48 getLiabsVal(const MangoGroup& mangoGroup, const MangoCache& mangoCache,
                      HealthType healthType) {
-    double liabsVal = 0;
+    i80f48 liabsVal = 0;
     liabsVal += getUiBorrow(mangoCache.root_bank_cache[QUOTE_INDEX], mangoGroup,
                             QUOTE_INDEX);
     for (uint64_t i = 0; i < mangoGroup.numOracles; ++i) {
-      double liabWeight = 1;
+      i80f48 liabWeight = 1;
       auto price = getMangoGroupPrice(mangoGroup, i, mangoCache);
       if (healthType == HealthType::Maint) {
-        liabWeight = mangoGroup.spotMarkets[i].maintLiabWeight.toDouble();
+        liabWeight = mangoGroup.spotMarkets[i].maintLiabWeight;
       } else if (healthType == HealthType::Init) {
-        liabWeight = mangoGroup.spotMarkets[i].initLiabWeight.toDouble();
+        liabWeight = mangoGroup.spotMarkets[i].initLiabWeight;
       }
       liabsVal += getUiBorrow(mangoCache.root_bank_cache[i], mangoGroup, i) *
                   (price * liabWeight);
       const auto perpsUiLiabsVal = nativeI80F48ToUi(
           getPerpAccountLiabsVal(
               mangoAccountInfo.perpAccounts[i], mangoGroup.perpMarkets[i],
-              mangoCache.price_cache[i].price.toDouble(),
-              mangoCache.perp_market_cache[i].short_funding.toDouble(),
-              mangoCache.perp_market_cache[i].long_funding.toDouble()),
+              mangoCache.price_cache[i].price,
+              mangoCache.perp_market_cache[i].short_funding,
+              mangoCache.perp_market_cache[i].long_funding),
           mangoGroup.tokens[QUOTE_INDEX].decimals);
       liabsVal += perpsUiLiabsVal;
     }
     return liabsVal;
   }
-  double getUiBorrow(const RootBankCache& rootBankCache,
+  i80f48 getUiBorrow(const RootBankCache& rootBankCache,
                      const MangoGroup& mangoGroup, uint64_t tokenIndex) {
     return nativeI80F48ToUi(
-        ceil(getNativeBorrow(rootBankCache, mangoGroup, tokenIndex)),
+        ceil(getNativeBorrow(rootBankCache, mangoGroup, tokenIndex).to_double()),
         getMangoGroupTokenDecimals(mangoGroup, tokenIndex));
   }
-  double getNativeBorrow(const RootBankCache& rootBankCache,
+  i80f48 getNativeBorrow(const RootBankCache& rootBankCache,
                          const MangoGroup& mangoGroup, uint64_t tokenIndex) {
-    return rootBankCache.borrow_index.toDouble() *
-           mangoAccountInfo.borrows[tokenIndex].toDouble();
+    return rootBankCache.borrow_index *
+           mangoAccountInfo.borrows[tokenIndex];
   }
-  double getNativeDeposit(const RootBankCache& rootBankCache,
+  i80f48 getNativeDeposit(const RootBankCache& rootBankCache,
                           uint64_t tokenIndex) {
-    return rootBankCache.deposit_index.toDouble() *
-           mangoAccountInfo.deposits[tokenIndex].toDouble();
+    return rootBankCache.deposit_index *
+           mangoAccountInfo.deposits[tokenIndex];
   }
-  double getUiDeposit(const RootBankCache& rootBankCache,
+  i80f48 getUiDeposit(const RootBankCache& rootBankCache,
                       const MangoGroup& mangoGroup, uint64_t tokenIndex) {
     auto result =
-        nativeI80F48ToUi(floor(getNativeDeposit(rootBankCache, tokenIndex)),
+        nativeI80F48ToUi(floor(getNativeDeposit(rootBankCache, tokenIndex).to_double()),
                          getMangoGroupTokenDecimals(mangoGroup, tokenIndex));
     return result;
   }
-  double getSpotVal(const MangoGroup& mangoGroup, const MangoCache& mangoCache,
-                    uint64_t index, double assetWeight) {
-    double assetsVal = 0;
+  i80f48 getSpotVal(const MangoGroup& mangoGroup, const MangoCache& mangoCache,
+                    uint64_t index, i80f48 assetWeight) {
+    i80f48 assetsVal = 0;
     auto price = getMangoGroupPrice(mangoGroup, index, mangoCache);
     auto depositVal =
         getUiDeposit(mangoCache.root_bank_cache[index], mangoGroup, index) *

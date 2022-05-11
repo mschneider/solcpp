@@ -14,22 +14,22 @@ auto splitOpenOrders(const serum_v3::OpenOrders& openOrders) {
   const auto baseLocked = openOrders.baseTokenTotal - openOrders.baseTokenFree;
   return std::make_tuple(quoteFree, quoteLocked, baseFree, baseLocked);
 }
-double getUnsettledFunding(const PerpAccountInfo& accountInfo,
+auto getUnsettledFunding(const PerpAccountInfo& accountInfo,
                            const PerpMarketCache& perpMarketCache) {
   if (accountInfo.basePosition < 0) {
     return accountInfo.basePosition *
-           (perpMarketCache.short_funding.toDouble() -
-            accountInfo.shortSettledFunding.toDouble());
+           (perpMarketCache.short_funding -
+            accountInfo.shortSettledFunding);
   } else {
     return accountInfo.basePosition *
-           (perpMarketCache.long_funding.toDouble() -
-            accountInfo.longSettledFunding.toDouble());
+           (perpMarketCache.long_funding -
+            accountInfo.longSettledFunding);
   }
 }
 // Return the quote position after adjusting for unsettled funding
-double getQuotePosition(const PerpAccountInfo& accountInfo,
+auto getQuotePosition(const PerpAccountInfo& accountInfo,
                         const PerpMarketCache& perpMarketCache) {
-  return accountInfo.quotePosition.toDouble() -
+  return accountInfo.quotePosition -
          getUnsettledFunding(accountInfo, perpMarketCache);
 }
 /**
@@ -54,28 +54,28 @@ auto getMangoGroupWeights(const MangoGroup& mangoGroup, uint64_t marketIndex,
     return std::make_tuple(i80f48(1.0), i80f48(1.0), i80f48(1.0), i80f48(1.0));
   }
 }
-double nativeI80F48ToUi(double amount, uint8_t decimals) {
+auto nativeI80F48ToUi(i80f48 amount, uint8_t decimals) {
   return amount / pow(10, decimals);
 }
-double getPerpAccountAssetVal(const PerpAccountInfo& perpAccountInfo,
+auto getPerpAccountAssetVal(const PerpAccountInfo& perpAccountInfo,
                               const PerpMarketInfo& perpMarketInfo,
-                              double price, double shortFunding,
-                              double longFunding) {
-  double assetsVal = 0;
+                              i80f48 price, i80f48 shortFunding,
+                              i80f48 longFunding) {
+  i80f48 assetsVal = 0.0;
   if (perpAccountInfo.basePosition > 0) {
     assetsVal +=
         (perpAccountInfo.basePosition * perpMarketInfo.baseLotSize * price);
   }
-  double realQuotePosition = perpAccountInfo.quotePosition.toDouble();
+  auto realQuotePosition = perpAccountInfo.quotePosition;
   if (perpAccountInfo.basePosition > 0) {
     realQuotePosition =
-        perpAccountInfo.quotePosition.toDouble() -
-        ((longFunding - perpAccountInfo.longSettledFunding.toDouble()) *
+        perpAccountInfo.quotePosition -
+        ((longFunding - perpAccountInfo.longSettledFunding) *
          perpAccountInfo.basePosition);
   } else if (perpAccountInfo.basePosition < 0) {
     realQuotePosition =
-        perpAccountInfo.quotePosition.toDouble() -
-        ((shortFunding - perpAccountInfo.shortSettledFunding.toDouble()) *
+        perpAccountInfo.quotePosition -
+        ((shortFunding - perpAccountInfo.shortSettledFunding) *
          perpAccountInfo.basePosition);
   }
 
@@ -84,25 +84,25 @@ double getPerpAccountAssetVal(const PerpAccountInfo& perpAccountInfo,
   }
   return assetsVal;
 }
-double getPerpAccountLiabsVal(const PerpAccountInfo& perpAccountInfo,
+auto getPerpAccountLiabsVal(const PerpAccountInfo& perpAccountInfo,
                               const PerpMarketInfo& perpMarketInfo,
-                              double price, double shortFunding,
-                              double longFunding) {
-  double liabsVal = 0;
+                              i80f48 price, i80f48 shortFunding,
+                              i80f48 longFunding) {
+  i80f48 liabsVal = 0.0;
   if (perpAccountInfo.basePosition < 0) {
     liabsVal +=
         (perpAccountInfo.basePosition * perpMarketInfo.baseLotSize * price);
   }
-  auto realQuotePosition = perpAccountInfo.quotePosition.toDouble();
+  auto realQuotePosition = perpAccountInfo.quotePosition;
   if (perpAccountInfo.basePosition > 0) {
     realQuotePosition =
-        perpAccountInfo.quotePosition.toDouble() -
-        ((longFunding - perpAccountInfo.longSettledFunding.toDouble()) *
+        perpAccountInfo.quotePosition -
+        ((longFunding - perpAccountInfo.longSettledFunding) *
          perpAccountInfo.basePosition);
   } else if (perpAccountInfo.basePosition < 0) {
     realQuotePosition =
-        perpAccountInfo.quotePosition.toDouble() -
-        ((shortFunding - perpAccountInfo.shortSettledFunding.toDouble()) *
+        perpAccountInfo.quotePosition -
+        ((shortFunding - perpAccountInfo.shortSettledFunding) *
          perpAccountInfo.basePosition);
   }
   if (realQuotePosition < 0) {
@@ -129,7 +129,7 @@ uint8_t getMangoGroupTokenDecimals(const MangoGroup& mangoGroup,
     return tokenInfo.decimals;
   }
 }
-double getMangoGroupPrice(const MangoGroup& mangoGroup, uint64_t tokenIndex,
+i80f48 getMangoGroupPrice(const MangoGroup& mangoGroup, uint64_t tokenIndex,
                           const MangoCache& mangoCache) {
   if (tokenIndex == QUOTE_INDEX) {
     return 1;
@@ -137,7 +137,7 @@ double getMangoGroupPrice(const MangoGroup& mangoGroup, uint64_t tokenIndex,
   const auto decimalAdj =
       pow(10, getMangoGroupTokenDecimals(mangoGroup, tokenIndex) -
                   getMangoGroupTokenDecimals(mangoGroup, QUOTE_INDEX));
-  return mangoCache.price_cache[tokenIndex].price.toDouble() * decimalAdj;
+  return mangoCache.price_cache[tokenIndex].price * decimalAdj;
 }
 double nativeToUi(uint64_t amount, uint8_t decimals) {
   return amount / pow(10, decimals);

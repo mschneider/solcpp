@@ -16,7 +16,7 @@ TEST_CASE("base58 decode & encode") {
     const auto decoded = solana::b58decode(bs58);
     const auto encoded = solana::b58encode(decoded);
     const auto redecoded = solana::b58decode(encoded);
-    std::ifstream fixture(resources_dir + "/base58/" + bs58, ios::binary);
+    std::ifstream fixture(resources_dir + "/base58/" + bs58, std::ios::binary);
     std::vector<char> buffer(std::istreambuf_iterator<char>(fixture), {});
 
     CHECK_EQ(bs58.size(), encoded.size());
@@ -55,14 +55,14 @@ TEST_CASE("decode mango_v3 Fill") {
            "2Fgjpc7bp9jpiTRKSVSsiAcexw8Cawbz7GLJu8MamS9q");
   CHECK_EQ(to_string(event->makerOrderId), "7671244543748780405054196");
   CHECK_EQ(event->makerClientOrderId, 1644182622524);
-  CHECK_EQ((int)round(event->makerFee.toDouble() * 10000), -4);
+  CHECK_EQ((int)round(event->makerFee.to_double() * 10000), -4);
   CHECK_EQ(event->bestInitial, 0);
   CHECK_EQ(event->makerTimestamp, 1644182623);
   CHECK_EQ(event->taker.toBase58(),
            "2eTob7jrhKeHNhkK1jTfS3kZYdtNQS1VF7LETom6YHjJ");
   CHECK_EQ(to_string(event->takerOrderId), "7484028538144702206551329");
   CHECK_EQ(event->takerClientOrderId, 0);
-  CHECK_EQ((int)round(event->takerFee.toDouble() * 10000), 5);
+  CHECK_EQ((int)round(event->takerFee.to_double() * 10000), 5);
   CHECK_EQ(event->price, 415858);
   CHECK_EQ(event->quantity, 1);
 }
@@ -150,20 +150,20 @@ TEST_CASE("Empty MangoAccount") {
       solana::rpc::fromFile<mango_v3::MangoCache>(path + "/cache.json");
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 0);
+  CHECK_EQ(initHealth.to_double(), 0);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 0);
+  CHECK_EQ(maintHealth.to_double(), 0);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 100);
+  CHECK_EQ(initRatio.to_double(), 100);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 100);
+  CHECK_EQ(maintRatio.to_double(), 100);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 0);
+  CHECK_EQ(value.to_double(), 0);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 0);
+  CHECK_EQ(leverage.to_double(), 0);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 
@@ -179,20 +179,20 @@ TEST_CASE("1deposit") {
       solana::rpc::fromFile<mango_v3::MangoCache>(path + "/cache.json");
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 37904260000.059052);
+  CHECK_EQ(initHealth.to_double(), 37904260000.059059);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 42642292500.066513);
+  CHECK_EQ(maintHealth.to_double(), 42642292500.066528);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 100);
+  CHECK_EQ(initRatio.to_double(), 100);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 100);
+  CHECK_EQ(maintRatio.to_double(), 100);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 47380.32499999999999928946);
+  CHECK_EQ(value.to_double(), 47380.324999999997);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 0);
+  CHECK_EQ(leverage.to_double(), 0);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 TEST_CASE("account1") {
@@ -231,20 +231,20 @@ TEST_CASE("account1") {
 
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 454884281.15520579);
+  CHECK_EQ(initHealth.to_double(), 454884281.1552062);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 901472688.63722574);
+  CHECK_EQ(maintHealth.to_double(), 901472688.63722587);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 10.48860467608943);
+  CHECK_EQ(initRatio.to_double(), 10.488604676089253);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 20.785925232226798);
+  CHECK_EQ(maintRatio.to_double(), 20.785925232226532);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 1348.2506615888833);
+  CHECK_EQ(value.to_double(), 1348.2506615888819);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 3.2167149014445608);
+  CHECK_EQ(leverage.to_double(), 3.2167149014445613);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 TEST_CASE("account2") {
@@ -279,20 +279,20 @@ TEST_CASE("account2") {
 
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 7516159604.8491821);
+  CHECK_EQ(initHealth.to_double(), 7516159604.8491831);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 9618709877.4511909);
+  CHECK_EQ(maintHealth.to_double(), 9618709877.4511909);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 24.806800043657297);
+  CHECK_EQ(initRatio.to_double(), 24.806800043657162);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 31.746187568175088);
+  CHECK_EQ(maintRatio.to_double(), 31.746187568175088);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 11721.356691426183);
+  CHECK_EQ(value.to_double(), 11721.356691426183);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 3.5633861120422576);
+  CHECK_EQ(leverage.to_double(), 3.5633861120422559);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 TEST_CASE("account3") {
@@ -307,20 +307,20 @@ TEST_CASE("account3") {
       solana::rpc::fromFile<mango_v3::MangoCache>(path + "/cache.json");
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 341025333625.51721);
+  CHECK_EQ(initHealth.to_double(), 341025333625.51855);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 683477170424.20276);
+  CHECK_EQ(maintHealth.to_double(), 683477170424.20337);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 4.5265201884565842);
+  CHECK_EQ(initRatio.to_double(), 4.5265201884564732);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 9.5039735307641315);
+  CHECK_EQ(maintRatio.to_double(), 9.5039735307640427);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 1025929.0072220536);
+  CHECK_EQ(value.to_double(), 1025929.0072220544);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 6.5015747278843659);
+  CHECK_EQ(leverage.to_double(), 6.501574727884357);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 TEST_CASE("account4") {
@@ -335,20 +335,20 @@ TEST_CASE("account4") {
       solana::rpc::fromFile<mango_v3::MangoCache>(path + "/cache.json");
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, -848086876487.0498);
+  CHECK_EQ(initHealth.to_double(), -848086876487.04956);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, -433869053006.07324);
+  CHECK_EQ(maintHealth.to_double(), -433869053006.07361);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, -9.306553530875572);
+  CHECK_EQ(initRatio.to_double(), -9.3065535308756608);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, -4.9878179847267052);
+  CHECK_EQ(maintRatio.to_double(), -4.9878179847269166);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, -19651.229526046664);
+  CHECK_EQ(value.to_double(), -19651.229526046634);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, -421.56937094642979);
+  CHECK_EQ(leverage.to_double(), -421.56937094643047);
   CHECK_EQ(mangoAccount.isLiquidatable(mangoGroup, mangoCache), true);
 }
 TEST_CASE("account5") {
@@ -395,20 +395,20 @@ TEST_CASE("account5") {
 
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 15144959918141.09175135195858530324);
+  CHECK_EQ(initHealth.to_double(), 15144959918141.092);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 15361719060997.6826021614036608298);
+  CHECK_EQ(maintHealth.to_double(), 15361719060997.684);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 878.88913077823338);
+  CHECK_EQ(initRatio.to_double(), 878.88913077823327);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 946.4449882088802);
+  CHECK_EQ(maintRatio.to_double(), 946.44498820887998);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 15578478.17337437);
+  CHECK_EQ(value.to_double(), 15578478.173374372);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 0.098840765602179497);
+  CHECK_EQ(leverage.to_double(), 0.098840765602176361);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 TEST_CASE("account6") {
@@ -455,20 +455,20 @@ TEST_CASE("account6") {
 
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 14480970069238.33686487450164648294);
+  CHECK_EQ(initHealth.to_double(), 14480970069238.33686487450164648294);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 15030566251990.17026082618337312624);
+  CHECK_EQ(maintHealth.to_double(), 15030566251990.17026082618337312624);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 215.03167137713018);
+  CHECK_EQ(initRatio.to_double(), 215.03167137713001);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 236.77769605824452);
+  CHECK_EQ(maintRatio.to_double(), 236.77769605824432);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 15580162.407819403);
+  CHECK_EQ(value.to_double(), 15580162.407819409);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 0.079138709899027215);
+  CHECK_EQ(leverage.to_double(), 0.079138709899027049);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 TEST_CASE("account7") {
@@ -499,20 +499,20 @@ TEST_CASE("account7") {
 
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 16272272.28055547965738014682);
+  CHECK_EQ(initHealth.to_double(), 16272272.28055547965738014682);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 16649749.17384252860704663135);
+  CHECK_EQ(maintHealth.to_double(), 16649749.17384252860704663135);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 359.23329723261616663876);
+  CHECK_EQ(initRatio.to_double(), 359.23329723261616663876);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 400.98177879921832);
+  CHECK_EQ(maintRatio.to_double(), 400.98177879921832);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 17.02722595090421);
+  CHECK_EQ(value.to_double(), 17.027225950904331);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 0.22169019545402435);
+  CHECK_EQ(leverage.to_double(), 0.2216901954540127);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 TEST_CASE("account8") {
@@ -543,20 +543,20 @@ TEST_CASE("account8") {
 
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 337240882.73863387);
+  CHECK_EQ(initHealth.to_double(), 337240882.73863375);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 496326340.62213492);
+  CHECK_EQ(maintHealth.to_double(), 496326340.62213475);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 36.051471007120028);
+  CHECK_EQ(initRatio.to_double(), 36.051471007119673);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 53.057904883010345);
+  CHECK_EQ(maintRatio.to_double(), 53.05790488301021);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 655.41179779906815);
+  CHECK_EQ(value.to_double(), 655.41179779906793);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 1.4272596009734659);
+  CHECK_EQ(leverage.to_double(), 1.4272596009734642);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
 TEST_CASE("account9") {
@@ -615,19 +615,19 @@ TEST_CASE("account9") {
 
   auto initHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                            mango_v3::HealthType::Init);
-  CHECK_EQ(initHealth, 96257596.932942599);
+  CHECK_EQ(initHealth.to_double(), 96257596.932942361);
   auto maintHealth = mangoAccount.getHealth(mangoGroup, mangoCache,
                                             mango_v3::HealthType::Maint);
-  CHECK_EQ(maintHealth, 511619124.36291969);
+  CHECK_EQ(maintHealth.to_double(), 511619124.36291981);
   auto initRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                mango_v3::HealthType::Init);
-  CHECK_EQ(initRatio, 2.9769382434197134);
+  CHECK_EQ(initRatio.to_double(), 2.9769382434196245);
   auto maintRatio = mangoAccount.getHealthRatio(mangoGroup, mangoCache,
                                                 mango_v3::HealthType::Maint);
-  CHECK_EQ(maintRatio, 17.211269135610863);
+  CHECK_EQ(maintRatio.to_double(), 17.211269135610507);
   auto value = mangoAccount.computeValue(mangoGroup, mangoCache);
-  CHECK_EQ(value, 926.98053240315084);
+  CHECK_EQ(value.to_double(), 926.9805324031521);
   auto leverage = mangoAccount.getLeverage(mangoGroup, mangoCache);
-  CHECK_EQ(leverage, 3.9194428382889464);
+  CHECK_EQ(leverage.to_double(), 3.919442838288937);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
