@@ -61,8 +61,8 @@ struct MangoAccount {
    */
   auto getHealthComponents(const MangoGroup& mangoGroup,
                            const MangoCache& mangoCache) {
-    std::vector<i80f48> spot(mangoGroup.numOracles, 0.0);
-    std::vector<i80f48> perps(mangoGroup.numOracles, 0.0);
+    std::vector<i80f48> spot(mangoGroup.numOracles, 0.0L);
+    std::vector<i80f48> perps(mangoGroup.numOracles, 0.0L);
     auto quote = getNet(mangoCache.root_bank_cache[QUOTE_INDEX], QUOTE_INDEX);
     for (uint64_t i = 0; i < mangoGroup.numOracles; i++) {
       const auto bankCache = mangoCache.root_bank_cache[i];
@@ -123,7 +123,7 @@ struct MangoAccount {
         }
 
       } else {
-        perps[i] = 0;
+        perps[i] = 0L;
       }
     }
     return std::make_tuple(spot, perps, quote);
@@ -167,8 +167,8 @@ struct MangoAccount {
                                          std::vector<i80f48> spot,
                                          std::vector<i80f48> perps,
                                          i80f48 quote, HealthType healthType) {
-    i80f48 assets = 0.0;
-    i80f48 liabs = 0.0;
+    i80f48 assets = 0.0L;
+    i80f48 liabs = 0.0L;
     if (quote > 0) {
       assets += quote;
     } else {
@@ -201,7 +201,7 @@ struct MangoAccount {
     if (liabs > 0) {
       return ((assets / liabs) - 1) * 100;
     } else {
-      return 100;
+      return 100.0L;
     }
   }
 
@@ -229,12 +229,12 @@ struct MangoAccount {
   }
   i80f48 getAssetsVal(const MangoGroup& mangoGroup,
                       const MangoCache& mangoCache, HealthType healthType) {
-    i80f48 assetsVal = 0.0;
+    i80f48 assetsVal = 0.0L;
     // quote currency deposits
     assetsVal += getUiDeposit(mangoCache.root_bank_cache[QUOTE_INDEX],
                               mangoGroup, QUOTE_INDEX);
     for (uint64_t i = 0; i < mangoGroup.numOracles; i++) {
-      i80f48 assetWeight = 1;
+      i80f48 assetWeight = 1L;
       if (healthType == HealthType::Maint) {
         assetWeight = mangoGroup.spotMarkets[i].maintAssetWeight;
       } else if (healthType == HealthType::Init) {
@@ -256,7 +256,7 @@ struct MangoAccount {
   }
   i80f48 getLiabsVal(const MangoGroup& mangoGroup, const MangoCache& mangoCache,
                      HealthType healthType) {
-    i80f48 liabsVal = 0;
+    i80f48 liabsVal = 0L;
     liabsVal += getUiBorrow(mangoCache.root_bank_cache[QUOTE_INDEX], mangoGroup,
                             QUOTE_INDEX);
     for (uint64_t i = 0; i < mangoGroup.numOracles; ++i) {
@@ -304,7 +304,7 @@ struct MangoAccount {
   }
   i80f48 getSpotVal(const MangoGroup& mangoGroup, const MangoCache& mangoCache,
                     uint64_t index, i80f48 assetWeight) {
-    i80f48 assetsVal = 0;
+    i80f48 assetsVal = 0L;
     auto price = getMangoGroupPrice(mangoGroup, index, mangoCache);
     auto depositVal =
         getUiDeposit(mangoCache.root_bank_cache[index], mangoGroup, index) *

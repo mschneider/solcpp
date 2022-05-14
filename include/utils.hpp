@@ -49,16 +49,16 @@ auto getMangoGroupWeights(const MangoGroup& mangoGroup, uint64_t marketIndex,
                            mangoGroup.perpMarkets[marketIndex].initAssetWeight,
                            mangoGroup.perpMarkets[marketIndex].initLiabWeight);
   } else {
-    return std::make_tuple(i80f48(1.0), i80f48(1.0), i80f48(1.0), i80f48(1.0));
+    return std::make_tuple(i80f48(1.0L), i80f48(1.0L), i80f48(1.0L), i80f48(1.0L));
   }
 }
 auto nativeI80F48ToUi(i80f48 amount, uint8_t decimals) {
-  return amount / pow(10, decimals);
+  return amount / pow(10.0L, decimals);
 }
 auto getPerpAccountAssetVal(const PerpAccountInfo& perpAccountInfo,
                             const PerpMarketInfo& perpMarketInfo, i80f48 price,
                             i80f48 shortFunding, i80f48 longFunding) {
-  i80f48 assetsVal = 0.0;
+  i80f48 assetsVal = 0.0L;
   if (perpAccountInfo.basePosition > 0) {
     assetsVal +=
         (perpAccountInfo.basePosition * perpMarketInfo.baseLotSize * price);
@@ -82,7 +82,7 @@ auto getPerpAccountAssetVal(const PerpAccountInfo& perpAccountInfo,
 auto getPerpAccountLiabsVal(const PerpAccountInfo& perpAccountInfo,
                             const PerpMarketInfo& perpMarketInfo, i80f48 price,
                             i80f48 shortFunding, i80f48 longFunding) {
-  i80f48 liabsVal = 0.0;
+  i80f48 liabsVal = 0.0L;
   if (perpAccountInfo.basePosition < 0) {
     liabsVal +=
         (perpAccountInfo.basePosition * perpMarketInfo.baseLotSize * price);
@@ -124,14 +124,14 @@ uint8_t getMangoGroupTokenDecimals(const MangoGroup& mangoGroup,
 i80f48 getMangoGroupPrice(const MangoGroup& mangoGroup, uint64_t tokenIndex,
                           const MangoCache& mangoCache) {
   if (tokenIndex == QUOTE_INDEX) {
-    return 1;
+    return 1L;
   }
   const auto decimalAdj =
-      pow(10, getMangoGroupTokenDecimals(mangoGroup, tokenIndex) -
+      pow(10.0L, getMangoGroupTokenDecimals(mangoGroup, tokenIndex) -
                   getMangoGroupTokenDecimals(mangoGroup, QUOTE_INDEX));
   return mangoCache.price_cache[tokenIndex].price * decimalAdj;
 }
 double nativeToUi(uint64_t amount, uint8_t decimals) {
-  return amount / pow(10, decimals);
+  return amount / pow(10.0L, decimals);
 }
 }  // namespace mango_v3
