@@ -49,7 +49,8 @@ auto getMangoGroupWeights(const MangoGroup& mangoGroup, uint64_t marketIndex,
                            mangoGroup.perpMarkets[marketIndex].initAssetWeight,
                            mangoGroup.perpMarkets[marketIndex].initLiabWeight);
   } else {
-    return std::make_tuple(i80f48(1.0L), i80f48(1.0L), i80f48(1.0L), i80f48(1.0L));
+    return std::make_tuple(i80f48(1.0L), i80f48(1.0L), i80f48(1.0L),
+                           i80f48(1.0L));
   }
 }
 auto nativeI80F48ToUi(i80f48 amount, uint8_t decimals) {
@@ -128,7 +129,7 @@ i80f48 getMangoGroupPrice(const MangoGroup& mangoGroup, uint64_t tokenIndex,
   }
   const auto decimalAdj =
       pow(10.0L, getMangoGroupTokenDecimals(mangoGroup, tokenIndex) -
-                  getMangoGroupTokenDecimals(mangoGroup, QUOTE_INDEX));
+                     getMangoGroupTokenDecimals(mangoGroup, QUOTE_INDEX));
   return mangoCache.price_cache[tokenIndex].price * decimalAdj;
 }
 double nativeToUi(uint64_t amount, uint8_t decimals) {
