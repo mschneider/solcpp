@@ -240,6 +240,20 @@ inline json jsonRequest(const std::string &method,
   if (params != nullptr) req["params"] = params;
   return req;
 }
+// Read AccountInfo dumped in a file
+template <typename T>
+static T fromFile(const std::string &path) {
+  std::ifstream fileStream(path);
+  std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
+  auto response = json::parse(fileContent);
+  const std::string encoded = response["data"][0];
+  const std::string decoded = solana::b64decode(encoded);
+  if (decoded.size() != sizeof(T))
+    throw std::runtime_error("Invalid account data");
+  T accountInfo{};
+  memcpy(&accountInfo, decoded.data(), sizeof(T));
+  return accountInfo;
+}
 ///
 /// RPC HTTP Endpoints
 class Connection {
@@ -297,7 +311,7 @@ class Connection {
                                std::to_string(decoded.size()) + " expected " +
                                std::to_string(sizeof(T)));
 
-    T result;
+    T result{};
     memcpy(&result, decoded.data(), sizeof(T));
     return result;
   }
@@ -331,7 +345,7 @@ class Connection {
         throw std::runtime_error("invalid response length " +
                                  std::to_string(decoded.size()) + " expected " +
                                  std::to_string(sizeof(T)));
-      T account;
+      T account{};
       memcpy(&account, decoded.data(), sizeof(T));
       result[req["params"][0][index]] = account;  // Retrieve the corresponding
                                                   // pubKey from the request

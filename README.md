@@ -42,8 +42,8 @@ work well with the rest of the code base.
 
 - bitcoin/libbase58 (b1dd03fa8d1be4be076bb6152325c6b5cf64f678) [MIT]
 - base64 (https://stackoverflow.com/a/37109258/18072933) [CC BY-SA 4.0]
-- fixedp
-  (https://gist.github.com/dflemstr/294959/aa90ff5b1a66b45b9edb30a432a66f8383d368e6)
+- fixed
+  (https://github.com/eteran/cpp-utilities/blob/master/fixed/include/cpp-utilities/fixed.h)
   [CC BY-SA 3.0]
 
 # Examples
@@ -52,6 +52,7 @@ work well with the rest of the code base.
 - Subscribe to account updates (fills)
 - Send Transaction
 - Build complex transactions (atomic cancel and replace)
+- MangoAccount Health info and calculations
 
 ## TODO
 
@@ -64,4 +65,3 @@ work well with the rest of the code base.
 
 - [ ] Improve liquidity on mango markets
 - [ ] Remove/replace deprecated methods
-- [ ] Remove the pragma warnings

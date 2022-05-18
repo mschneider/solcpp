@@ -5,6 +5,7 @@
 
 #include "fixedp.h"
 #include "int128.hpp"
+#include "serum_v3.hpp"
 #include "solana.hpp"
 
 namespace mango_v3 {
@@ -41,6 +42,8 @@ const Config DEVNET = {
     {6, 6, 6, 9, 6, 6, 6, 6, 6, 9, 8, 8, 8, 0, 0, 6},
     {"MNGO", "BTC", "ETH", "SOL", "SRM", "RAY", "USDT", "ADA", "FTT", "AVAX",
      "LUNA", "BNB", "MATIC", "", "", "USDC"}};
+
+enum class HealthType { Unknown, Init, Maint };
 
 // all rust structs assume padding to 8
 #pragma pack(push, 8)
@@ -102,6 +105,26 @@ struct MangoGroup {
   uint32_t numMangoAccounts;
   uint8_t padding[24];
 };
+struct RootBankCache {
+  i80f48 deposit_index;
+  i80f48 borrow_index;
+  uint64_t last_update;
+};
+struct PerpMarketCache {
+  i80f48 long_funding;
+  i80f48 short_funding;
+  uint64_t last_update;
+};
+struct PriceCache {
+  i80f48 price;
+  uint64_t last_update;
+};
+struct MangoCache {
+  MetaData metadata;
+  PriceCache price_cache[MAX_PAIRS];
+  RootBankCache root_bank_cache[MAX_TOKENS];
+  PerpMarketCache perp_market_cache[MAX_PAIRS];
+};
 
 enum Side : uint8_t { Buy, Sell };
 
@@ -139,21 +162,6 @@ struct MangoAccountInfo {
   bool notUpgradable;
   solana::PublicKey delegate;
   uint8_t padding[5];
-};
-
-struct MangoAccount {
-  MangoAccountInfo accountInfo;
-  explicit MangoAccount(const MangoAccountInfo &accountInfo_) noexcept {
-    accountInfo = accountInfo_;
-  }
-  // Fetch `accountInfo` from `endpoint` and decode it
-  explicit MangoAccount(const std::string &pubKey,
-                        const std::string &endpoint = MAINNET.endpoint) {
-    auto connection = solana::rpc::Connection(endpoint);
-    const auto &accountInfo_ =
-        connection.getAccountInfo<MangoAccountInfo>(pubKey);
-    accountInfo = accountInfo_;
-  }
 };
 
 struct LiquidityMiningInfo {
@@ -257,16 +265,16 @@ struct EventQueue {
 
 namespace ix {
 template <typename T>
-std::vector<uint8_t> toBytes(const T &ref) {
-  const auto bytePtr = (uint8_t *)&ref;
+std::vector<uint8_t> toBytes(const T& ref) {
+  const auto bytePtr = (uint8_t*)&ref;
   return std::vector<uint8_t>(bytePtr, bytePtr + sizeof(T));
 }
 
 std::pair<int64_t, int64_t> uiToNativePriceQuantity(double price,
                                                     double quantity,
-                                                    const Config &config,
+                                                    const Config& config,
                                                     const int marketIndex,
-                                                    const PerpMarket &market) {
+                                                    const PerpMarket& market) {
   const int64_t baseUnit = pow(10LL, config.decimals[marketIndex]);
   const int64_t quoteUnit = pow(10LL, config.decimals[QUOTE_INDEX]);
   const auto nativePrice = ((int64_t)(price * quoteUnit)) * market.baseLotSize /
@@ -296,10 +304,10 @@ struct PlacePerpOrder {
 };
 
 solana::Instruction placePerpOrderInstruction(
-    const PlacePerpOrder &ixData, const solana::PublicKey &ownerPk,
-    const solana::PublicKey &accountPk, const solana::PublicKey &marketPk,
-    const PerpMarket &market, const solana::PublicKey &groupPk,
-    const MangoGroup &group, const solana::PublicKey &programPk) {
+    const PlacePerpOrder& ixData, const solana::PublicKey& ownerPk,
+    const solana::PublicKey& accountPk, const solana::PublicKey& marketPk,
+    const PerpMarket& market, const solana::PublicKey& groupPk,
+    const MangoGroup& group, const solana::PublicKey& programPk) {
   std::vector<solana::AccountMeta> accs = {
       {groupPk, false, false},    {accountPk, false, true},
       {ownerPk, true, false},     {group.mangoCache, false, false},
@@ -320,10 +328,10 @@ struct CancelAllPerpOrders {
 };
 
 solana::Instruction cancelAllPerpOrdersInstruction(
-    const CancelAllPerpOrders &ixData, const solana::PublicKey &ownerPk,
-    const solana::PublicKey &accountPk, const solana::PublicKey &marketPk,
-    const PerpMarket &market, const solana::PublicKey &groupPk,
-    const solana::PublicKey &programPk) {
+    const CancelAllPerpOrders& ixData, const solana::PublicKey& ownerPk,
+    const solana::PublicKey& accountPk, const solana::PublicKey& marketPk,
+    const PerpMarket& market, const solana::PublicKey& groupPk,
+    const solana::PublicKey& programPk) {
   const std::vector<solana::AccountMeta> accs = {
       {groupPk, false, false},    {accountPk, false, true},
       {ownerPk, true, false},     {marketPk, false, true},

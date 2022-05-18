@@ -61,11 +61,11 @@ int main() {
       spdlog::info("SPOT: {}", i);
       spdlog::info("  market: {}", marketPk);
       spdlog::info("  maintAssetWeight: {}",
-                   market.maintAssetWeight.toDouble());
-      spdlog::info("  initAssetWeight: {}", market.initAssetWeight.toDouble());
-      spdlog::info("  maintLiabWeight: {}", market.maintLiabWeight.toDouble());
-      spdlog::info("  initLiabWeight: {}", market.initLiabWeight.toDouble());
-      spdlog::info("  liquidationFee: {}", market.liquidationFee.toDouble());
+                   market.maintAssetWeight.to_double());
+      spdlog::info("  initAssetWeight: {}", market.initAssetWeight.to_double());
+      spdlog::info("  maintLiabWeight: {}", market.maintLiabWeight.to_double());
+      spdlog::info("  initLiabWeight: {}", market.initLiabWeight.to_double());
+      spdlog::info("  liquidationFee: {}", market.liquidationFee.to_double());
     }
 
     for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
@@ -77,13 +77,13 @@ int main() {
       spdlog::info("PERP: {}", i);
       spdlog::info("  market: {}", marketPk);
       spdlog::info("  maintAssetWeight: {}",
-                   market.maintAssetWeight.toDouble());
-      spdlog::info("  initAssetWeight: {}", market.initAssetWeight.toDouble());
-      spdlog::info("  maintLiabWeight: {}", market.maintLiabWeight.toDouble());
-      spdlog::info("  initLiabWeight: {}", market.initLiabWeight.toDouble());
-      spdlog::info("  liquidationFee: {}", market.liquidationFee.toDouble());
-      spdlog::info("  makerFee: {}", market.makerFee.toDouble());
-      spdlog::info("  takerFee: {}", market.takerFee.toDouble());
+                   market.maintAssetWeight.to_double());
+      spdlog::info("  initAssetWeight: {}", market.initAssetWeight.to_double());
+      spdlog::info("  maintLiabWeight: {}", market.maintLiabWeight.to_double());
+      spdlog::info("  initLiabWeight: {}", market.initLiabWeight.to_double());
+      spdlog::info("  liquidationFee: {}", market.liquidationFee.to_double());
+      spdlog::info("  makerFee: {}", market.makerFee.to_double());
+      spdlog::info("  takerFee: {}", market.takerFee.to_double());
       spdlog::info("  baseLotSize: {}", market.baseLotSize);
       spdlog::info("  quoteLotSize: {}", market.quoteLotSize);
     }

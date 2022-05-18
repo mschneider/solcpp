@@ -92,8 +92,8 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl,
           spdlog::info("makerOrderId: {}", to_string(fill.makerOrderId));
           spdlog::info("makerOrderClientId: {}", fill.makerClientOrderId);
           spdlog::info("timeOnBook: {}", timeOnBook);
-          spdlog::info("makerFee: {}", fill.makerFee.toDouble());
-          spdlog::info("takerFee: {}", fill.takerFee.toDouble());
+          spdlog::info("makerFee: {}", fill.makerFee.to_double());
+          spdlog::info("takerFee: {}", fill.takerFee.to_double());
           break;
         }
         case mango_v3::EventType::Out: {
@@ -105,7 +105,7 @@ void on_message(ws_client *c, websocketpp::connection_hdl hdl,
         case mango_v3::EventType::Liquidate: {
           const auto &liq = (mango_v3::LiquidateEvent &)event;
           timestamp = liq.timestamp;
-          spdlog::info("LIQ prc: {} qty: {}", liq.price.toDouble(),
+          spdlog::info("LIQ prc: {} qty: {}", liq.price.to_double(),
                        liq.quantity);
           break;
         }
