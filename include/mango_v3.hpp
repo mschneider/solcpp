@@ -330,7 +330,7 @@ class BookSide {
  public:
   BookSide(Side side) : side(side) {}
 
-  bool handleMsg(const nlohmann::json &msg) {
+  bool handleMsg(const nlohmann::json& msg) {
     // ignore subscription confirmation
     const auto itResult = msg.find("result");
     if (itResult != msg.end()) {
@@ -359,7 +359,7 @@ class BookSide {
   uint64_t getVolume(uint64_t price) const {
     Op operation;
     uint64_t volume = 0;
-    for (auto &&order : *orders) {
+    for (auto&& order : *orders) {
       if (operation(order.price, price)) {
         volume += order.quantity;
       } else {
@@ -382,11 +382,11 @@ class BookSide {
     while (iter.stack.size() > 0) {
       if ((*iter).tag == NodeType::LeafNode) {
         const auto leafNode =
-            reinterpret_cast<const struct LeafNode *>(&(*iter));
+            reinterpret_cast<const struct LeafNode*>(&(*iter));
         const auto now = std::chrono::system_clock::now();
-        const auto nowUnix =
-            std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
-                .count();
+        const auto nowUnix = std::chrono::duration_cast<std::chrono::seconds>(
+                                 now.time_since_epoch())
+                                 .count();
         const auto isValid =
             !leafNode->timeInForce ||
             leafNode->timestamp + leafNode->timeInForce < nowUnix;
@@ -417,29 +417,29 @@ class BookSide {
 
     struct iterator {
       Side side;
-      const BookSideRaw &bookSide;
+      const BookSideRaw& bookSide;
       std::stack<uint32_t> stack;
       uint32_t left, right;
 
-      iterator(Side side, const BookSideRaw &bookSide)
+      iterator(Side side, const BookSideRaw& bookSide)
           : side(side), bookSide(bookSide) {
         stack.push(bookSide.rootNode);
         left = side == Side::Buy ? 1 : 0;
         right = side == Side::Buy ? 0 : 1;
       }
 
-      bool operator==(const iterator &other) const {
+      bool operator==(const iterator& other) const {
         return &bookSide == &other.bookSide && stack.top() == other.stack.top();
       }
 
-      iterator &operator++() {
+      iterator& operator++() {
         if (stack.size() > 0) {
-          const auto &elem = **this;
+          const auto& elem = **this;
           stack.pop();
 
           if (elem.tag == NodeType::InnerNode) {
             const auto innerNode =
-                reinterpret_cast<const struct InnerNode *>(&elem);
+                reinterpret_cast<const struct InnerNode*>(&elem);
             stack.push(innerNode->children[right]);
             stack.push(innerNode->children[left]);
           }
@@ -447,7 +447,7 @@ class BookSide {
         return *this;
       }
 
-      const AnyNode &operator*() const { return bookSide.nodes[stack.top()]; }
+      const AnyNode& operator*() const { return bookSide.nodes[stack.top()]; }
     };
   };
 
@@ -461,7 +461,7 @@ class Trades {
  public:
   auto getLastTrade() const { return latestTrade; }
 
-  bool handleMsg(const nlohmann::json &msg) {
+  bool handleMsg(const nlohmann::json& msg) {
     // ignore subscription confirmation
     const auto itResult = msg.find("result");
     if (itResult != msg.end()) {
@@ -475,7 +475,7 @@ class Trades {
     const std::string data = msg["params"]["result"]["value"]["data"][0];
 
     const auto decoded = solana::b64decode(data);
-    const auto events = reinterpret_cast<const EventQueue *>(decoded.data());
+    const auto events = reinterpret_cast<const EventQueue*>(decoded.data());
     const auto seqNumDiff = events->header.seqNum - lastSeqNum;
     const auto lastSlot =
         (events->header.head + events->header.count) % EVENT_QUEUE_SIZE;
@@ -485,10 +485,10 @@ class Trades {
       for (int offset = seqNumDiff; offset > 0; --offset) {
         const auto slot =
             (lastSlot - offset + EVENT_QUEUE_SIZE) % EVENT_QUEUE_SIZE;
-        const auto &event = events->items[slot];
+        const auto& event = events->items[slot];
 
         if (event.eventType == EventType::Fill) {
-          const auto &fill = (FillEvent &)event;
+          const auto& fill = (FillEvent&)event;
           latestTrade = std::make_shared<uint64_t>(fill.price);
           gotLatest = true;
         }
