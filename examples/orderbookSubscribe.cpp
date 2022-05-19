@@ -85,6 +85,7 @@ int main() {
   updateLogger logger(book, trades);
   logger.start();
 
+  using namespace std::literals::chrono_literals;
   while (true) {
     std::this_thread::sleep_for(100s);
   }

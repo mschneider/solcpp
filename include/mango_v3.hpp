@@ -385,7 +385,7 @@ class BookSide {
             reinterpret_cast<const struct LeafNode *>(&(*iter));
         const auto now = std::chrono::system_clock::now();
         const auto nowUnix =
-            chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
+            std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
                 .count();
         const auto isValid =
             !leafNode->timeInForce ||
