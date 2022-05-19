@@ -25,10 +25,7 @@ dependencies. Install Conan [here](https://conan.io/downloads.html).
 # Create a default profile or copy over the example for linux / macos
 $ conan profile new default --detect
 $ mkdir build && cd build
-$ conan install ..  \
-  --build=missing \
-  -o:h boost:without_fiber=True \ # Skips building boost's header-only fiber
-  -o:h boost:without_python=True \ # Skips python bindings
+$ conan install .. --build=missing -o:h boost:without_contract=True -o:h boost:without_fiber=True -o:h boost:without_graph=True -o:h boost:without_graph_parallel=True -o:h boost:without_json=True -o:h boost:without_log=True -o:h boost:without_math=True -o:h boost:without_mpi=True -o:h boost:without_nowide=True -o:h boost:without_program_options=True -o:h boost:without_python=True -o:h boost:without_stacktrace=True -o:h boost:without_test=True -o:h boost:without_timer=True -o:h boost:without_type_erasure=True -o:h boost:without_wave=True
 $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 $ cmake --build .
 $ ./bin/tests
@@ -45,8 +42,8 @@ work well with the rest of the code base.
 
 - bitcoin/libbase58 (b1dd03fa8d1be4be076bb6152325c6b5cf64f678) [MIT]
 - base64 (https://stackoverflow.com/a/37109258/18072933) [CC BY-SA 4.0]
-- fixedp
-  (https://gist.github.com/dflemstr/294959/aa90ff5b1a66b45b9edb30a432a66f8383d368e6)
+- fixed
+  (https://github.com/eteran/cpp-utilities/blob/master/fixed/include/cpp-utilities/fixed.h)
   [CC BY-SA 3.0]
 
 # Examples
@@ -55,6 +52,7 @@ work well with the rest of the code base.
 - Subscribe to account updates (fills)
 - Send Transaction
 - Build complex transactions (atomic cancel and replace)
+- MangoAccount Health info and calculations
 
 ## TODO
 
@@ -67,4 +65,3 @@ work well with the rest of the code base.
 
 - [ ] Improve liquidity on mango markets
 - [ ] Remove/replace deprecated methods
-- [ ] Remove the pragma warnings
