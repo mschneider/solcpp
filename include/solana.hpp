@@ -232,7 +232,6 @@ struct CompiledTransaction {
   };
 };
 
-
 namespace rpc {
 using json = nlohmann::json;
 inline json jsonRequest(const std::string &method,

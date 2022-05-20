@@ -39,13 +39,15 @@ int main() {
 
   // 4. wait for tx to confirm
   const auto start = std::chrono::system_clock::now();
-  const auto timeoutBlockHeight = recentBlockHash.lastValidBlockHeight + mango_v3::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
+  const auto timeoutBlockHeight =
+      recentBlockHash.lastValidBlockHeight +
+      mango_v3::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
   while (true) {
     const auto sinceStart = std::chrono::system_clock::now() - start;
     // Asynchronously fetch blockHeight
-    std::future<uint64_t> blockHeightFut = std::async(std::launch::async, [&connection]()-> uint64_t {
-      return connection.getBlockHeight();
-    });
+    std::future<uint64_t> blockHeightFut = std::async(
+        std::launch::async,
+        [&connection]() -> uint64_t { return connection.getBlockHeight(); });
     const auto secondsSinceStart =
         std::chrono::duration_cast<std::chrono::seconds>(sinceStart).count();
     if (secondsSinceStart > 90)
@@ -66,16 +68,15 @@ int main() {
       spdlog::info("RES: {}", r.text);
       json res = json::parse(r.text);
 
-      if (res["result"]["value"][0] != nullptr)
-        return EXIT_SUCCESS;
+      if (res["result"]["value"][0] != nullptr) return EXIT_SUCCESS;
     }
     // Check if we are past validBlockHeight
     auto currentBlockHeight = blockHeightFut.get();
-    if (timeoutBlockHeight <= currentBlockHeight){
-      spdlog::error("Timed out for txid: {}, current BlockHeight: {}", b58Sig, currentBlockHeight);
+    if (timeoutBlockHeight <= currentBlockHeight) {
+      spdlog::error("Timed out for txid: {}, current BlockHeight: {}", b58Sig,
+                    currentBlockHeight);
       return EXIT_FAILURE;
     }
-
   }
   return EXIT_SUCCESS;
 }
