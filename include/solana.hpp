@@ -235,7 +235,7 @@ struct CompiledTransaction {
 
 namespace rpc {
 using json = nlohmann::json;
-static inline json jsonRequest(const std::string &method,
+inline json jsonRequest(const std::string &method,
                         const json &params = nullptr) {
   json req = {{"jsonrpc", "2.0"}, {"id", 1}, {"method", method}};
   if (params != nullptr) req["params"] = params;
