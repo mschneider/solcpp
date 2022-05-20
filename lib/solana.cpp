@@ -98,6 +98,18 @@ Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
   return {PublicKey::fromBase58(encoded), lastValidBlockHeight};
 }
 
+uint64_t Connection::getBlockHeight(const std::string &commitment){
+  const json req = getBlockhashRequest(commitment, "getBlockHeight");
+  cpr::Response r =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+  json res = json::parse(r.text);
+  const uint64_t blockHeight = res["result"];
+  return blockHeight;
+}
 json Connection::getSignatureStatuses(
     const std::vector<std::string> &signatures, bool searchTransactionHistory) {
   const json params = {

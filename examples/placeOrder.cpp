@@ -20,7 +20,7 @@ int main() {
       connection.getAccountInfo<mango_v3::PerpMarket>(perpMarketPk.toBase58());
   assert(market.mangoGroup.toBase58() == config.group);
 
-  const auto recentBlockhash = connection.getRecentBlockhash_DEPRECATED();
+  const auto recentBlockhash = connection.getLatestBlockhash();
   const auto groupPk = solana::PublicKey::fromBase58(config.group);
   const auto programPk = solana::PublicKey::fromBase58(config.program);
   const auto keypair =

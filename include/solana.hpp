@@ -112,6 +112,10 @@ struct CompactU16 {
     buffer.insert(buffer.end(), vec.begin(), vec.end());
   }
 };
+struct Blockhash {
+  PublicKey publicKey;
+  uint64_t lastValidBlockHeight;
+};
 struct CompiledInstruction {
   uint8_t programIdIndex;
   std::vector<uint8_t> accountIndices;
@@ -140,7 +144,7 @@ struct CompiledInstruction {
 };
 
 struct CompiledTransaction {
-  PublicKey recentBlockhash;
+  Blockhash recentBlockhash;
   std::vector<PublicKey> accounts;
   std::vector<CompiledInstruction> instructions;
   uint8_t requiredSignatures;
@@ -149,7 +153,7 @@ struct CompiledTransaction {
 
   static CompiledTransaction fromInstructions(
       const std::vector<Instruction> &instructions, const PublicKey &payer,
-      const PublicKey &blockhash) {
+      const Blockhash &blockhash) {
     // collect all program ids and accounts including the payer
     std::vector<AccountMeta> allMetas = {{payer, true, true}};
     for (const auto &instruction : instructions) {
@@ -218,8 +222,8 @@ struct CompiledTransaction {
       buffer.insert(buffer.end(), account.data.begin(), account.data.end());
     }
 
-    buffer.insert(buffer.end(), recentBlockhash.data.begin(),
-                  recentBlockhash.data.end());
+    buffer.insert(buffer.end(), recentBlockhash.publicKey.data.begin(),
+                  recentBlockhash.publicKey.data.end());
 
     solana::CompactU16::encode(instructions.size(), buffer);
     for (const auto &instruction : instructions) {
@@ -227,14 +231,11 @@ struct CompiledTransaction {
     }
   };
 };
-struct Blockhash {
-  PublicKey publicKey;
-  uint64_t lastValidBlockHeight;
-};
+
 
 namespace rpc {
 using json = nlohmann::json;
-inline json jsonRequest(const std::string &method,
+static inline json jsonRequest(const std::string &method,
                         const json &params = nullptr) {
   json req = {{"jsonrpc", "2.0"}, {"id", 1}, {"method", method}};
   if (params != nullptr) req["params"] = params;
@@ -285,6 +286,7 @@ class Connection {
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
   Blockhash getLatestBlockhash(const std::string &commitment = "finalized");
+  uint64_t getBlockHeight(const std::string &commitment = "finalized");
   json getSignatureStatuses(const std::vector<std::string> &signatures,
                             bool searchTransactionHistory = false);
   std::string signAndSendTransaction(
