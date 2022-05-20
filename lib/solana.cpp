@@ -98,7 +98,7 @@ Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
   return {PublicKey::fromBase58(encoded), lastValidBlockHeight};
 }
 
-uint64_t Connection::getBlockHeight(const std::string &commitment){
+uint64_t Connection::getBlockHeight(const std::string &commitment) {
   const json req = getBlockhashRequest(commitment, "getBlockHeight");
   cpr::Response r =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
