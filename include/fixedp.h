@@ -60,7 +60,10 @@ struct type_from_size {
   static constexpr bool is_specialized = false;
 };
 
-#if defined(__GNUC__) && defined(__x86_64__) && !defined(__STRICT_ANSI__)
+#if ((defined(__GNUC__) and defined(__x86_64__)) or     \
+     (defined(__clang__) and defined(__aarch64__))) and \
+    !defined(__STRICT_ANSI__)
+
 template <>
 struct type_from_size<128> {
   static constexpr bool is_specialized = true;

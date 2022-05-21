@@ -22,6 +22,7 @@ const int EVENT_SIZE = 200;
 const int EVENT_QUEUE_SIZE = 256;
 const int BOOK_NODE_SIZE = 88;
 const int BOOK_SIZE = 1024;
+const int MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION = 152;
 
 struct Config {
   std::string endpoint;
