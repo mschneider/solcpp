@@ -42,13 +42,8 @@ int main() {
       recentBlockHash.lastValidBlockHeight +
       mango_v3::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
   while (true) {
-    // Asynchronously fetch blockHeight
-    std::future<uint64_t> blockHeightFut =
-        std::async(std::launch::async, [&connection]() -> uint64_t {
-          return connection.getBlockHeight("confirmed");
-        });
     // Check if we are past validBlockHeight
-    auto currentBlockHeight = blockHeightFut.get();
+    auto currentBlockHeight = connection.getBlockHeight("confirmed");
     if (timeoutBlockHeight <= currentBlockHeight) {
       spdlog::error("Timed out for txid: {}, current BlockHeight: {}", b58Sig,
                     currentBlockHeight);
