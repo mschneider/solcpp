@@ -35,7 +35,7 @@ std::cout << myAccoutInfo.basePosition << std::endl;
 See full [example](https://github.com/mschneider/solcpp/blob/main/examples/positions.cpp#L11).
 ### 2. Send Transaction
 ```cpp
-#include "mango_v3.hpp"
+#include "solana.hpp"
 
 // 1. fetch recent blockhash to anchor tx to
 auto recentBlockHash = connection.getLatestBlockhash();
