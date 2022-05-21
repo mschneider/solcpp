@@ -41,7 +41,7 @@ class wssSubscriber {
 
   void start() {
     c.clear_access_channels(websocketpp::log::alevel::all);
-	c.init_asio();
+    c.init_asio();
     c.set_tls_init_handler(
         websocketpp::lib::bind(&wssSubscriber::on_tls_init, this));
     c.set_open_handler(websocketpp::lib::bind(
