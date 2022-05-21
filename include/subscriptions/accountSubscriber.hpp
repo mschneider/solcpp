@@ -39,7 +39,14 @@ class accountSubscriber {
 
  private:
   void onMessage(const nlohmann::json &msg) {
-    if (account->handleMsg(msg)) {
+	const auto itResult = msg.find("result");
+	if (itResult != msg.end()) {
+	  return;
+	}
+
+	const std::string encoded = msg["params"]["result"]["value"]["data"][0];
+	const std::string decoded = solana::b64decode(encoded);
+    if (account->update(decoded)) {
       if (notifyCb) {
         notifyCb();
       }

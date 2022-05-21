@@ -331,16 +331,41 @@ class BookSide {
  public:
   BookSide(Side side) : side(side) {}
 
-  bool handleMsg(const nlohmann::json& msg) {
-    // ignore subscription confirmation
-    const auto itResult = msg.find("result");
-    if (itResult != msg.end()) {
-      return false;
-    }
+  bool update(const std::string& decoded) {
+   if (decoded.size() != sizeof(BookSideRaw)) {
+	  throw std::runtime_error("invalid response length " +
+							   std::to_string(decoded.size()) + " expected " +
+							   std::to_string(sizeof(BookSideRaw)));
+	}
+	memcpy(&(*raw), decoded.data(), sizeof(BookSideRaw));
 
-    const std::string encoded = msg["params"]["result"]["value"]["data"][0];
-    const std::string decoded = solana::b64decode(encoded);
-    return update(decoded);
+	auto iter = BookSide::BookSideRaw::iterator(side, *raw);
+	std::vector<Order> newOrders;
+	while (iter.stack.size() > 0) {
+	  if ((*iter).tag == NodeType::LeafNode) {
+		const auto leafNode =
+			reinterpret_cast<const struct LeafNode*>(&(*iter));
+		const auto now = std::chrono::system_clock::now();
+		const auto nowUnix = std::chrono::duration_cast<std::chrono::seconds>(
+								 now.time_since_epoch())
+								 .count();
+		const auto isValid =
+			!leafNode->timeInForce ||
+			leafNode->timestamp + leafNode->timeInForce < nowUnix;
+		if (isValid) {
+		  newOrders.emplace_back((uint64_t)(leafNode->key >> 64),
+								 leafNode->quantity);
+		}
+	  }
+	  ++iter;
+	}
+
+	if (!newOrders.empty()) {
+	  orders = std::make_shared<std::vector<Order>>(std::move(newOrders));
+	  return true;
+	} else {
+	  return false;
+	}
   }
 
   Order getBestOrder() const {
@@ -368,43 +393,6 @@ class BookSide {
       }
     }
     return volume;
-  }
-
-  bool update(const std::string decoded) {
-    if (decoded.size() != sizeof(BookSideRaw)) {
-      throw std::runtime_error("invalid response length " +
-                               std::to_string(decoded.size()) + " expected " +
-                               std::to_string(sizeof(BookSideRaw)));
-    }
-    memcpy(&(*raw), decoded.data(), sizeof(BookSideRaw));
-
-    auto iter = BookSide::BookSideRaw::iterator(side, *raw);
-    std::vector<Order> newOrders;
-    while (iter.stack.size() > 0) {
-      if ((*iter).tag == NodeType::LeafNode) {
-        const auto leafNode =
-            reinterpret_cast<const struct LeafNode*>(&(*iter));
-        const auto now = std::chrono::system_clock::now();
-        const auto nowUnix = std::chrono::duration_cast<std::chrono::seconds>(
-                                 now.time_since_epoch())
-                                 .count();
-        const auto isValid =
-            !leafNode->timeInForce ||
-            leafNode->timestamp + leafNode->timeInForce < nowUnix;
-        if (isValid) {
-          newOrders.emplace_back((uint64_t)(leafNode->key >> 64),
-                                 leafNode->quantity);
-        }
-      }
-      ++iter;
-    }
-
-    if (!newOrders.empty()) {
-      orders = std::make_shared<std::vector<Order>>(std::move(newOrders));
-      return true;
-    } else {
-      return false;
-    }
   }
 
   struct BookSideRaw {
@@ -462,20 +450,7 @@ class Trades {
  public:
   auto getLastTrade() const { return latestTrade; }
 
-  bool handleMsg(const nlohmann::json& msg) {
-    // ignore subscription confirmation
-    const auto itResult = msg.find("result");
-    if (itResult != msg.end()) {
-      return false;
-    }
-
-    // all other messages are event queue updates
-    const std::string method = msg["method"];
-    const int subscription = msg["params"]["subscription"];
-    const int slot = msg["params"]["result"]["context"]["slot"];
-    const std::string data = msg["params"]["result"]["value"]["data"][0];
-
-    const auto decoded = solana::b64decode(data);
+  bool update(const std::string& decoded) {
     const auto events = reinterpret_cast<const EventQueue*>(decoded.data());
     const auto seqNumDiff = events->header.seqNum - lastSeqNum;
     const auto lastSlot =
