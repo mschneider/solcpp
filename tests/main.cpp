@@ -68,7 +68,7 @@ TEST_CASE("decode mango_v3 Fill") {
 }
 
 TEST_CASE("compile memo transaction") {
-  const solana::PublicKey recentBlockhash = {};
+  const solana::Blockhash recentBlockhash = {};
   const auto feePayer = solana::PublicKey::fromBase58(
       "8K4Exjnvs3ZJQDE78zmFoax5Sh4cEVdbk1D1r17Wxuud");
   const auto memoProgram =
@@ -79,7 +79,7 @@ TEST_CASE("compile memo transaction") {
   const auto ctx = solana::CompiledTransaction::fromInstructions(
       {ix}, feePayer, recentBlockhash);
 
-  CHECK_EQ(recentBlockhash, ctx.recentBlockhash);
+  CHECK_EQ(recentBlockhash.publicKey, ctx.recentBlockhash.publicKey);
   CHECK_EQ(2, ctx.accounts.size());
   CHECK_EQ(feePayer, ctx.accounts[0]);
   CHECK_EQ(memoProgram, ctx.accounts[1]);

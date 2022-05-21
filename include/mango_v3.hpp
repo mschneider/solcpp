@@ -18,6 +18,7 @@ const int INFO_LEN = 32;
 const int QUOTE_INDEX = 15;
 const int EVENT_SIZE = 200;
 const int EVENT_QUEUE_SIZE = 256;
+const int MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION = 152;
 
 struct Config {
   std::string endpoint;
