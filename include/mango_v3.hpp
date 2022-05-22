@@ -307,12 +307,6 @@ struct FreeNode {
   uint8_t padding[BOOK_NODE_SIZE - 8];
 };
 
-struct Order {
-  Order(uint64_t price, uint64_t quantity) : price(price), quantity(quantity) {}
-  uint64_t price = 0;
-  uint64_t quantity = 0;
-};
-
 struct L1Orderbook {
   uint64_t highestBid = 0;
   uint64_t highestBidSize = 0;
@@ -329,6 +323,9 @@ struct L1Orderbook {
 
 class BookSide {
  public:
+  using order_t = struct LeafNode;
+  using orders_t = std::vector<order_t>;
+
   BookSide(Side side, uint8_t maxBookDelay = 255)
       : side(side), maxBookDelay(maxBookDelay) {}
 
@@ -362,7 +359,7 @@ class BookSide {
     memcpy(&(*raw), decoded.data(), sizeof(BookSideRaw));
 
     auto iter = BookSide::BookSideRaw::iterator(side, *raw);
-    std::vector<Order> newOrders;
+    orders_t newOrders;
 
     const auto now = getMaxTimestamp();
 
@@ -374,23 +371,23 @@ class BookSide {
             !leafNode->timeInForce ||
             ((leafNode->timestamp + leafNode->timeInForce) > now);
         if (isValid) {
-          newOrders.emplace_back((uint64_t)(leafNode->key >> 64),
-                                 leafNode->quantity);
+          newOrders.push_back(*leafNode);
         }
       }
       ++iter;
     }
 
     if (!newOrders.empty()) {
-      orders = std::make_shared<std::vector<Order>>(std::move(newOrders));
+      orders = std::make_shared<orders_t>(std::move(newOrders));
       return true;
     } else {
       return false;
     }
   }
 
-  Order getBestOrder() const {
-    return (!orders->empty()) ? orders->front() : Order(0, 0);
+  std::shared_ptr<order_t> getBestOrder() const {
+    return orders->empty() ? nullptr
+                           : std::make_shared<order_t>(orders->front());
   }
 
   uint64_t getVolume(uint64_t price) const {
@@ -407,7 +404,8 @@ class BookSide {
     Op operation;
     uint64_t volume = 0;
     for (auto&& order : *orders) {
-      if (operation(order.price, price)) {
+      auto orderPrice = (uint64_t)(order.key >> 64);
+      if (operation(orderPrice, price)) {
         volume += order.quantity;
       } else {
         break;
@@ -464,8 +462,7 @@ class BookSide {
   const Side side;
   uint8_t maxBookDelay;
   std::shared_ptr<BookSideRaw> raw = std::make_shared<BookSideRaw>();
-  std::shared_ptr<std::vector<Order>> orders =
-      std::make_shared<std::vector<Order>>();
+  std::shared_ptr<orders_t> orders = std::make_shared<orders_t>();
 };
 
 class Trades {
@@ -490,7 +487,8 @@ class Trades {
           lastTrade = std::make_shared<FillEvent>(fill);
           gotLatest = true;
         }
-        // no break; let's iterate to the last fill to get the latest fill order
+        // no break; let's iterate to the last fill to get the latest fill
+        // order
       }
     }
 

@@ -35,17 +35,19 @@ class orderbook {
     L1Orderbook newL1;
     auto bestBid = bids.getAccount()->getBestOrder();
     auto bestAsk = asks.getAccount()->getBestOrder();
-    newL1.highestBid = bestBid.price;
-    newL1.highestBidSize = bestBid.quantity;
-    newL1.lowestAsk = bestAsk.price;
-    newL1.lowestAskSize = bestAsk.quantity;
+    if (bestBid && bestAsk) {
+      newL1.highestBid = (uint64_t)(bestBid->key >> 64);
+      newL1.highestBidSize = bestBid->quantity;
+      newL1.lowestAsk = (uint64_t)(bestAsk->key >> 64);
+      newL1.lowestAskSize = bestAsk->quantity;
 
-    if (newL1.valid()) {
-      newL1.midPoint = ((double)newL1.lowestAsk + newL1.highestBid) / 2;
-      newL1.spreadBps =
-          ((newL1.lowestAsk - newL1.highestBid) * 10000) / newL1.midPoint;
-      level1 = std::make_shared<L1Orderbook>(std::move(newL1));
-      onUpdateCb();
+      if (newL1.valid()) {
+        newL1.midPoint = ((double)newL1.lowestAsk + newL1.highestBid) / 2;
+        newL1.spreadBps =
+            ((newL1.lowestAsk - newL1.highestBid) * 10000) / newL1.midPoint;
+        level1 = std::make_shared<L1Orderbook>(std::move(newL1));
+        onUpdateCb();
+      }
     }
   }
 
