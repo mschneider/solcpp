@@ -329,7 +329,29 @@ struct L1Orderbook {
 
 class BookSide {
  public:
-  BookSide(Side side) : side(side) {}
+  BookSide(Side side, uint8_t maxBookDelay = 255)
+      : side(side), maxBookDelay(maxBookDelay) {}
+
+  auto getMaxTimestamp() {
+    const auto now = std::chrono::system_clock::now();
+    const auto nowUnix =
+        std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
+            .count();
+
+    auto maxTimestamp = nowUnix - maxBookDelay;
+    auto iter = BookSide::BookSideRaw::iterator(side, *raw);
+    while (iter.stack.size() > 0) {
+      if ((*iter).tag == NodeType::LeafNode) {
+        const auto leafNode =
+            reinterpret_cast<const struct LeafNode*>(&(*iter));
+        if (leafNode->timestamp > maxTimestamp) {
+          maxTimestamp = leafNode->timestamp;
+        }
+      }
+      ++iter;
+    }
+    return maxTimestamp;
+  }
 
   bool update(const std::string& decoded) {
     if (decoded.size() != sizeof(BookSideRaw)) {
@@ -341,17 +363,16 @@ class BookSide {
 
     auto iter = BookSide::BookSideRaw::iterator(side, *raw);
     std::vector<Order> newOrders;
+
+    const auto now = getMaxTimestamp();
+
     while (iter.stack.size() > 0) {
       if ((*iter).tag == NodeType::LeafNode) {
         const auto leafNode =
             reinterpret_cast<const struct LeafNode*>(&(*iter));
-        const auto now = std::chrono::system_clock::now();
-        const auto nowUnix = std::chrono::duration_cast<std::chrono::seconds>(
-                                 now.time_since_epoch())
-                                 .count();
         const auto isValid =
             !leafNode->timeInForce ||
-            leafNode->timestamp + leafNode->timeInForce < nowUnix;
+            ((leafNode->timestamp + leafNode->timeInForce) > now);
         if (isValid) {
           newOrders.emplace_back((uint64_t)(leafNode->key >> 64),
                                  leafNode->quantity);
@@ -441,6 +462,7 @@ class BookSide {
   };
 
   const Side side;
+  uint8_t maxBookDelay;
   std::shared_ptr<BookSideRaw> raw = std::make_shared<BookSideRaw>();
   std::shared_ptr<std::vector<Order>> orders =
       std::make_shared<std::vector<Order>>();
