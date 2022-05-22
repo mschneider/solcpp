@@ -470,7 +470,7 @@ class BookSide {
 
 class Trades {
  public:
-  auto getLastTrade() const { return latestTrade; }
+  auto getLastTrade() const { return lastTrade; }
 
   bool update(const std::string& decoded) {
     const auto events = reinterpret_cast<const EventQueue*>(decoded.data());
@@ -487,7 +487,7 @@ class Trades {
 
         if (event.eventType == EventType::Fill) {
           const auto& fill = (FillEvent&)event;
-          latestTrade = std::make_shared<uint64_t>(fill.price);
+          lastTrade = std::make_shared<FillEvent>(fill);
           gotLatest = true;
         }
         // no break; let's iterate to the last fill to get the latest fill order
@@ -500,7 +500,7 @@ class Trades {
 
  private:
   uint64_t lastSeqNum = INT_MAX;
-  std::shared_ptr<uint64_t> latestTrade;
+  std::shared_ptr<FillEvent> lastTrade;
 };
 
 #pragma pack(pop)

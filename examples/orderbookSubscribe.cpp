@@ -34,11 +34,12 @@ class updateLogger {
     if (level1Snapshot) {
       if (level1Snapshot->valid()) {
         spdlog::info("============Update============");
-        auto latestTrade = trades.getAccount()->getLastTrade();
-        if (latestTrade) {
-          spdlog::info("Latest trade: {}", to_string(*latestTrade));
+        auto lastTrade = trades.getAccount()->getLastTrade();
+        if (lastTrade) {
+          spdlog::info("Last trade: price {}, quantity {}", lastTrade->price,
+                       lastTrade->quantity);
         } else {
-          spdlog::info("Latest trade not yet received");
+          spdlog::info("No trade since the subscription started");
         }
         spdlog::info("Bid-Ask {}-{}", level1Snapshot->highestBid,
                      level1Snapshot->lowestAsk);
