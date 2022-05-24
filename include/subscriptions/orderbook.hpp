@@ -9,8 +9,9 @@ namespace mango_v3 {
 namespace subscription {
 class orderbook {
  public:
-  orderbook(const std::string& bidsAccount, const std::string& asksAccount)
-      : bids(bidsAccount, Buy), asks(asksAccount, Sell) {
+  orderbook(const PerpMarket& perpMarket)
+      : bids(perpMarket.bids.toBase58(), Buy),
+        asks(perpMarket.asks.toBase58(), Sell) {
     bids.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
     asks.registerUpdateCallback(std::bind(&orderbook::updateCallback, this));
   }

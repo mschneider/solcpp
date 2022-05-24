@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <stack>
@@ -319,6 +320,27 @@ struct L1Orderbook {
     return ((highestBid && lowestAsk) && (lowestAsk > highestBid)) ? true
                                                                    : false;
   }
+};
+
+class NativeToUi {
+ public:
+  NativeToUi(int64_t quoteLotSize, int64_t baseLotSize, uint8_t quoteDecimals,
+             uint8_t baseDecimals) {
+    baseLotsToUiConvertor = baseLotSize / std::pow(10, baseDecimals);
+    priceLotsToUiConvertor = std::pow(10, (baseDecimals - quoteDecimals)) *
+                             quoteLotSize / baseLotSize;
+  }
+
+  double getPrice(int64_t price) const {
+    return price * priceLotsToUiConvertor;
+  }
+  double getQuantity(int64_t quantity) const {
+    return quantity * baseLotsToUiConvertor;
+  }
+
+ private:
+  double baseLotsToUiConvertor;
+  double priceLotsToUiConvertor;
 };
 
 class BookSide {

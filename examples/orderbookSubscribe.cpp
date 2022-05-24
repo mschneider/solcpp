@@ -15,8 +15,9 @@ class updateLogger {
  public:
   updateLogger(
       mango_v3::subscription::orderbook& orderbook,
-      mango_v3::subscription::accountSubscriber<mango_v3::Trades>& trades)
-      : orderbook(orderbook), trades(trades) {
+      mango_v3::subscription::accountSubscriber<mango_v3::Trades>& trades,
+      const mango_v3::NativeToUi& nativeToUi)
+      : orderbook(orderbook), trades(trades), nativeToUi(nativeToUi) {
     orderbook.registerUpdateCallback(std::bind(&updateLogger::logUpdate, this));
     trades.registerUpdateCallback(std::bind(&updateLogger::logUpdate, this));
     orderbook.registerCloseCallback(std::bind(&updateLogger::abort, this));
@@ -36,15 +37,18 @@ class updateLogger {
         spdlog::info("============Update============");
         auto lastTrade = trades.getAccount()->getLastTrade();
         if (lastTrade) {
-          spdlog::info("Last trade: price {}, quantity {}", lastTrade->price,
-                       lastTrade->quantity);
+          spdlog::info("Last trade: price {:.2f}, quantity {}",
+                       nativeToUi.getPrice(lastTrade->price),
+                       nativeToUi.getQuantity(lastTrade->quantity));
         } else {
           spdlog::info("No trade since the subscription started");
         }
-        spdlog::info("Bid-Ask {}-{}", level1Snapshot->highestBid,
-                     level1Snapshot->lowestAsk);
-        spdlog::info("MidPrice: {}", level1Snapshot->midPoint);
-        spdlog::info("Spread: {0:.2f} bps", level1Snapshot->spreadBps);
+        spdlog::info("Bid-Ask {:.2f}-{:.2f}",
+                     nativeToUi.getPrice(level1Snapshot->highestBid),
+                     nativeToUi.getPrice(level1Snapshot->lowestAsk));
+        spdlog::info("MidPrice: {:.2f}",
+                     nativeToUi.getPrice(level1Snapshot->midPoint));
+        spdlog::info("Spread: {:.2f} bps", level1Snapshot->spreadBps);
 
         constexpr auto depth = 2;
         spdlog::info("Market depth -{}%: {}", depth,
@@ -62,6 +66,7 @@ class updateLogger {
  private:
   mango_v3::subscription::orderbook& orderbook;
   mango_v3::subscription::accountSubscriber<mango_v3::Trades>& trades;
+  const mango_v3::NativeToUi& nativeToUi;
   std::mutex logMtx;
 };
 
@@ -81,9 +86,12 @@ int main() {
   assert(market.mangoGroup.toBase58() == config.group);
 
   subscription::accountSubscriber<Trades> trades(market.eventQueue.toBase58());
-  subscription::orderbook book(market.bids.toBase58(), market.asks.toBase58());
+  subscription::orderbook book(market);
 
-  updateLogger logger(book, trades);
+  mango_v3::NativeToUi nativeToUi(market.quoteLotSize, market.baseLotSize,
+                                  group.tokens[QUOTE_INDEX].decimals,
+                                  group.tokens[marketIndex].decimals);
+  updateLogger logger(book, trades, nativeToUi);
   logger.start();
 
   using namespace std::literals::chrono_literals;
