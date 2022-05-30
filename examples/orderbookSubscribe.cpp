@@ -37,7 +37,7 @@ class updateLogger {
         spdlog::info("============Update============");
         auto lastTrade = trades.getAccount()->getLastTrade();
         if (lastTrade) {
-          spdlog::info("Last trade: price {:.2f}, quantity {}",
+          spdlog::info("Last trade: price {:.2f}, quantity {:.2f}",
                        nativeToUi.getPrice(lastTrade->price),
                        nativeToUi.getQuantity(lastTrade->quantity));
         } else {

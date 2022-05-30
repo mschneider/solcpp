@@ -334,6 +334,7 @@ class NativeToUi {
   double getPrice(int64_t price) const {
     return price * priceLotsToUiConvertor;
   }
+
   double getQuantity(int64_t quantity) const {
     return quantity * baseLotsToUiConvertor;
   }
