@@ -43,9 +43,11 @@ class updateLogger {
         } else {
           spdlog::info("No trade since the subscription started");
         }
-        spdlog::info("Bid-Ask {:.2f}-{:.2f}",
+        spdlog::info("Bid-Ask ({:.2f}) {:.2f}-{:.2f} ({:.2f})",
+                     nativeToUi.getQuantity(level1Snapshot->highestBidSize),
                      nativeToUi.getPrice(level1Snapshot->highestBid),
-                     nativeToUi.getPrice(level1Snapshot->lowestAsk));
+                     nativeToUi.getPrice(level1Snapshot->lowestAsk),
+                     nativeToUi.getQuantity(level1Snapshot->lowestAskSize));
         spdlog::info("MidPrice: {:.2f}",
                      nativeToUi.getPrice(level1Snapshot->midPoint));
         spdlog::info("Spread: {:.2f} bps", level1Snapshot->spreadBps);
