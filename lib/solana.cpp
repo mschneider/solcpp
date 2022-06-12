@@ -20,7 +20,7 @@ Connection::Connection(const std::string &rpc_url,
 json Connection::getAccountInfoRequest(const std::string &account,
                                        const std::string &encoding,
                                        const size_t offset,
-                                       const size_t length) {
+                                       const size_t length) const {
   json params = {account};
   json options = {{"encoding", encoding}};
   if (offset && length) {

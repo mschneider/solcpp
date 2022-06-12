@@ -1,6 +1,10 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
+#include <memory>
+#include <mutex>
+#include <stack>
 #include <string>
 
 #include "fixedp.h"
@@ -18,6 +22,8 @@ const int INFO_LEN = 32;
 const int QUOTE_INDEX = 15;
 const int EVENT_SIZE = 200;
 const int EVENT_QUEUE_SIZE = 256;
+const int BOOK_NODE_SIZE = 88;
+const int BOOK_SIZE = 1024;
 const int MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION = 152;
 
 struct Config {
@@ -127,6 +133,7 @@ struct MangoCache {
   PerpMarketCache perp_market_cache[MAX_PAIRS];
 };
 
+// todo: change to scoped enum class
 enum Side : uint8_t { Buy, Sell };
 
 struct PerpAccountInfo {
@@ -199,6 +206,7 @@ struct EventQueueHeader {
   uint64_t seqNum;
 };
 
+// todo: change to scoped enum class
 enum EventType : uint8_t { Fill, Out, Liquidate };
 
 struct AnyEvent {
@@ -257,6 +265,270 @@ struct OutEvent {
 struct EventQueue {
   EventQueueHeader header;
   AnyEvent items[EVENT_QUEUE_SIZE];
+};
+
+// todo: change to scoped enum class
+enum NodeType : uint32_t {
+  Uninitialized = 0,
+  InnerNode,
+  LeafNode,
+  FreeNode,
+  LastFreeNode
+};
+
+struct AnyNode {
+  NodeType tag;
+  uint8_t padding[BOOK_NODE_SIZE - 4];
+};
+
+struct InnerNode {
+  NodeType tag;
+  uint32_t prefixLen;
+  __uint128_t key;
+  uint32_t children[2];
+  uint8_t padding[BOOK_NODE_SIZE - 32];
+};
+
+struct LeafNode {
+  NodeType tag;
+  uint8_t ownerSlot;
+  uint8_t orderType;
+  uint8_t version;
+  uint8_t timeInForce;
+  __uint128_t key;
+  solana::PublicKey owner;
+  uint64_t quantity;
+  uint64_t clientOrderId;
+  uint64_t bestInitial;
+  uint64_t timestamp;
+};
+
+struct FreeNode {
+  NodeType tag;
+  uint32_t next;
+  uint8_t padding[BOOK_NODE_SIZE - 8];
+};
+
+struct L1Orderbook {
+  uint64_t highestBid = 0;
+  uint64_t highestBidSize = 0;
+  uint64_t lowestAsk = 0;
+  uint64_t lowestAskSize = 0;
+  double midPoint = 0.0;
+  double spreadBps = 0.0;
+
+  bool valid() const {
+    return ((highestBid && lowestAsk) && (lowestAsk > highestBid)) ? true
+                                                                   : false;
+  }
+};
+
+class NativeToUi {
+ public:
+  NativeToUi(int64_t quoteLotSize, int64_t baseLotSize, uint8_t quoteDecimals,
+             uint8_t baseDecimals) {
+    baseLotsToUiConvertor = baseLotSize / std::pow(10, baseDecimals);
+    priceLotsToUiConvertor = std::pow(10, (baseDecimals - quoteDecimals)) *
+                             quoteLotSize / baseLotSize;
+  }
+
+  double getPrice(int64_t price) const {
+    return price * priceLotsToUiConvertor;
+  }
+
+  double getQuantity(int64_t quantity) const {
+    return quantity * baseLotsToUiConvertor;
+  }
+
+ private:
+  double baseLotsToUiConvertor;
+  double priceLotsToUiConvertor;
+};
+
+class BookSide {
+ public:
+  using order_t = struct LeafNode;
+  using orders_t = std::vector<order_t>;
+
+  BookSide(Side side, uint8_t maxBookDelay = 255)
+      : side(side), maxBookDelay(maxBookDelay) {}
+
+  bool update(const std::string& decoded) {
+    if (decoded.size() != sizeof(BookSideRaw)) {
+      throw std::runtime_error("invalid response length " +
+                               std::to_string(decoded.size()) + " expected " +
+                               std::to_string(sizeof(BookSideRaw)));
+    }
+    std::scoped_lock lock(updateMtx);
+    memcpy(&(*raw), decoded.data(), sizeof(BookSideRaw));
+    auto iter = BookSide::BookSideRaw::iterator(side, *raw);
+    orders_t newOrders;
+
+    const auto now = getMaxTimestamp();
+
+    while (iter.stack.size() > 0) {
+      if ((*iter).tag == NodeType::LeafNode) {
+        const auto leafNode =
+            reinterpret_cast<const struct LeafNode*>(&(*iter));
+        const auto isValid =
+            !leafNode->timeInForce ||
+            ((leafNode->timestamp + leafNode->timeInForce) > now);
+        if (isValid) {
+          newOrders.push_back(*leafNode);
+        }
+      }
+      ++iter;
+    }
+
+    if (!newOrders.empty()) {
+      orders = std::make_shared<orders_t>(std::move(newOrders));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  std::shared_ptr<order_t> getBestOrder() const {
+    std::scoped_lock lock(updateMtx);
+    return orders->empty() ? nullptr
+                           : std::make_shared<order_t>(orders->front());
+  }
+
+  uint64_t getVolume(uint64_t price) const {
+    std::scoped_lock lock(updateMtx);
+    if (side == Side::Buy) {
+      return getVolume<std::greater_equal<uint64_t>>(price);
+    } else {
+      return getVolume<std::less_equal<uint64_t>>(price);
+    }
+  }
+
+ private:
+  long long getMaxTimestamp() {
+    const auto now = std::chrono::system_clock::now();
+    const auto nowUnix =
+        std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
+            .count();
+
+    auto maxTimestamp = nowUnix - maxBookDelay;
+    auto iter = BookSide::BookSideRaw::iterator(side, *raw);
+    while (iter.stack.size() > 0) {
+      if ((*iter).tag == NodeType::LeafNode) {
+        const auto leafNode =
+            reinterpret_cast<const struct LeafNode*>(&(*iter));
+        if (leafNode->timestamp > maxTimestamp) {
+          maxTimestamp = leafNode->timestamp;
+        }
+      }
+      ++iter;
+    }
+    return maxTimestamp;
+  }
+
+  template <typename Op>
+  uint64_t getVolume(uint64_t price) const {
+    Op operation;
+    uint64_t volume = 0;
+    auto tmpOrders = *orders;
+    for (auto&& order : tmpOrders) {
+      auto orderPrice = (uint64_t)(order.key >> 64);
+      if (operation(orderPrice, price)) {
+        volume += order.quantity;
+      } else {
+        break;
+      }
+    }
+    return volume;
+  }
+
+  struct BookSideRaw {
+    MetaData metaData;
+    uint64_t bumpIndex;
+    uint64_t freeListLen;
+    uint32_t freeListHead;
+    uint32_t rootNode;
+    uint64_t leafCount;
+    AnyNode nodes[BOOK_SIZE];
+
+    struct iterator {
+      Side side;
+      const BookSideRaw& bookSide;
+      std::stack<uint32_t> stack;
+      uint32_t left, right;
+
+      iterator(Side side, const BookSideRaw& bookSide)
+          : side(side), bookSide(bookSide) {
+        stack.push(bookSide.rootNode);
+        left = side == Side::Buy ? 1 : 0;
+        right = side == Side::Buy ? 0 : 1;
+      }
+
+      bool operator==(const iterator& other) const {
+        return &bookSide == &other.bookSide && stack.top() == other.stack.top();
+      }
+
+      iterator& operator++() {
+        if (stack.size() > 0) {
+          const auto& elem = **this;
+          stack.pop();
+
+          if (elem.tag == NodeType::InnerNode) {
+            const auto innerNode =
+                reinterpret_cast<const struct InnerNode*>(&elem);
+            stack.push(innerNode->children[right]);
+            stack.push(innerNode->children[left]);
+          }
+        }
+        return *this;
+      }
+
+      const AnyNode& operator*() const { return bookSide.nodes[stack.top()]; }
+    };
+  };
+
+  const Side side;
+  uint8_t maxBookDelay;
+  std::shared_ptr<BookSideRaw> raw = std::make_shared<BookSideRaw>();
+  std::shared_ptr<orders_t> orders = std::make_shared<orders_t>();
+  mutable std::mutex updateMtx;
+};
+
+class Trades {
+ public:
+  auto getLastTrade() const { return lastTrade; }
+
+  bool update(const std::string& decoded) {
+    std::scoped_lock lock(updateMtx);
+    const auto events = reinterpret_cast<const EventQueue*>(decoded.data());
+    const auto seqNumDiff = events->header.seqNum - lastSeqNum;
+    const auto lastSlot =
+        (events->header.head + events->header.count) % EVENT_QUEUE_SIZE;
+
+    bool gotLatest = false;
+    if (events->header.seqNum > lastSeqNum) {
+      for (int offset = seqNumDiff; offset > 0; --offset) {
+        const auto slot =
+            (lastSlot - offset + EVENT_QUEUE_SIZE) % EVENT_QUEUE_SIZE;
+        const auto& event = events->items[slot];
+
+        if (event.eventType == EventType::Fill) {
+          const auto& fill = (FillEvent&)event;
+          lastTrade = std::make_shared<FillEvent>(fill);
+          gotLatest = true;
+        }
+        // no break; let's iterate to the last fill to get the latest fill
+        // order
+      }
+    }
+
+    lastSeqNum = events->header.seqNum;
+    return gotLatest;
+  }
+
+ private:
+  uint64_t lastSeqNum = INT_MAX;
+  std::shared_ptr<FillEvent> lastTrade;
+  std::mutex updateMtx;
 };
 
 #pragma pack(pop)

@@ -631,3 +631,58 @@ TEST_CASE("account9") {
   CHECK_EQ(leverage.to_double(), 3.919442838288937);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
+
+TEST_CASE("NativeToUi Conversions") {
+  using namespace mango_v3;
+  const auto& config = MAINNET;
+  const solana::rpc::Connection solCon;
+  const auto group = solCon.getAccountInfo<MangoGroup>(config.group);
+
+  for (auto&& symbol : config.symbols) {
+    const auto marketIndex = (&symbol - &config.symbols[0]);
+    const auto perpMarketPk = group.perpMarkets[marketIndex].perpMarket;
+    /* todo: currently getAccountInfo throws invalid response length exception
+     * for following tokens, so filtering them*/
+    if (symbol == "USDT" or symbol == "COPE" or symbol == "BNB" or
+        symbol == "USDC" or symbol == "") {
+      continue;
+    }
+    auto market = solCon.getAccountInfo<PerpMarket>(perpMarketPk.toBase58());
+
+    mango_v3::NativeToUi nativeToUi(market.quoteLotSize, market.baseLotSize,
+                                    group.tokens[QUOTE_INDEX].decimals,
+                                    group.tokens[marketIndex].decimals);
+
+    if (symbol == "MNGO") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 1.0);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 10000);
+    } else if (symbol == "BTC") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 1000);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 1);
+    } else if (symbol == "ETH") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 1000);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 10);
+    } else if (symbol == "SOL") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 100);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 100);
+    } else if (symbol == "SRM") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 10);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 1000);
+    } else if (symbol == "RAY") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 10);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 1000);
+    } else if (symbol == "FTT") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 10);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 1000);
+    } else if (symbol == "MSOL") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 1);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 10000);
+    } else if (symbol == "AVAX") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 1000);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 10);
+    } else if (symbol == "LUNA") {
+      CHECK_EQ(nativeToUi.getPrice(10000), 100);
+      CHECK_EQ(nativeToUi.getQuantity(10000), 100);
+    }
+  }
+}
