@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <stack>
 #include <string>
 
@@ -352,35 +353,14 @@ class BookSide {
   BookSide(Side side, uint8_t maxBookDelay = 255)
       : side(side), maxBookDelay(maxBookDelay) {}
 
-  auto getMaxTimestamp() {
-    const auto now = std::chrono::system_clock::now();
-    const auto nowUnix =
-        std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
-            .count();
-
-    auto maxTimestamp = nowUnix - maxBookDelay;
-    auto iter = BookSide::BookSideRaw::iterator(side, *raw);
-    while (iter.stack.size() > 0) {
-      if ((*iter).tag == NodeType::LeafNode) {
-        const auto leafNode =
-            reinterpret_cast<const struct LeafNode*>(&(*iter));
-        if (leafNode->timestamp > maxTimestamp) {
-          maxTimestamp = leafNode->timestamp;
-        }
-      }
-      ++iter;
-    }
-    return maxTimestamp;
-  }
-
   bool update(const std::string& decoded) {
     if (decoded.size() != sizeof(BookSideRaw)) {
       throw std::runtime_error("invalid response length " +
                                std::to_string(decoded.size()) + " expected " +
                                std::to_string(sizeof(BookSideRaw)));
     }
+    std::scoped_lock lock(updateMtx);
     memcpy(&(*raw), decoded.data(), sizeof(BookSideRaw));
-
     auto iter = BookSide::BookSideRaw::iterator(side, *raw);
     orders_t newOrders;
 
@@ -409,11 +389,13 @@ class BookSide {
   }
 
   std::shared_ptr<order_t> getBestOrder() const {
+    std::scoped_lock lock(updateMtx);
     return orders->empty() ? nullptr
                            : std::make_shared<order_t>(orders->front());
   }
 
   uint64_t getVolume(uint64_t price) const {
+    std::scoped_lock lock(updateMtx);
     if (side == Side::Buy) {
       return getVolume<std::greater_equal<uint64_t>>(price);
     } else {
@@ -422,11 +404,33 @@ class BookSide {
   }
 
  private:
+  long long getMaxTimestamp() {
+    const auto now = std::chrono::system_clock::now();
+    const auto nowUnix =
+        std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
+            .count();
+
+    auto maxTimestamp = nowUnix - maxBookDelay;
+    auto iter = BookSide::BookSideRaw::iterator(side, *raw);
+    while (iter.stack.size() > 0) {
+      if ((*iter).tag == NodeType::LeafNode) {
+        const auto leafNode =
+            reinterpret_cast<const struct LeafNode*>(&(*iter));
+        if (leafNode->timestamp > maxTimestamp) {
+          maxTimestamp = leafNode->timestamp;
+        }
+      }
+      ++iter;
+    }
+    return maxTimestamp;
+  }
+
   template <typename Op>
   uint64_t getVolume(uint64_t price) const {
     Op operation;
     uint64_t volume = 0;
-    for (auto&& order : *orders) {
+    auto tmpOrders = *orders;
+    for (auto&& order : tmpOrders) {
       auto orderPrice = (uint64_t)(order.key >> 64);
       if (operation(orderPrice, price)) {
         volume += order.quantity;
@@ -486,6 +490,7 @@ class BookSide {
   uint8_t maxBookDelay;
   std::shared_ptr<BookSideRaw> raw = std::make_shared<BookSideRaw>();
   std::shared_ptr<orders_t> orders = std::make_shared<orders_t>();
+  mutable std::mutex updateMtx;
 };
 
 class Trades {
@@ -493,6 +498,7 @@ class Trades {
   auto getLastTrade() const { return lastTrade; }
 
   bool update(const std::string& decoded) {
+    std::scoped_lock lock(updateMtx);
     const auto events = reinterpret_cast<const EventQueue*>(decoded.data());
     const auto seqNumDiff = events->header.seqNum - lastSeqNum;
     const auto lastSlot =
@@ -522,6 +528,7 @@ class Trades {
  private:
   uint64_t lastSeqNum = INT_MAX;
   std::shared_ptr<FillEvent> lastTrade;
+  std::mutex updateMtx;
 };
 
 #pragma pack(pop)
