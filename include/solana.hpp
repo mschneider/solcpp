@@ -284,7 +284,10 @@ class Connection {
   ///
   /// 2. Invoke RPC endpoints
   ///
-  std::string requestAirdrop(const PublicKey &pubkey,uint64_t lamports);
+  std::string requestAirdrop(const PublicKey &pubkey,uint64_t lamports,std::string url);
+
+  std::string sendTransaction(const std::string &transaction,bool skipPreflight,
+    const std::string &preflightCommitment);
 
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");

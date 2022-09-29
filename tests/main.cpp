@@ -7,7 +7,7 @@ TEST_CASE("Request Airdrop"){
     const auto fromKey = solana::PublicKey::fromBase58(
       "83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri");
       auto connection = solana::rpc::Connection();
-  auto result = connection.requestAirdrop(fromKey,1000000000);
+  auto result = connection.requestAirdrop(fromKey,1000000000,"http://localhost:8899");
   CHECK_EQ(2,2);
 }
 

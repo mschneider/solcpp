@@ -77,6 +77,9 @@ json Connection::setAirdrop(
   
 }
 
+
+
+
 ///
 /// 2. Invoke RPC endpoints
 ///
@@ -133,7 +136,6 @@ std::string Connection::signAndSendTransaction(
     const std::string &preflightCommitment) {
   std::vector<uint8_t> txBody;
   tx.serializeTo(txBody);
-
   const auto signature = keypair.privateKey.signMessage(txBody);
   const auto b58Sig =
       b58encode(std::string(signature.begin(), signature.end()));
@@ -162,11 +164,27 @@ std::string Connection::signAndSendTransaction(
   return b58Sig;
 }
 
-std::string Connection::requestAirdrop(const PublicKey &pubkey,uint64_t lamports){
+std::string Connection::sendTransaction(const std::string &transaction,bool skipPreflight,
+    const std::string &preflightCommitment){
+
+    const json req=sendTransactionRequest(transaction,"base64",skipPreflight,preflightCommitment);
+
+      cpr::Response r =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+  
+  json res=r.text;
+  return res["result"];
+}
+
+std::string Connection::requestAirdrop(const PublicKey &pubkey,uint64_t lamports,std::string url){
 
   const json req = setAirdrop(pubkey.toBase58(),lamports);
   cpr::Response r =
-      cpr::Post(cpr::Url{"http://localhost:8899"}, cpr::Body{req.dump()},
+      cpr::Post(cpr::Url{url}, cpr::Body{req.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
   //json res = json::parse(r.text);
   std::cout<<pubkey.toBase58()<<r.status_code << std::endl;
