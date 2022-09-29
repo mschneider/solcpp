@@ -279,9 +279,13 @@ class Connection {
       const std::string &transaction, const std::string &encoding = "base58",
       bool skipPreflight = false,
       const std::string &preflightCommitment = "finalized");
+
+  json setAirdrop(const std::string &account,uint64_t lamports);
   ///
   /// 2. Invoke RPC endpoints
   ///
+  std::string requestAirdrop(const PublicKey &pubkey,uint64_t lamports);
+
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
   Blockhash getLatestBlockhash(const std::string &commitment = "finalized");

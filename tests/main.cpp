@@ -3,6 +3,14 @@
 
 #include "MangoAccount.hpp"
 
+TEST_CASE("Request Airdrop"){
+    const auto fromKey = solana::PublicKey::fromBase58(
+      "83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri");
+      auto connection = solana::rpc::Connection();
+  auto result = connection.requestAirdrop(fromKey,1000000000);
+  CHECK_EQ(2,2);
+}
+
 TEST_CASE("base58 decode & encode") {
   const std::vector<std::string> bs58s{
       "98pjRuQjK3qA6gXts96PqZT4Ze5QmnCmt3QYjhbUSPue",

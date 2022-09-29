@@ -67,6 +67,16 @@ json Connection::sendTransactionRequest(
   return jsonRequest("sendTransaction", params);
 }
 
+json Connection::setAirdrop(
+  const std::string &account,uint64_t lamports
+){
+
+  const json params = {account, lamports};
+
+  return jsonRequest("requestAirdrop", params);
+  
+}
+
 ///
 /// 2. Invoke RPC endpoints
 ///
@@ -151,6 +161,24 @@ std::string Connection::signAndSendTransaction(
 
   return b58Sig;
 }
+
+std::string Connection::requestAirdrop(const PublicKey &pubkey,uint64_t lamports){
+
+  const json req = setAirdrop(pubkey.toBase58(),lamports);
+  cpr::Response r =
+      cpr::Post(cpr::Url{"http://localhost:8899"}, cpr::Body{req.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  //json res = json::parse(r.text);
+  std::cout<<pubkey.toBase58()<<r.status_code << std::endl;
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+
+  
+  return r.text;
+
+}
+
 }  // namespace rpc
 
 }  // namespace solana
