@@ -164,6 +164,37 @@ std::string Connection::signAndSendTransaction(
   return b58Sig;
 }
 
+std::string Connection::sendRawTransaction(
+    const Keypair &keypair, std::vector<uint8_t> &tx, bool skipPreflight,
+    const std::string &preflightCommitment) {
+  const auto signature = keypair.privateKey.signMessage(tx);
+  const auto b58Sig = b58encode(std::string(signature.begin(), signature.end()));
+
+  std::vector<uint8_t> signedTx;
+  solana::CompactU16::encode(1, signedTx);
+  signedTx.insert(signedTx.end(), signature.begin(), signature.end());
+  signedTx.insert(signedTx.end(), tx.begin(), tx.end());
+
+  const auto b64tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
+  const json req = sendTransactionRequest(b64tx, "base64", skipPreflight,
+                                          preflightCommitment);
+  const std::string jsonSerialized = req.dump();
+
+  cpr::Response r =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{jsonSerialized},
+                cpr::Header{{"Content-Type", "application/json"}});
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+
+  json res = json::parse(r.text);
+  if (b58Sig != res["result"])
+    throw std::runtime_error("could not submit tx: " + r.text);
+
+  return b58Sig;
+}
+
+
 std::string Connection::sendTransaction(const std::string &transaction,bool skipPreflight,
     const std::string &preflightCommitment){
 
