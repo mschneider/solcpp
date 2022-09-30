@@ -289,7 +289,7 @@ class Connection {
   std::string sendTransaction(const std::string &transaction,bool skipPreflight,
     const std::string &preflightCommitment);
   
-  std::string Connection::sendRawTransaction(
+  std::string sendRawTransaction(
     const Keypair &keypair, std::vector<uint8_t> &tx, bool skipPreflight,
     const std::string &preflightCommitment);
 
