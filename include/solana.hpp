@@ -284,8 +284,7 @@ class Connection {
   ///
   /// 2. Invoke RPC endpoints
   ///
-  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports,
-                             std::string url);
+  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
 
   /**
    * Sign and send a transaction
