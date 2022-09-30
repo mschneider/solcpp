@@ -67,7 +67,7 @@ json Connection::sendTransactionRequest(
   return jsonRequest("sendTransaction", params);
 }
 
-json Connection::setAirdrop(
+json Connection::sendAirdropRequest(
   const std::string &account,uint64_t lamports
 ){
 
@@ -213,7 +213,7 @@ std::string Connection::sendTransaction(const std::string &transaction,bool skip
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,uint64_t lamports,std::string url){
 
-  const json req = setAirdrop(pubkey.toBase58(),lamports);
+  const json req = sendAirdropRequest(pubkey.toBase58(),lamports);
   cpr::Response r =
       cpr::Post(cpr::Url{url}, cpr::Body{req.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});

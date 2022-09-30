@@ -280,7 +280,7 @@ class Connection {
       bool skipPreflight = false,
       const std::string &preflightCommitment = "finalized");
 
-  json setAirdrop(const std::string &account,uint64_t lamports);
+  json sendAirdropRequest(const std::string &account,uint64_t lamports);
   ///
   /// 2. Invoke RPC endpoints
   ///
