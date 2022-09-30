@@ -1,3 +1,4 @@
+#include <iostream>
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
@@ -10,8 +11,8 @@ TEST_CASE("Request Airdrop") {
       "83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri");
   auto connection = solana::rpc::Connection(DEVNET);
   auto result = connection.requestAirdrop(fromKey, 1000000000);
-  CHECK_EQ(2, 2);
-}
+  CHECK_EQ(result.length(), 88);
+} 
 
 TEST_CASE("base58 decode & encode") {
   const std::vector<std::string> bs58s{
