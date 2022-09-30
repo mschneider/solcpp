@@ -295,6 +295,14 @@ class Connection {
                                  std::vector<uint8_t> &tx, bool skipPreflight,
                                  const std::string &preflightCommitment);
 
+  /**
+   * Send a transaction that has already been signed, serialized into the
+   * wire format, and encoded as a base64 string
+   */
+  std::string sendEncodedTransaction(const std::string &transaction,
+                              bool skipPreflight,
+                              const std::string &preflightCommitment);
+
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
   Blockhash getLatestBlockhash(const std::string &commitment = "finalized");

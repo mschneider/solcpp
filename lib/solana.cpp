@@ -206,6 +206,23 @@ std::string Connection::sendTransaction(
   return res["result"];
 }
 
+std::string Connection::sendEncodedTransaction(
+    const std::string &transaction, bool skipPreflight,
+    const std::string &preflightCommitment) {
+  const json req = sendTransactionRequest(transaction, "base64", skipPreflight,
+                                          preflightCommitment);
+
+  cpr::Response r =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+
+  json res = r.text;
+  return res["result"];
+}
+
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
                                        uint64_t lamports, std::string url) {
   const json req = sendAirdropRequest(pubkey.toBase58(), lamports);
