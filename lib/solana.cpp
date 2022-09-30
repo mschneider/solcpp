@@ -130,35 +130,10 @@ std::string Connection::signAndSendTransaction(
     const std::string &preflightCommitment) {
   std::vector<uint8_t> txBody;
   tx.serializeTo(txBody);
-  const auto signature = keypair.privateKey.signMessage(txBody);
-  const auto b58Sig =
-      b58encode(std::string(signature.begin(), signature.end()));
-
-  std::vector<uint8_t> signedTx;
-  solana::CompactU16::encode(1, signedTx);
-  signedTx.insert(signedTx.end(), signature.begin(), signature.end());
-  signedTx.insert(signedTx.end(), txBody.begin(), txBody.end());
-
-  const auto b64tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
-  const json req = sendTransactionRequest(b64tx, "base64", skipPreflight,
-                                          preflightCommitment);
-  const std::string jsonSerialized = req.dump();
-
-  cpr::Response r =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{jsonSerialized},
-                cpr::Header{{"Content-Type", "application/json"}});
-  if (r.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(r.status_code));
-
-  json res = json::parse(r.text);
-  if (b58Sig != res["result"])
-    throw std::runtime_error("could not submit tx: " + r.text);
-
-  return b58Sig;
+  return sendTransaction(keypair, txBody, skipPreflight, preflightCommitment);
 }
 
-std::string Connection::sendRawTransaction(
+std::string Connection::sendTransaction(
     const Keypair &keypair, std::vector<uint8_t> &tx, bool skipPreflight,
     const std::string &preflightCommitment) {
   const auto signature = keypair.privateKey.signMessage(tx);
@@ -189,21 +164,12 @@ std::string Connection::sendRawTransaction(
   return b58Sig;
 }
 
-std::string Connection::sendTransaction(
+std::string Connection::sendRawTransaction(
     const std::string &transaction, bool skipPreflight,
     const std::string &preflightCommitment) {
-  const json req = sendTransactionRequest(transaction, "base64", skipPreflight,
-                                          preflightCommitment);
-
-  cpr::Response r =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-  if (r.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(r.status_code));
-
-  json res = r.text;
-  return res["result"];
+  const auto encodedTransaction = b64encode(transaction);
+  return sendEncodedTransaction(encodedTransaction, skipPreflight,
+                                preflightCommitment);
 }
 
 std::string Connection::sendEncodedTransaction(

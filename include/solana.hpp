@@ -287,12 +287,19 @@ class Connection {
   std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports,
                              std::string url);
 
-  std::string sendTransaction(const std::string &transaction,
+  /**
+   * Sign and send a transaction
+   */
+  std::string sendTransaction(const Keypair &keypair, std::vector<uint8_t> &tx,
                               bool skipPreflight,
                               const std::string &preflightCommitment);
 
-  std::string sendRawTransaction(const Keypair &keypair,
-                                 std::vector<uint8_t> &tx, bool skipPreflight,
+  /**
+   * Send a transaction that has already been signed and serialized into the
+   * wire format
+   */
+  std::string sendRawTransaction(const std::string &transaction,
+                                 bool skipPreflight,
                                  const std::string &preflightCommitment);
 
   /**
@@ -300,8 +307,8 @@ class Connection {
    * wire format, and encoded as a base64 string
    */
   std::string sendEncodedTransaction(const std::string &transaction,
-                              bool skipPreflight,
-                              const std::string &preflightCommitment);
+                                     bool skipPreflight,
+                                     const std::string &preflightCommitment);
 
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
@@ -309,6 +316,7 @@ class Connection {
   uint64_t getBlockHeight(const std::string &commitment = "finalized");
   json getSignatureStatuses(const std::vector<std::string> &signatures,
                             bool searchTransactionHistory = false);
+  [[deprecated]]
   std::string signAndSendTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       bool skipPreflight = false,
