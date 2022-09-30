@@ -212,13 +212,13 @@ std::string Connection::requestAirdrop(const PublicKey &pubkey,
   cpr::Response r =
       cpr::Post(cpr::Url{url}, cpr::Body{req.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
-  // json res = json::parse(r.text);
-  std::cout << pubkey.toBase58() << r.status_code << std::endl;
+  json res = json::parse(r.text);
+  
   if (r.status_code != 200)
     throw std::runtime_error("unexpected status_code " +
                              std::to_string(r.status_code));
 
-  return r.text;
+  return res;
 }
 
 }  // namespace rpc
