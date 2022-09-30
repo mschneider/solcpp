@@ -3,12 +3,14 @@
 
 #include "MangoAccount.hpp"
 
-TEST_CASE("Request Airdrop"){
-    const auto fromKey = solana::PublicKey::fromBase58(
+const std::string DEVNET = "https://api.devnet.solana.com";
+
+TEST_CASE("Request Airdrop") {
+  const auto fromKey = solana::PublicKey::fromBase58(
       "83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri");
-      auto connection = solana::rpc::Connection();
-  auto result = connection.requestAirdrop(fromKey,1000000000,"http://localhost:8899");
-  CHECK_EQ(2,2);
+  auto connection = solana::rpc::Connection(DEVNET);
+  auto result = connection.requestAirdrop(fromKey, 1000000000);
+  CHECK_EQ(2, 2);
 }
 
 TEST_CASE("base58 decode & encode") {
