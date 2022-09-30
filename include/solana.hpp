@@ -284,6 +284,10 @@ class Connection {
   ///
   /// 2. Invoke RPC endpoints
   ///
+
+  /**
+   * Request an allocation of lamports to the specified address
+   */
   std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
 
   /**
