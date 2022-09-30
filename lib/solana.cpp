@@ -178,30 +178,29 @@ std::string Connection::sendEncodedTransaction(
   const json req = sendTransactionRequest(transaction, "base64", skipPreflight,
                                           preflightCommitment);
 
-  cpr::Response r =
+  cpr::Response res =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
-  if (r.status_code != 200)
+  if (res.status_code != 200)
     throw std::runtime_error("unexpected status_code " +
-                             std::to_string(r.status_code));
+                             std::to_string(res.status_code));
 
-  json res = r.text;
-  return res["result"];
+  return json::parse(res.text)["result"];
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
                                        uint64_t lamports) {
   const json req = sendAirdropRequest(pubkey.toBase58(), lamports);
 
-  cpr::Response response =
+  cpr::Response res =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
 
-  if (response.status_code != 200)
+  if (res.status_code != 200)
     throw std::runtime_error("unexpected status_code " +
-                             std::to_string(response.status_code));
+                             std::to_string(res.status_code));
 
-  return json::parse(response.text)["result"];
+  return json::parse(res.text)["result"];
 }
 
 }  // namespace rpc
