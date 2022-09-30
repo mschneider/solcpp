@@ -67,18 +67,12 @@ json Connection::sendTransactionRequest(
   return jsonRequest("sendTransaction", params);
 }
 
-json Connection::sendAirdropRequest(
-  const std::string &account,uint64_t lamports
-){
-
+json Connection::sendAirdropRequest(const std::string &account,
+                                    uint64_t lamports) {
   const json params = {account, lamports};
 
   return jsonRequest("requestAirdrop", params);
-  
 }
-
-
-
 
 ///
 /// 2. Invoke RPC endpoints
@@ -168,7 +162,8 @@ std::string Connection::sendRawTransaction(
     const Keypair &keypair, std::vector<uint8_t> &tx, bool skipPreflight,
     const std::string &preflightCommitment) {
   const auto signature = keypair.privateKey.signMessage(tx);
-  const auto b58Sig = b58encode(std::string(signature.begin(), signature.end()));
+  const auto b58Sig =
+      b58encode(std::string(signature.begin(), signature.end()));
 
   std::vector<uint8_t> signedTx;
   solana::CompactU16::encode(1, signedTx);
@@ -194,38 +189,36 @@ std::string Connection::sendRawTransaction(
   return b58Sig;
 }
 
+std::string Connection::sendTransaction(
+    const std::string &transaction, bool skipPreflight,
+    const std::string &preflightCommitment) {
+  const json req = sendTransactionRequest(transaction, "base64", skipPreflight,
+                                          preflightCommitment);
 
-std::string Connection::sendTransaction(const std::string &transaction,bool skipPreflight,
-    const std::string &preflightCommitment){
-
-    const json req=sendTransactionRequest(transaction,"base64",skipPreflight,preflightCommitment);
-
-      cpr::Response r =
+  cpr::Response r =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
   if (r.status_code != 200)
     throw std::runtime_error("unexpected status_code " +
                              std::to_string(r.status_code));
-  
-  json res=r.text;
+
+  json res = r.text;
   return res["result"];
 }
 
-std::string Connection::requestAirdrop(const PublicKey &pubkey,uint64_t lamports,std::string url){
-
-  const json req = sendAirdropRequest(pubkey.toBase58(),lamports);
+std::string Connection::requestAirdrop(const PublicKey &pubkey,
+                                       uint64_t lamports, std::string url) {
+  const json req = sendAirdropRequest(pubkey.toBase58(), lamports);
   cpr::Response r =
       cpr::Post(cpr::Url{url}, cpr::Body{req.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
-  //json res = json::parse(r.text);
-  std::cout<<pubkey.toBase58()<<r.status_code << std::endl;
+  // json res = json::parse(r.text);
+  std::cout << pubkey.toBase58() << r.status_code << std::endl;
   if (r.status_code != 200)
     throw std::runtime_error("unexpected status_code " +
                              std::to_string(r.status_code));
 
-  
   return r.text;
-
 }
 
 }  // namespace rpc

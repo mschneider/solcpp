@@ -280,18 +280,20 @@ class Connection {
       bool skipPreflight = false,
       const std::string &preflightCommitment = "finalized");
 
-  json sendAirdropRequest(const std::string &account,uint64_t lamports);
+  json sendAirdropRequest(const std::string &account, uint64_t lamports);
   ///
   /// 2. Invoke RPC endpoints
   ///
-  std::string requestAirdrop(const PublicKey &pubkey,uint64_t lamports,std::string url);
+  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports,
+                             std::string url);
 
-  std::string sendTransaction(const std::string &transaction,bool skipPreflight,
-    const std::string &preflightCommitment);
-  
-  std::string sendRawTransaction(
-    const Keypair &keypair, std::vector<uint8_t> &tx, bool skipPreflight,
-    const std::string &preflightCommitment);
+  std::string sendTransaction(const std::string &transaction,
+                              bool skipPreflight,
+                              const std::string &preflightCommitment);
+
+  std::string sendRawTransaction(const Keypair &keypair,
+                                 std::vector<uint8_t> &tx, bool skipPreflight,
+                                 const std::string &preflightCommitment);
 
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
