@@ -203,8 +203,6 @@ json Connection::simulateTransaction(
   const auto reqJson = jsonRequest("simulateTransaction",
                                    {b64Tx, simulateTransactionConfig.toJson()});
 
-  std::cout << reqJson.dump();
-
   cpr::Response res =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
