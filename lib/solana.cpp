@@ -200,9 +200,11 @@ json Connection::simulateTransaction(
   // signed and encode transaction
   const auto b64Tx = compiledTx.signAndEncode(keypair);
   // send jsonRpc request
+  json val;
+  val["encoding"]="base64";
   const auto reqJson = jsonRequest("simulateTransaction",
-                                   {b64Tx, simulateTransactionConfig.toJson()});
-
+                                   {b64Tx, val});//simulateTransactionConfig.toJson()});
+  std::cout<<reqJson.dump()<<std::endl;
   cpr::Response res =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});

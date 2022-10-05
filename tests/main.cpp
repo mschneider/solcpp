@@ -20,7 +20,7 @@ TEST_CASE("Simulate Transaction") {
   const solana::PublicKey feePayer = solana::PublicKey::fromBase58(PUBLIC_KEY);
   const solana::PublicKey memoProgram =
       solana::PublicKey::fromBase58(solana::MEMO_PROGRAM_ID);
-  const std::string memo = "Hello \xF0\x9F\xA5\xAD";
+  const std::string memo = "Hello";
 
   const solana::CompiledInstruction ix = {
       1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
