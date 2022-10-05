@@ -1,7 +1,13 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <iostream>
+#include <optional>
 #include <solana.hpp>
+
+#include "cpr/api.h"
+#include "cpr/body.h"
+#include "cpr/cprtypes.h"
 
 namespace solana {
 namespace rpc {
@@ -186,6 +192,28 @@ std::string Connection::sendEncodedTransaction(
                              std::to_string(res.status_code));
 
   return json::parse(res.text)["result"];
+}
+
+json Connection::simulateTransaction(
+    const Keypair &keypair, const CompiledTransaction &compiledTx,
+    const SimulateTransactionConfig &simulateTransactionConfig) const {
+  // signed and encode transaction
+  const auto b64Tx = compiledTx.signAndEncode(keypair);
+  // send jsonRpc request
+  const auto reqJson = jsonRequest("simulateTransaction",
+                                   {b64Tx, simulateTransactionConfig.toJson()});
+
+  std::cout << reqJson.dump();
+
+  cpr::Response res =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  // check is request succeeded
+  if (res.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(res.status_code));
+
+  return json::parse(res.text);
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,

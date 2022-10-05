@@ -6,7 +6,9 @@
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include "base58.hpp"
 #include "base64.hpp"
@@ -230,6 +232,33 @@ struct CompiledTransaction {
       instruction.serializeTo(buffer);
     }
   };
+
+  /**
+   * signs and base64 encodes the transaction
+   */
+  static std::string signAndEncodeTransaction(const Keypair &keypair,
+                                              const std::vector<uint8_t> &tx) {
+    // create signature
+    const auto signature = keypair.privateKey.signMessage(tx);
+    // encode the signature
+    const auto b58Sig =
+        b58encode(std::string(signature.begin(), signature.end()));
+    // sign the transaction
+    std::vector<uint8_t> signedTx;
+    solana::CompactU16::encode(1, signedTx);
+    signedTx.insert(signedTx.end(), signature.begin(), signature.end());
+    signedTx.insert(signedTx.end(), tx.begin(), tx.end());
+    // base 64 encode transaction
+    return b64encode(std::string(signedTx.begin(), signedTx.end()));
+  }
+
+  std::string signAndEncode(const Keypair &keypair) const {
+    // serialize transaction
+    std::vector<uint8_t> tx;
+    serializeTo(tx);
+    // sign and base64 encode the transaction
+    return signAndEncodeTransaction(keypair, tx);
+  }
 };
 
 namespace rpc {
@@ -254,6 +283,54 @@ static T fromFile(const std::string &path) {
   memcpy(&accountInfo, decoded.data(), sizeof(T));
   return accountInfo;
 }
+
+///
+/// Configuration object for simulateTransaction
+struct SimulateTransactionConfig {
+  /**
+   * if true the transaction signatures will be verified (default: false,
+   * conflicts with replaceRecentBlockhash)
+   */
+  const std::optional<bool> sigVerify = std::nullopt;
+  /**
+   * Commitment level to simulate the transaction at (default: "finalized").
+   */
+  const std::optional<std::string> commitment = std::nullopt;
+  /**
+   *if true the transaction recent blockhash will be replaced with the most
+   *recent blockhash. (default: false, conflicts with sigVerify)
+   */
+  const std::optional<bool> replaceRecentBlockhash = std::nullopt;
+  /**
+   * An array of accounts to return, as base-58 encoded strings
+   */
+  const std::optional<std::vector<std::string>> address = std::nullopt;
+  /**
+   * set the minimum slot that the request can be evaluated at.
+   */
+  const std::optional<uint8_t> minContextSlot = std::nullopt;
+
+  json toJson() const {
+    json value;
+    if (sigVerify.has_value()) {
+      value["sigVerify"] = sigVerify.value();
+    }
+    if (commitment.has_value()) {
+      value["commitment"] = commitment.value();
+    }
+    if (replaceRecentBlockhash.has_value()) {
+      value["replaceRecentBlockhash"] = replaceRecentBlockhash.value();
+    }
+    if (address.has_value()) {
+      value["accounts"] = {{"addresses", address.value()}};
+    }
+    if (minContextSlot.has_value()) {
+      value["minContextSlot"] = minContextSlot.value();
+    }
+    return value;
+  }
+};
+
 ///
 /// RPC HTTP Endpoints
 class Connection {
@@ -313,14 +390,20 @@ class Connection {
                                      bool skipPreflight,
                                      const std::string &preflightCommitment);
 
+  /**
+   * Simulate sending a transaction
+   */
+  json simulateTransaction(
+      const Keypair &keypair, const CompiledTransaction &tx,
+      const SimulateTransactionConfig &simulateTransactionConfig) const;
+
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
   Blockhash getLatestBlockhash(const std::string &commitment = "finalized");
   uint64_t getBlockHeight(const std::string &commitment = "finalized");
   json getSignatureStatuses(const std::vector<std::string> &signatures,
                             bool searchTransactionHistory = false);
-  [[deprecated]]
-  std::string signAndSendTransaction(
+  [[deprecated]] std::string signAndSendTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       bool skipPreflight = false,
       const std::string &preflightCommitment = "finalized");
