@@ -8,15 +8,13 @@
 
 const std::string DEVNET = "https://api.devnet.solana.com";
 const std::string KEY_PAIR_FILE = "../tests/fixtures/solana/id.json";
-const std::string PUBLIC_KEY = "83astBRguLMdt2h5U1Tpdq5tjFoJ6noeGwaY3mDLVcri";
 
-TEST_CASE("Simulate Transaction") {
-  const auto keypair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+TEST_CASE("Simulate & Send Transaction") {
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   auto connection = solana::rpc::Connection(DEVNET);
 
   // create a compiled transaction
   auto recentBlockHash = connection.getLatestBlockhash();
-  const solana::PublicKey feePayer = solana::PublicKey::fromBase58(PUBLIC_KEY);
   const solana::PublicKey memoProgram =
       solana::PublicKey::fromBase58(solana::MEMO_PROGRAM_ID);
   const std::string memo = "Hello";
@@ -25,16 +23,18 @@ TEST_CASE("Simulate Transaction") {
       1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
 
   const solana::CompiledTransaction tx = {
-      recentBlockHash, {feePayer, memoProgram}, {ix}, 1, 0, 1};
+      recentBlockHash, {keyPair.publicKey, memoProgram}, {ix}, 1, 0, 1};
 
   // call simulateTransaction
-  connection.simulateTransaction(keypair, tx);
+  connection.simulateTransaction(keyPair, tx);
+  // simulate transaction
+  connection.sendTransaction(keyPair, tx);
 }
 
 TEST_CASE("Request Airdrop") {
-  const auto fromKey = solana::PublicKey::fromBase58(PUBLIC_KEY);
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   auto connection = solana::rpc::Connection(DEVNET);
-  auto result = connection.requestAirdrop(fromKey, 1000000000);
+  auto result = connection.requestAirdrop(keyPair.publicKey, 1000000000);
   CHECK_GT(result.length(), 0);
 }
 
