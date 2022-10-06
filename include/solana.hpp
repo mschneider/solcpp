@@ -235,15 +235,12 @@ struct CompiledTransaction {
   };
 
   /**
-   * signs and base64 encodes the transaction
+   * sign the transaction
    */
   static std::vector<uint8_t> signTransaction(const Keypair &keypair,
                                               const std::vector<uint8_t> &tx) {
     // create signature
     const auto signature = keypair.privateKey.signMessage(tx);
-    // encode the signature
-    const auto b58Sig =
-        b58encode(std::string(signature.begin(), signature.end()));
     // sign the transaction
     std::vector<uint8_t> signedTx;
     solana::CompactU16::encode(1, signedTx);
@@ -253,6 +250,10 @@ struct CompiledTransaction {
     return signedTx;
   }
 
+
+  /**
+   * sign the CompiledTransaction
+   */
   std::vector<uint8_t> sign(const Keypair &keypair) const {
     // serialize transaction
     std::vector<uint8_t> tx;
