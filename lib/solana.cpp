@@ -1,7 +1,6 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
-#include <iostream>
 #include <optional>
 #include <solana.hpp>
 
@@ -200,11 +199,8 @@ json Connection::simulateTransaction(
   // signed and encode transaction
   const auto b64Tx = compiledTx.signAndEncode(keypair);
   // send jsonRpc request
-  json val;
-  val["encoding"]="base64";
   const auto reqJson = jsonRequest("simulateTransaction",
-                                   {b64Tx, val});//simulateTransactionConfig.toJson()});
-  std::cout<<reqJson.dump()<<std::endl;
+                                   {b64Tx, simulateTransactionConfig.toJson()});
   cpr::Response res =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
@@ -213,7 +209,13 @@ json Connection::simulateTransaction(
     throw std::runtime_error("unexpected status_code " +
                              std::to_string(res.status_code));
 
-  return json::parse(res.text);
+  const auto resJson = json::parse(res.text);
+  
+  if (resJson.contains("error")) {
+    throw std::runtime_error(res.text);
+  }
+
+  return resJson["result"];
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
