@@ -1,7 +1,6 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
-#include <iostream>
 #include <iterator>
 #include <optional>
 #include <ostream>
