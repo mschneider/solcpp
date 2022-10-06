@@ -59,6 +59,7 @@ TEST_CASE("Request Airdrop") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   auto connection = solana::rpc::Connection(DEVNET);
   auto result = connection.requestAirdrop(keyPair.publicKey, 1000000000);
+  // TODO: validate using confirmTransaction 
   CHECK_GT(result.length(), 0);
 }
 
