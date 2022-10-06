@@ -441,9 +441,10 @@ class Connection {
   /**
    * Simulate sending a transaction
    */
-  json simulateTransaction(
-      const Keypair &keypair, const CompiledTransaction &tx,
-      const SimulateTransactionConfig &simulateTransactionConfig) const;
+  json simulateTransaction(const Keypair &keypair,
+                           const CompiledTransaction &tx,
+                           const SimulateTransactionConfig &config =
+                               SimulateTransactionConfig()) const;
 
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
