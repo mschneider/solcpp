@@ -1,4 +1,3 @@
-#include <iostream>
 #include <string>
 
 #include "solana.hpp"
@@ -29,17 +28,15 @@ TEST_CASE("Simulate Transaction") {
       recentBlockHash, {feePayer, memoProgram}, {ix}, 1, 0, 1};
 
   // call simulateTransaction
-  auto result = connection.simulateTransaction(
-      keypair, tx, solana::rpc::SimulateTransactionConfig());
-
-  std::cout << result.dump();
+  connection.simulateTransaction(keypair, tx,
+                                 solana::rpc::SimulateTransactionConfig());
 }
 
 TEST_CASE("Request Airdrop") {
   const auto fromKey = solana::PublicKey::fromBase58(PUBLIC_KEY);
   auto connection = solana::rpc::Connection(DEVNET);
   auto result = connection.requestAirdrop(fromKey, 1000000000);
-  CHECK_EQ(result.length(), 88);
+  CHECK_GT(result.length(), 0);
 }
 
 TEST_CASE("base58 decode & encode") {
