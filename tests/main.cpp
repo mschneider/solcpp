@@ -28,8 +28,7 @@ TEST_CASE("Simulate Transaction") {
       recentBlockHash, {feePayer, memoProgram}, {ix}, 1, 0, 1};
 
   // call simulateTransaction
-  connection.simulateTransaction(keypair, tx,
-                                 solana::rpc::SimulateTransactionConfig());
+  connection.simulateTransaction(keypair, tx);
 }
 
 TEST_CASE("Request Airdrop") {

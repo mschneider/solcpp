@@ -1,8 +1,12 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <iostream>
+#include <iterator>
 #include <optional>
+#include <ostream>
 #include <solana.hpp>
+#include <string>
 
 #include "cpr/api.h"
 #include "cpr/body.h"
@@ -61,11 +65,22 @@ json Connection::getBlockhashRequest(const std::string &commitment,
   return jsonRequest(method, params);
 }
 
-json Connection::sendAirdropRequest(const std::string &account,
-                                    uint64_t lamports) {
-  const json params = {account, lamports};
+json Connection::sendJsonRpcRequest(const json &body) const {
+  cpr::Response res =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{body.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
 
-  return jsonRequest("requestAirdrop", params);
+  if (res.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(res.status_code));
+
+  const auto resJson = json::parse(res.text);
+
+  if (resJson.contains("error")) {
+    throw std::runtime_error(resJson["error"].dump());
+  }
+
+  return resJson["result"];
 }
 
 ///
@@ -129,81 +144,48 @@ std::string Connection::signAndSendTransaction(
 std::string Connection::sendTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SendTransactionConfig &config) const {
-  // signed and encode transaction
+  // sign and encode transaction
   const auto b64Tx = compiledTx.signAndEncode(keypair);
   // send jsonRpc request
-  const auto reqJson =
-      jsonRequest("simulateTransaction", {b64Tx, config.toJson()});
-  cpr::Response res =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-  // check is request succeeded
-  if (res.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(res.status_code));
-
-  return json::parse(res.text)["result"];
+  return sendEncodedTransaction(b64Tx, config);
 }
 
 std::string Connection::sendRawTransaction(
     const std::string &transaction, const SendTransactionConfig &config) const {
-  const auto encodedTransaction = b64encode(transaction);
-  return sendEncodedTransaction(encodedTransaction, config);
+  // base64 encode transaction
+  const auto b64Tx = b64encode(transaction);
+  // send jsonRpc request
+  return sendEncodedTransaction(b64Tx, config);
 }
 
 std::string Connection::sendEncodedTransaction(
     const std::string &b64Tx, const SendTransactionConfig &config) const {
+  // create request
+  const json params = {b64Tx, config.toJson()};
+  const json reqJson = jsonRequest("sendTransaction", params);
   // send jsonRpc request
-  const auto reqJson = jsonRequest("sendTransaction", {b64Tx, config.toJson()});
-  cpr::Response res =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-
-  if (res.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(res.status_code));
-
-  return json::parse(res.text)["result"];
+  return sendJsonRpcRequest(reqJson);
 }
 
 json Connection::simulateTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
-    const SimulateTransactionConfig &simulateTransactionConfig) const {
+    const SimulateTransactionConfig &config) const {
   // signed and encode transaction
   const auto b64Tx = compiledTx.signAndEncode(keypair);
+  // create request
+  const json params = {b64Tx, config.toJson()};
+  const auto reqJson = jsonRequest("simulateTransaction", params);
   // send jsonRpc request
-  const auto reqJson = jsonRequest("simulateTransaction",
-                                   {b64Tx, simulateTransactionConfig.toJson()});
-  cpr::Response res =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-  // check is request succeeded
-  if (res.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(res.status_code));
-
-  const auto resJson = json::parse(res.text);
-
-  if (resJson.contains("error")) {
-    throw std::runtime_error(res.text);
-  }
-
-  return resJson["result"];
+  return sendJsonRpcRequest(reqJson);
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
                                        uint64_t lamports) {
-  const json req = sendAirdropRequest(pubkey.toBase58(), lamports);
-
-  cpr::Response res =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-
-  if (res.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(res.status_code));
-
-  return json::parse(res.text)["result"];
+  // create request
+  const json params = {pubkey.toBase58(), lamports};
+  const json reqJson = jsonRequest("requestAirdrop", params);
+  // send jsonRpc request
+  return sendJsonRpcRequest(reqJson);
 }
 
 }  // namespace rpc

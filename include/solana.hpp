@@ -405,7 +405,12 @@ class Connection {
   json getBlockhashRequest(const std::string &commitment = "finalized",
                            const std::string &method = "getRecentBlockhash");
 
-  json sendAirdropRequest(const std::string &account, uint64_t lamports);
+  /*
+   * send rpc request
+   * @return result from response
+   */
+  json sendJsonRpcRequest(const json &body) const;
+
   ///
   /// 2. Invoke RPC endpoints
   ///
