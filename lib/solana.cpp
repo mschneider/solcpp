@@ -181,7 +181,7 @@ json Connection::simulateTransaction(
   const json params = {b64Tx, config.toJson()};
   const auto reqJson = jsonRequest("simulateTransaction", params);
   // send jsonRpc request
-  return sendJsonRpcRequest(reqJson);
+  return sendJsonRpcRequest(reqJson)["value"];
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,

@@ -443,6 +443,7 @@ class Connection {
 
   /**
    * Simulate sending a transaction
+   * @return SimulatedTransactionResponse
    */
   json simulateTransaction(const Keypair &keypair,
                            const CompiledTransaction &tx,
