@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 
 #include "solana.hpp"
@@ -22,13 +23,36 @@ TEST_CASE("Simulate & Send Transaction") {
   const solana::CompiledInstruction ix = {
       1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
 
-  const solana::CompiledTransaction tx = {
+  const solana::CompiledTransaction compiledTx = {
       recentBlockHash, {keyPair.publicKey, memoProgram}, {ix}, 1, 0, 1};
 
-  // call simulateTransaction
-  connection.simulateTransaction(keyPair, tx);
-  // simulate transaction
-  connection.sendTransaction(keyPair, tx);
+  ///
+  /// Test simulateTransaction
+  ///
+
+  const auto simulateRes = connection.simulateTransaction(keyPair, compiledTx);
+  // consumed units should be greater than unity
+  CHECK_GT(simulateRes["unitsConsumed"], 0);
+  // logs should be an array
+  CHECK_EQ(simulateRes["logs"].is_array(), true);
+
+
+  ///
+  /// Test sendTransaction
+  ///
+
+  const std::string transactionSignature =
+      connection.sendTransaction(keyPair, compiledTx);
+  // serialize transaction
+  std::vector<uint8_t> tx;
+  compiledTx.serializeTo(tx);
+  // create signature
+  const auto signedTx = keyPair.privateKey.signMessage(tx);
+  // encode the signature
+  const auto b58Sig =
+      solana::b58encode(std::string(signedTx.begin(), signedTx.end()));
+
+  CHECK_EQ(transactionSignature, b58Sig);
 }
 
 TEST_CASE("Request Airdrop") {
