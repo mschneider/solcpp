@@ -150,9 +150,11 @@ std::string Connection::sendTransaction(
 }
 
 std::string Connection::sendRawTransaction(
-    const std::string &transaction, const SendTransactionConfig &config) const {
+    const std::vector<uint8_t> &transaction,
+    const SendTransactionConfig &config) const {
+  std::string tx = std::string(transaction.begin(), transaction.end());
   // base64 encode transaction
-  const auto b64Tx = b64encode(transaction);
+  const auto b64Tx = b64encode(tx);
   // send jsonRpc request
   return sendEncodedTransaction(b64Tx, config);
 }

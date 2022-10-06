@@ -432,7 +432,7 @@ class Connection {
    * wire format
    */
   std::string sendRawTransaction(
-      const std::string &transaction,
+      const std::vector<uint8_t> &transaction,
       const SendTransactionConfig &config = SendTransactionConfig()) const;
 
   /**
