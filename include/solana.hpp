@@ -285,6 +285,53 @@ static T fromFile(const std::string &path) {
 }
 
 ///
+/// Configuration object for sendTransaction
+struct SendTransactionConfig {
+  /**
+   * if true, skip the preflight transaction checks (default: false)
+   */
+  const std::optional<bool> skipPreflight = std::nullopt;
+  /**
+   * Commitment level to use for preflight (default: "finalized").
+   */
+  const std::optional<std::string> preflightCommitment = std::nullopt;
+  /**
+   * Encoding used for the transaction data. Either "base58" (slow, DEPRECATED),
+   * or "base64". (default: "base64", rpc default: "base58").
+   */
+  const std::string encoding = BASE64;
+  /**
+   * Maximum number of times for the RPC node to retry sending the transaction
+   * to the leader. If this parameter not provided, the RPC node will retry the
+   * transaction until it is finalized or until the blockhash expires.
+   */
+  const std::optional<uint8_t> maxRetries = std::nullopt;
+  /**
+   * set the minimum slot at which to perform preflight transaction checks.
+   */
+  const std::optional<uint8_t> minContextSlot = std::nullopt;
+
+  json toJson() const {
+    json value = {{"encoding", encoding}};
+
+    if (skipPreflight.has_value()) {
+      value["skipPreflight"] = skipPreflight.value();
+    }
+    if (preflightCommitment.has_value()) {
+      value["preflightCommitment"] = preflightCommitment.value();
+    }
+    if (maxRetries.has_value()) {
+      value["maxRetries"] = maxRetries.value();
+    }
+    if (minContextSlot.has_value()) {
+      value["minContextSlot"] = minContextSlot.value();
+    }
+
+    return value;
+  }
+};
+
+///
 /// Configuration object for simulateTransaction
 struct SimulateTransactionConfig {
   /**
@@ -357,10 +404,6 @@ class Connection {
                                   const size_t length = 0);
   json getBlockhashRequest(const std::string &commitment = "finalized",
                            const std::string &method = "getRecentBlockhash");
-  json sendTransactionRequest(
-      const std::string &transaction, const std::string &encoding = "base58",
-      bool skipPreflight = false,
-      const std::string &preflightCommitment = "finalized");
 
   json sendAirdropRequest(const std::string &account, uint64_t lamports);
   ///
@@ -375,25 +418,25 @@ class Connection {
   /**
    * Sign and send a transaction
    */
-  std::string sendTransaction(const Keypair &keypair, std::vector<uint8_t> &tx,
-                              bool skipPreflight,
-                              const std::string &preflightCommitment);
+  std::string sendTransaction(
+      const Keypair &keypair, const CompiledTransaction &tx,
+      const SendTransactionConfig &config = SendTransactionConfig()) const;
 
   /**
    * Send a transaction that has already been signed and serialized into the
    * wire format
    */
-  std::string sendRawTransaction(const std::string &transaction,
-                                 bool skipPreflight,
-                                 const std::string &preflightCommitment);
+  std::string sendRawTransaction(
+      const std::string &transaction,
+      const SendTransactionConfig &config = SendTransactionConfig()) const;
 
   /**
    * Send a transaction that has already been signed, serialized into the
    * wire format, and encoded as a base64 string
    */
-  std::string sendEncodedTransaction(const std::string &transaction,
-                                     bool skipPreflight,
-                                     const std::string &preflightCommitment);
+  std::string sendEncodedTransaction(
+      const std::string &transaction,
+      const SendTransactionConfig &config = SendTransactionConfig()) const;
 
   /**
    * Simulate sending a transaction

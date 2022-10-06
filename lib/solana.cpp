@@ -61,17 +61,6 @@ json Connection::getBlockhashRequest(const std::string &commitment,
   return jsonRequest(method, params);
 }
 
-json Connection::sendTransactionRequest(
-    const std::string &transaction, const std::string &encoding,
-    bool skipPreflight, const std::string &preflightCommitment) {
-  const json params = {transaction,
-                       {{"encoding", encoding},
-                        {"skipPreflight", skipPreflight},
-                        {"preflightCommitment", preflightCommitment}}};
-
-  return jsonRequest("sendTransaction", params);
-}
-
 json Connection::sendAirdropRequest(const std::string &account,
                                     uint64_t lamports) {
   const json params = {account, lamports};
@@ -133,59 +122,43 @@ json Connection::getSignatureStatuses(
 std::string Connection::signAndSendTransaction(
     const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight,
     const std::string &preflightCommitment) {
-  std::vector<uint8_t> txBody;
-  tx.serializeTo(txBody);
-  return sendTransaction(keypair, txBody, skipPreflight, preflightCommitment);
+  const SendTransactionConfig config{skipPreflight, preflightCommitment};
+  return sendTransaction(keypair, tx, config);
 }
 
 std::string Connection::sendTransaction(
-    const Keypair &keypair, std::vector<uint8_t> &tx, bool skipPreflight,
-    const std::string &preflightCommitment) {
-  const auto signature = keypair.privateKey.signMessage(tx);
-  const auto b58Sig =
-      b58encode(std::string(signature.begin(), signature.end()));
-
-  std::vector<uint8_t> signedTx;
-  solana::CompactU16::encode(1, signedTx);
-  signedTx.insert(signedTx.end(), signature.begin(), signature.end());
-  signedTx.insert(signedTx.end(), tx.begin(), tx.end());
-
-  const auto b64tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
-  const json req = sendTransactionRequest(b64tx, "base64", skipPreflight,
-                                          preflightCommitment);
-  const std::string jsonSerialized = req.dump();
-
-  cpr::Response r =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{jsonSerialized},
+    const Keypair &keypair, const CompiledTransaction &compiledTx,
+    const SendTransactionConfig &config) const {
+  // signed and encode transaction
+  const auto b64Tx = compiledTx.signAndEncode(keypair);
+  // send jsonRpc request
+  const auto reqJson =
+      jsonRequest("simulateTransaction", {b64Tx, config.toJson()});
+  cpr::Response res =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
-  if (r.status_code != 200)
+  // check is request succeeded
+  if (res.status_code != 200)
     throw std::runtime_error("unexpected status_code " +
-                             std::to_string(r.status_code));
+                             std::to_string(res.status_code));
 
-  json res = json::parse(r.text);
-  if (b58Sig != res["result"])
-    throw std::runtime_error("could not submit tx: " + r.text);
-
-  return b58Sig;
+  return json::parse(res.text)["result"];
 }
 
 std::string Connection::sendRawTransaction(
-    const std::string &transaction, bool skipPreflight,
-    const std::string &preflightCommitment) {
+    const std::string &transaction, const SendTransactionConfig &config) const {
   const auto encodedTransaction = b64encode(transaction);
-  return sendEncodedTransaction(encodedTransaction, skipPreflight,
-                                preflightCommitment);
+  return sendEncodedTransaction(encodedTransaction, config);
 }
 
 std::string Connection::sendEncodedTransaction(
-    const std::string &transaction, bool skipPreflight,
-    const std::string &preflightCommitment) {
-  const json req = sendTransactionRequest(transaction, "base64", skipPreflight,
-                                          preflightCommitment);
-
+    const std::string &b64Tx, const SendTransactionConfig &config) const {
+  // send jsonRpc request
+  const auto reqJson = jsonRequest("sendTransaction", {b64Tx, config.toJson()});
   cpr::Response res =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{reqJson.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
+
   if (res.status_code != 200)
     throw std::runtime_error("unexpected status_code " +
                              std::to_string(res.status_code));
@@ -210,7 +183,7 @@ json Connection::simulateTransaction(
                              std::to_string(res.status_code));
 
   const auto resJson = json::parse(res.text);
-  
+
   if (resJson.contains("error")) {
     throw std::runtime_error(res.text);
   }
