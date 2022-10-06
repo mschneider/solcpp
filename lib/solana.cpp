@@ -1,12 +1,15 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <cstdint>
 #include <iterator>
 #include <optional>
 #include <ostream>
 #include <solana.hpp>
 #include <string>
+#include <vector>
 
+#include "base64.hpp"
 #include "cpr/api.h"
 #include "cpr/body.h"
 #include "cpr/cprtypes.h"
@@ -144,15 +147,17 @@ std::string Connection::sendTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SendTransactionConfig &config) const {
   // sign and encode transaction
-  const auto b64Tx = compiledTx.signAndEncode(keypair);
+  const auto signedTx = compiledTx.sign(keypair);
+  const auto b64Tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
   // send jsonRpc request
   return sendEncodedTransaction(b64Tx, config);
 }
 
 std::string Connection::sendRawTransaction(
-    const std::string &transaction, const SendTransactionConfig &config) const {
+    const std::vector<uint8_t> &signedTx,
+    const SendTransactionConfig &config) const {
   // base64 encode transaction
-  const auto b64Tx = b64encode(transaction);
+  const auto b64Tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
   // send jsonRpc request
   return sendEncodedTransaction(b64Tx, config);
 }
@@ -170,7 +175,8 @@ json Connection::simulateTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SimulateTransactionConfig &config) const {
   // signed and encode transaction
-  const auto b64Tx = compiledTx.signAndEncode(keypair);
+  const auto signedTx = compiledTx.sign(keypair);
+  const auto b64Tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
   // create request
   const json params = {b64Tx, config.toJson()};
   const auto reqJson = jsonRequest("simulateTransaction", params);

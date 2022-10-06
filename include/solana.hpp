@@ -3,6 +3,7 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -236,7 +237,7 @@ struct CompiledTransaction {
   /**
    * signs and base64 encodes the transaction
    */
-  static std::string signAndEncodeTransaction(const Keypair &keypair,
+  static std::vector<uint8_t> signTransaction(const Keypair &keypair,
                                               const std::vector<uint8_t> &tx) {
     // create signature
     const auto signature = keypair.privateKey.signMessage(tx);
@@ -248,16 +249,16 @@ struct CompiledTransaction {
     solana::CompactU16::encode(1, signedTx);
     signedTx.insert(signedTx.end(), signature.begin(), signature.end());
     signedTx.insert(signedTx.end(), tx.begin(), tx.end());
-    // base 64 encode transaction
-    return b64encode(std::string(signedTx.begin(), signedTx.end()));
+
+    return signedTx;
   }
 
-  std::string signAndEncode(const Keypair &keypair) const {
+  std::vector<uint8_t> sign(const Keypair &keypair) const {
     // serialize transaction
     std::vector<uint8_t> tx;
     serializeTo(tx);
     // sign and base64 encode the transaction
-    return signAndEncodeTransaction(keypair, tx);
+    return signTransaction(keypair, tx);
   }
 };
 
@@ -344,10 +345,6 @@ struct SimulateTransactionConfig {
    */
   const std::optional<std::string> commitment = std::nullopt;
   /**
-   * Commitment level to simulate the transaction at (default: "finalized").
-   */
-  const std::string encoding = BASE64;
-  /**
    *if true the transaction recent blockhash will be replaced with the most
    *recent blockhash. (default: false, conflicts with sigVerify)
    */
@@ -362,7 +359,7 @@ struct SimulateTransactionConfig {
   const std::optional<uint8_t> minContextSlot = std::nullopt;
 
   json toJson() const {
-    json value = {{"encoding", encoding}};
+    json value = {{"encoding", BASE64}};
 
     if (sigVerify.has_value()) {
       value["sigVerify"] = sigVerify.value();
@@ -432,7 +429,7 @@ class Connection {
    * wire format
    */
   std::string sendRawTransaction(
-      const std::string &transaction,
+      const std::vector<uint8_t> &tx,
       const SendTransactionConfig &config = SendTransactionConfig()) const;
 
   /**
