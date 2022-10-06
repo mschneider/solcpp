@@ -27,7 +27,7 @@ TEST_CASE("Simulate & Send Transaction") {
 
   // call simulateTransaction
   connection.simulateTransaction(keyPair, tx);
-  // simulate transaction
+  // send transaction
   connection.sendTransaction(keyPair, tx);
 }
 

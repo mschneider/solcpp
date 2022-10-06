@@ -236,23 +236,21 @@ struct CompiledTransaction {
   /**
    * signs and base64 encodes the transaction
    */
-  static std::string signAndEncodeTransaction(const Keypair &keypair,
+  static std::vector<uint8_t> signAndEncodeTransaction(const Keypair &keypair,
                                               const std::vector<uint8_t> &tx) {
     // create signature
     const auto signature = keypair.privateKey.signMessage(tx);
-    // encode the signature
-    const auto b58Sig =
-        b58encode(std::string(signature.begin(), signature.end()));
     // sign the transaction
     std::vector<uint8_t> signedTx;
     solana::CompactU16::encode(1, signedTx);
     signedTx.insert(signedTx.end(), signature.begin(), signature.end());
     signedTx.insert(signedTx.end(), tx.begin(), tx.end());
-    // base 64 encode transaction
-    return b64encode(std::string(signedTx.begin(), signedTx.end()));
+    
+    // u8 blob
+    return signedTx;
   }
 
-  std::string signAndEncode(const Keypair &keypair) const {
+  std::vector<uint8_t> signAndEncode(const Keypair &keypair) const {
     // serialize transaction
     std::vector<uint8_t> tx;
     serializeTo(tx);

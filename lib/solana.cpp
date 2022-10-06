@@ -144,7 +144,8 @@ std::string Connection::sendTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SendTransactionConfig &config) const {
   // sign and encode transaction
-  const auto b64Tx = compiledTx.signAndEncode(keypair);
+  auto res=compiledTx.signAndEncode(keypair);
+  const auto b64Tx = b64encode(std::string(res.begin(), res.end()));
   // send jsonRpc request
   return sendEncodedTransaction(b64Tx, config);
 }
@@ -172,7 +173,8 @@ json Connection::simulateTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SimulateTransactionConfig &config) const {
   // signed and encode transaction
-  const auto b64Tx = compiledTx.signAndEncode(keypair);
+  auto res=compiledTx.signAndEncode(keypair);
+  const auto b64Tx = b64encode(std::string(res.begin(), res.end()));
   // create request
   const json params = {b64Tx, config.toJson()};
   const auto reqJson = jsonRequest("simulateTransaction", params);
