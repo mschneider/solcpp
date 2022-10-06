@@ -418,6 +418,7 @@ class Connection {
 
   /**
    * Sign and send a transaction
+   * @return transaction signature
    */
   std::string sendTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
