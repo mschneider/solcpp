@@ -297,6 +297,10 @@ struct SimulateTransactionConfig {
    */
   const std::optional<std::string> commitment = std::nullopt;
   /**
+   * Commitment level to simulate the transaction at (default: "finalized").
+   */
+  const std::string encoding = BASE64;
+  /**
    *if true the transaction recent blockhash will be replaced with the most
    *recent blockhash. (default: false, conflicts with sigVerify)
    */
@@ -311,7 +315,8 @@ struct SimulateTransactionConfig {
   const std::optional<uint8_t> minContextSlot = std::nullopt;
 
   json toJson() const {
-    json value;
+    json value = {{"encoding", encoding}};
+
     if (sigVerify.has_value()) {
       value["sigVerify"] = sigVerify.value();
     }
