@@ -2,6 +2,8 @@
 
 #include <string>
 
+const std::string BASE64 = "base64";
+
 namespace solana {
 static constexpr char *B64chars =
     (char *)"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
