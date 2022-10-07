@@ -1,5 +1,7 @@
+#include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include "solana.hpp"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -36,7 +38,6 @@ TEST_CASE("Simulate & Send Transaction") {
   // logs should be an array
   CHECK_EQ(simulateRes["logs"].is_array(), true);
 
-
   ///
   /// Test sendTransaction
   ///
@@ -58,9 +59,13 @@ TEST_CASE("Simulate & Send Transaction") {
 TEST_CASE("Request Airdrop") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   auto connection = solana::rpc::Connection(DEVNET);
+
+  auto prev_sol = connection.getBalance(keyPair.publicKey);
   auto result = connection.requestAirdrop(keyPair.publicKey, 1000000000);
-  // TODO: validate using confirmTransaction 
-  CHECK_GT(result.length(), 0);
+  std::this_thread::sleep_for(std::chrono::seconds(15));
+  auto new_sol = connection.getBalance(keyPair.publicKey);
+  // TODO: validate using confirmTransaction
+  CHECK_GT(new_sol["value"], prev_sol["value"]);
 }
 
 TEST_CASE("base58 decode & encode") {

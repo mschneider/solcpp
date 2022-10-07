@@ -416,6 +416,8 @@ class Connection {
    */
   std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
 
+  json getBalance(const PublicKey &pubkey);
+
   /**
    * Sign and send a transaction
    * @return transaction signature

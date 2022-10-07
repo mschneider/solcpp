@@ -193,6 +193,14 @@ std::string Connection::requestAirdrop(const PublicKey &pubkey,
   return sendJsonRpcRequest(reqJson);
 }
 
+json Connection::getBalance(const PublicKey &pubkey) {
+  // create request
+  const json params = {pubkey.toBase58()};
+  const json reqJson = jsonRequest("getBalance", params);
+  // send jsonRpc request
+  return sendJsonRpcRequest(reqJson);
+}
+
 }  // namespace rpc
 
 }  // namespace solana
