@@ -9,12 +9,11 @@
 
 #include "MangoAccount.hpp"
 
-const std::string DEVNET = "https://api.devnet.solana.com";
 const std::string KEY_PAIR_FILE = "../tests/fixtures/solana/id.json";
 
 TEST_CASE("Simulate & Send Transaction") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
-  auto connection = solana::rpc::Connection(DEVNET);
+  auto connection = solana::rpc::Connection(solana::DEVNET);
 
   // create a compiled transaction
   auto recentBlockHash = connection.getLatestBlockhash();
@@ -58,7 +57,7 @@ TEST_CASE("Simulate & Send Transaction") {
 
 TEST_CASE("Request Airdrop") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
-  auto connection = solana::rpc::Connection(DEVNET);
+  auto connection = solana::rpc::Connection(solana::DEVNET);
 
   auto prev_sol = connection.getBalance(keyPair.publicKey);
   auto result = connection.requestAirdrop(keyPair.publicKey, 1000000000);
