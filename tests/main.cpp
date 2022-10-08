@@ -1,7 +1,71 @@
+#include <chrono>
+#include <iostream>
+#include <string>
+#include <thread>
+
+#include "solana.hpp"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
 #include "MangoAccount.hpp"
+
+const std::string KEY_PAIR_FILE = "../tests/fixtures/solana/id.json";
+
+TEST_CASE("Simulate & Send Transaction") {
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  auto connection = solana::rpc::Connection(solana::DEVNET);
+
+  // create a compiled transaction
+  auto recentBlockHash = connection.getLatestBlockhash();
+  const solana::PublicKey memoProgram =
+      solana::PublicKey::fromBase58(solana::MEMO_PROGRAM_ID);
+  const std::string memo = "Hello";
+
+  const solana::CompiledInstruction ix = {
+      1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
+
+  const solana::CompiledTransaction compiledTx = {
+      recentBlockHash, {keyPair.publicKey, memoProgram}, {ix}, 1, 0, 1};
+
+  ///
+  /// Test simulateTransaction
+  ///
+
+  const auto simulateRes = connection.simulateTransaction(keyPair, compiledTx);
+  // consumed units should be greater than unity
+  CHECK_GT(simulateRes["unitsConsumed"], 0);
+  // logs should be an array
+  CHECK_EQ(simulateRes["logs"].is_array(), true);
+
+  ///
+  /// Test sendTransaction
+  ///
+
+  const std::string transactionSignature =
+      connection.sendTransaction(keyPair, compiledTx);
+  // serialize transaction
+  std::vector<uint8_t> tx;
+  compiledTx.serializeTo(tx);
+  // create signature
+  const auto signedTx = keyPair.privateKey.signMessage(tx);
+  // encode the signature
+  const auto b58Sig =
+      solana::b58encode(std::string(signedTx.begin(), signedTx.end()));
+
+  CHECK_EQ(transactionSignature, b58Sig);
+}
+
+TEST_CASE("Request Airdrop") {
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  auto connection = solana::rpc::Connection(solana::DEVNET);
+
+  auto prev_sol = connection.getBalance(keyPair.publicKey);
+  auto result = connection.requestAirdrop(keyPair.publicKey, 1000000000);
+  std::this_thread::sleep_for(std::chrono::seconds(15));
+  auto new_sol = connection.getBalance(keyPair.publicKey);
+  // TODO: validate using confirmTransaction
+  CHECK_GT(new_sol["value"], prev_sol["value"]);
+}
 
 TEST_CASE("base58 decode & encode") {
   const std::vector<std::string> bs58s{

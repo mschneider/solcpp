@@ -1,7 +1,18 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <cstdint>
+#include <iterator>
+#include <optional>
+#include <ostream>
 #include <solana.hpp>
+#include <string>
+#include <vector>
+
+#include "base64.hpp"
+#include "cpr/api.h"
+#include "cpr/body.h"
+#include "cpr/cprtypes.h"
 
 namespace solana {
 namespace rpc {
@@ -56,15 +67,22 @@ json Connection::getBlockhashRequest(const std::string &commitment,
   return jsonRequest(method, params);
 }
 
-json Connection::sendTransactionRequest(
-    const std::string &transaction, const std::string &encoding,
-    bool skipPreflight, const std::string &preflightCommitment) {
-  const json params = {transaction,
-                       {{"encoding", encoding},
-                        {"skipPreflight", skipPreflight},
-                        {"preflightCommitment", preflightCommitment}}};
+json Connection::sendJsonRpcRequest(const json &body) const {
+  cpr::Response res =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{body.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
 
-  return jsonRequest("sendTransaction", params);
+  if (res.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(res.status_code));
+
+  const auto resJson = json::parse(res.text);
+
+  if (resJson.contains("error")) {
+    throw std::runtime_error(resJson["error"].dump());
+  }
+
+  return resJson["result"];
 }
 
 ///
@@ -121,36 +139,68 @@ json Connection::getSignatureStatuses(
 std::string Connection::signAndSendTransaction(
     const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight,
     const std::string &preflightCommitment) {
-  std::vector<uint8_t> txBody;
-  tx.serializeTo(txBody);
-
-  const auto signature = keypair.privateKey.signMessage(txBody);
-  const auto b58Sig =
-      b58encode(std::string(signature.begin(), signature.end()));
-
-  std::vector<uint8_t> signedTx;
-  solana::CompactU16::encode(1, signedTx);
-  signedTx.insert(signedTx.end(), signature.begin(), signature.end());
-  signedTx.insert(signedTx.end(), txBody.begin(), txBody.end());
-
-  const auto b64tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
-  const json req = sendTransactionRequest(b64tx, "base64", skipPreflight,
-                                          preflightCommitment);
-  const std::string jsonSerialized = req.dump();
-
-  cpr::Response r =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{jsonSerialized},
-                cpr::Header{{"Content-Type", "application/json"}});
-  if (r.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(r.status_code));
-
-  json res = json::parse(r.text);
-  if (b58Sig != res["result"])
-    throw std::runtime_error("could not submit tx: " + r.text);
-
-  return b58Sig;
+  const SendTransactionConfig config{skipPreflight, preflightCommitment};
+  return sendTransaction(keypair, tx, config);
 }
+
+std::string Connection::sendTransaction(
+    const Keypair &keypair, const CompiledTransaction &compiledTx,
+    const SendTransactionConfig &config) const {
+  // sign and encode transaction
+  const auto signedTx = compiledTx.sign(keypair);
+  const auto b64Tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
+  // send jsonRpc request
+  return sendEncodedTransaction(b64Tx, config);
+}
+
+std::string Connection::sendRawTransaction(
+    const std::vector<uint8_t> &signedTx,
+    const SendTransactionConfig &config) const {
+  // base64 encode transaction
+  const auto b64Tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
+  // send jsonRpc request
+  return sendEncodedTransaction(b64Tx, config);
+}
+
+std::string Connection::sendEncodedTransaction(
+    const std::string &b64Tx, const SendTransactionConfig &config) const {
+  // create request
+  const json params = {b64Tx, config.toJson()};
+  const json reqJson = jsonRequest("sendTransaction", params);
+  // send jsonRpc request
+  return sendJsonRpcRequest(reqJson);
+}
+
+json Connection::simulateTransaction(
+    const Keypair &keypair, const CompiledTransaction &compiledTx,
+    const SimulateTransactionConfig &config) const {
+  // signed and encode transaction
+  const auto signedTx = compiledTx.sign(keypair);
+  const auto b64Tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
+  // create request
+  const json params = {b64Tx, config.toJson()};
+  const auto reqJson = jsonRequest("simulateTransaction", params);
+  // send jsonRpc request
+  return sendJsonRpcRequest(reqJson)["value"];
+}
+
+std::string Connection::requestAirdrop(const PublicKey &pubkey,
+                                       uint64_t lamports) {
+  // create request
+  const json params = {pubkey.toBase58(), lamports};
+  const json reqJson = jsonRequest("requestAirdrop", params);
+  // send jsonRpc request
+  return sendJsonRpcRequest(reqJson);
+}
+
+json Connection::getBalance(const PublicKey &pubkey) {
+  // create request
+  const json params = {pubkey.toBase58()};
+  const json reqJson = jsonRequest("getBalance", params);
+  // send jsonRpc request
+  return sendJsonRpcRequest(reqJson);
+}
+
 }  // namespace rpc
 
 }  // namespace solana

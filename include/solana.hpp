@@ -3,10 +3,12 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <cstdint>
 #include <fstream>
-#include <iostream>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include "base58.hpp"
 #include "base64.hpp"
@@ -18,6 +20,7 @@ const std::string NATIVE_MINT = "So11111111111111111111111111111111111111112";
 const std::string MEMO_PROGRAM_ID =
     "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
 const std::string MAINNET_BETA = "https://api.mainnet-beta.solana.com";
+const std::string DEVNET = "https://api.devnet.solana.com";
 
 struct PublicKey {
   static const auto SIZE = crypto_sign_PUBLICKEYBYTES;
@@ -230,6 +233,33 @@ struct CompiledTransaction {
       instruction.serializeTo(buffer);
     }
   };
+
+  /**
+   * sign the transaction
+   */
+  static std::vector<uint8_t> signTransaction(const Keypair &keypair,
+                                              const std::vector<uint8_t> &tx) {
+    // create signature
+    const auto signature = keypair.privateKey.signMessage(tx);
+    // sign the transaction
+    std::vector<uint8_t> signedTx;
+    solana::CompactU16::encode(1, signedTx);
+    signedTx.insert(signedTx.end(), signature.begin(), signature.end());
+    signedTx.insert(signedTx.end(), tx.begin(), tx.end());
+
+    return signedTx;
+  }
+
+  /**
+   * sign the CompiledTransaction
+   */
+  std::vector<uint8_t> sign(const Keypair &keypair) const {
+    // serialize transaction
+    std::vector<uint8_t> tx;
+    serializeTo(tx);
+    // sign and base64 encode the transaction
+    return signTransaction(keypair, tx);
+  }
 };
 
 namespace rpc {
@@ -254,6 +284,102 @@ static T fromFile(const std::string &path) {
   memcpy(&accountInfo, decoded.data(), sizeof(T));
   return accountInfo;
 }
+
+///
+/// Configuration object for sendTransaction
+struct SendTransactionConfig {
+  /**
+   * if true, skip the preflight transaction checks (default: false)
+   */
+  const std::optional<bool> skipPreflight = std::nullopt;
+  /**
+   * Commitment level to use for preflight (default: "finalized").
+   */
+  const std::optional<std::string> preflightCommitment = std::nullopt;
+  /**
+   * Encoding used for the transaction data. Either "base58" (slow, DEPRECATED),
+   * or "base64". (default: "base64", rpc default: "base58").
+   */
+  const std::string encoding = BASE64;
+  /**
+   * Maximum number of times for the RPC node to retry sending the transaction
+   * to the leader. If this parameter not provided, the RPC node will retry the
+   * transaction until it is finalized or until the blockhash expires.
+   */
+  const std::optional<uint8_t> maxRetries = std::nullopt;
+  /**
+   * set the minimum slot at which to perform preflight transaction checks.
+   */
+  const std::optional<uint8_t> minContextSlot = std::nullopt;
+
+  json toJson() const {
+    json value = {{"encoding", encoding}};
+
+    if (skipPreflight.has_value()) {
+      value["skipPreflight"] = skipPreflight.value();
+    }
+    if (preflightCommitment.has_value()) {
+      value["preflightCommitment"] = preflightCommitment.value();
+    }
+    if (maxRetries.has_value()) {
+      value["maxRetries"] = maxRetries.value();
+    }
+    if (minContextSlot.has_value()) {
+      value["minContextSlot"] = minContextSlot.value();
+    }
+
+    return value;
+  }
+};
+
+///
+/// Configuration object for simulateTransaction
+struct SimulateTransactionConfig {
+  /**
+   * if true the transaction signatures will be verified (default: false,
+   * conflicts with replaceRecentBlockhash)
+   */
+  const std::optional<bool> sigVerify = std::nullopt;
+  /**
+   * Commitment level to simulate the transaction at (default: "finalized").
+   */
+  const std::optional<std::string> commitment = std::nullopt;
+  /**
+   *if true the transaction recent blockhash will be replaced with the most
+   *recent blockhash. (default: false, conflicts with sigVerify)
+   */
+  const std::optional<bool> replaceRecentBlockhash = std::nullopt;
+  /**
+   * An array of accounts to return, as base-58 encoded strings
+   */
+  const std::optional<std::vector<std::string>> address = std::nullopt;
+  /**
+   * set the minimum slot that the request can be evaluated at.
+   */
+  const std::optional<uint8_t> minContextSlot = std::nullopt;
+
+  json toJson() const {
+    json value = {{"encoding", BASE64}};
+
+    if (sigVerify.has_value()) {
+      value["sigVerify"] = sigVerify.value();
+    }
+    if (commitment.has_value()) {
+      value["commitment"] = commitment.value();
+    }
+    if (replaceRecentBlockhash.has_value()) {
+      value["replaceRecentBlockhash"] = replaceRecentBlockhash.value();
+    }
+    if (address.has_value()) {
+      value["accounts"] = {{"addresses", address.value()}};
+    }
+    if (minContextSlot.has_value()) {
+      value["minContextSlot"] = minContextSlot.value();
+    }
+    return value;
+  }
+};
+
 ///
 /// RPC HTTP Endpoints
 class Connection {
@@ -275,20 +401,64 @@ class Connection {
                                   const size_t length = 0);
   json getBlockhashRequest(const std::string &commitment = "finalized",
                            const std::string &method = "getRecentBlockhash");
-  json sendTransactionRequest(
-      const std::string &transaction, const std::string &encoding = "base58",
-      bool skipPreflight = false,
-      const std::string &preflightCommitment = "finalized");
+
+  /*
+   * send rpc request
+   * @return result from response
+   */
+  json sendJsonRpcRequest(const json &body) const;
+
   ///
   /// 2. Invoke RPC endpoints
   ///
+
+  /**
+   * Request an allocation of lamports to the specified address
+   */
+  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
+
+  json getBalance(const PublicKey &pubkey);
+
+  /**
+   * Sign and send a transaction
+   * @return transaction signature
+   */
+  std::string sendTransaction(
+      const Keypair &keypair, const CompiledTransaction &tx,
+      const SendTransactionConfig &config = SendTransactionConfig()) const;
+
+  /**
+   * Send a transaction that has already been signed and serialized into the
+   * wire format
+   */
+  std::string sendRawTransaction(
+      const std::vector<uint8_t> &tx,
+      const SendTransactionConfig &config = SendTransactionConfig()) const;
+
+  /**
+   * Send a transaction that has already been signed, serialized into the
+   * wire format, and encoded as a base64 string
+   */
+  std::string sendEncodedTransaction(
+      const std::string &transaction,
+      const SendTransactionConfig &config = SendTransactionConfig()) const;
+
+  /**
+   * Simulate sending a transaction
+   * @return SimulatedTransactionResponse
+   */
+  json simulateTransaction(const Keypair &keypair,
+                           const CompiledTransaction &tx,
+                           const SimulateTransactionConfig &config =
+                               SimulateTransactionConfig()) const;
+
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
   Blockhash getLatestBlockhash(const std::string &commitment = "finalized");
   uint64_t getBlockHeight(const std::string &commitment = "finalized");
   json getSignatureStatuses(const std::vector<std::string> &signatures,
                             bool searchTransactionHistory = false);
-  std::string signAndSendTransaction(
+  [[deprecated]] std::string signAndSendTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       bool skipPreflight = false,
       const std::string &preflightCommitment = "finalized");
