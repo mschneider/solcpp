@@ -68,6 +68,8 @@ bool AccountMeta::operator<(const AccountMeta &other) const {
   return (isSigner > other.isSigner) || (isWritable > other.isWritable);
 }
 
+///
+/// CompactU16
 namespace CompactU16 {
 void encode(uint16_t num, std::vector<uint8_t> &buffer) {
   buffer.push_back(num & 0x7f);
@@ -88,6 +90,131 @@ void encode(const std::vector<uint8_t> &vec, std::vector<uint8_t> &buffer) {
   buffer.insert(buffer.end(), vec.begin(), vec.end());
 }
 }  // namespace CompactU16
+
+///
+/// CompiledInstruction
+CompiledInstruction CompiledInstruction::fromInstruction(
+    const Instruction &ix, const std::vector<PublicKey> &accounts) {
+  const auto programIdIt =
+      std::find(accounts.begin(), accounts.end(), ix.programId);
+  const auto programIdIndex =
+      static_cast<uint8_t>(programIdIt - accounts.begin());
+  std::vector<uint8_t> accountIndices;
+  for (const auto &account : ix.accounts) {
+    const auto accountPkIt =
+        std::find(accounts.begin(), accounts.end(), account.pubkey);
+    accountIndices.push_back(accountPkIt - accounts.begin());
+  }
+  return {programIdIndex, accountIndices, ix.data};
+}
+
+void CompiledInstruction::serializeTo(std::vector<uint8_t> &buffer) const {
+  buffer.push_back(programIdIndex);
+  solana::CompactU16::encode(accountIndices, buffer);
+  solana::CompactU16::encode(data, buffer);
+}
+
+///
+/// CompiledTransaction
+CompiledTransaction CompiledTransaction::fromInstructions(
+    const std::vector<Instruction> &instructions, const PublicKey &payer,
+    const Blockhash &blockhash) {
+  // collect all program ids and accounts including the payer
+  std::vector<AccountMeta> allMetas = {{payer, true, true}};
+  for (const auto &instruction : instructions) {
+    allMetas.insert(allMetas.end(), instruction.accounts.begin(),
+                    instruction.accounts.end());
+    allMetas.push_back({instruction.programId, false, false});
+  }
+
+  // merge account metas referencing the same acc/pubkey, assign maximum
+  // privileges
+  std::vector<AccountMeta> uniqueMetas;
+  for (const auto &meta : allMetas) {
+    auto dup = std::find_if(
+        uniqueMetas.begin(), uniqueMetas.end(),
+        [&meta](const auto &u) { return u.pubkey == meta.pubkey; });
+
+    if (dup == uniqueMetas.end()) {
+      uniqueMetas.push_back(meta);
+    } else {
+      dup->isSigner |= meta.isSigner;
+      dup->isWritable |= meta.isWritable;
+    }
+  }
+
+  // sort using operator< to establish order: signer+writable, signers,
+  // writables, others
+  std::sort(uniqueMetas.begin(), uniqueMetas.end());
+
+  uint8_t requiredSignatures = 0;
+  uint8_t readOnlySignedAccounts = 0;
+  uint8_t readOnlyUnsignedAccounts = 0;
+  std::vector<PublicKey> accounts;
+  for (const auto &meta : uniqueMetas) {
+    accounts.push_back(meta.pubkey);
+    if (meta.isSigner) {
+      requiredSignatures++;
+      if (!meta.isWritable) {
+        readOnlySignedAccounts++;
+      }
+    } else if (!meta.isWritable) {
+      readOnlyUnsignedAccounts++;
+    }
+  }
+
+  // dictionary encode individual instructions
+  std::vector<CompiledInstruction> cixs;
+  for (const auto &instruction : instructions) {
+    cixs.push_back(CompiledInstruction::fromInstruction(instruction, accounts));
+  }
+  return {blockhash,
+          accounts,
+          cixs,
+          requiredSignatures,
+          readOnlySignedAccounts,
+          readOnlyUnsignedAccounts};
+}
+
+void CompiledTransaction::serializeTo(std::vector<uint8_t> &buffer) const {
+  buffer.push_back(requiredSignatures);
+  buffer.push_back(readOnlySignedAccounts);
+  buffer.push_back(readOnlyUnsignedAccounts);
+
+  solana::CompactU16::encode(accounts.size(), buffer);
+  for (const auto &account : accounts) {
+    buffer.insert(buffer.end(), account.data.begin(), account.data.end());
+  }
+
+  buffer.insert(buffer.end(), recentBlockhash.publicKey.data.begin(),
+                recentBlockhash.publicKey.data.end());
+
+  solana::CompactU16::encode(instructions.size(), buffer);
+  for (const auto &instruction : instructions) {
+    instruction.serializeTo(buffer);
+  }
+}
+
+std::vector<uint8_t> CompiledTransaction::signTransaction(
+    const Keypair &keypair, const std::vector<uint8_t> &tx) {
+  // create signature
+  const auto signature = keypair.privateKey.signMessage(tx);
+  // sign the transaction
+  std::vector<uint8_t> signedTx;
+  solana::CompactU16::encode(1, signedTx);
+  signedTx.insert(signedTx.end(), signature.begin(), signature.end());
+  signedTx.insert(signedTx.end(), tx.begin(), tx.end());
+
+  return signedTx;
+}
+
+std::vector<uint8_t> CompiledTransaction::sign(const Keypair &keypair) const {
+  // serialize transaction
+  std::vector<uint8_t> tx;
+  serializeTo(tx);
+  // sign and base64 encode the transaction
+  return signTransaction(keypair, tx);
+}
 
 namespace rpc {
 Connection::Connection(const std::string &rpc_url,
