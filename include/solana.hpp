@@ -213,8 +213,10 @@ struct SimulateTransactionConfig {
 /// RPC HTTP Endpoints
 class Connection {
  public:
-  /// Initialize the rpc url and commitment levels to use.
-  /// Initialize sodium
+  /**
+   * Initialize the rpc url and commitment levels to use.
+   * Initialize sodium
+   */
   Connection(const std::string &rpc_url = MAINNET_BETA,
              const std::string &commitment = "finalized");
   ///
