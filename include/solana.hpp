@@ -237,17 +237,6 @@ class Connection {
   ///
   /// 2. Invoke RPC endpoints
   ///
-
-  /**
-   * Request an allocation of lamports to the specified address
-   */
-  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
-
-  /**
-   * Fetch the balance for the specified public key
-   */
-  json getBalance(const PublicKey &pubkey);
-
   /**
    * @deprecated
    * Sign and send a transaction
@@ -290,6 +279,16 @@ class Connection {
                            const CompiledTransaction &tx,
                            const SimulateTransactionConfig &config =
                                SimulateTransactionConfig()) const;
+
+  /**
+   * Request an allocation of lamports to the specified address
+   */
+  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
+
+  /**
+   * Fetch the balance for the specified public key
+   */
+  json getBalance(const PublicKey &pubkey);
 
   /**
    * Fetch a recent blockhash from the cluster
