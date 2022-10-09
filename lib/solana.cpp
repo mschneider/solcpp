@@ -87,7 +87,6 @@ void encode(const std::vector<uint8_t> &vec, std::vector<uint8_t> &buffer) {
   encode(vec.size(), buffer);
   buffer.insert(buffer.end(), vec.begin(), vec.end());
 }
-
 }  // namespace CompactU16
 
 namespace rpc {
