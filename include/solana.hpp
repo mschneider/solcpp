@@ -67,31 +67,17 @@ struct Instruction {
   std::vector<uint8_t> data;
 };
 
-struct CompactU16 {
-  static void encode(uint16_t num, std::vector<uint8_t> &buffer) {
-    buffer.push_back(num & 0x7f);
-    num >>= 7;
-    if (num == 0) return;
+namespace CompactU16 {
+void encode(uint16_t num, std::vector<uint8_t> &buffer);
 
-    buffer.back() |= 0x80;
-    buffer.push_back(num & 0x7f);
-    num >>= 7;
-    if (num == 0) return;
+void encode(const std::vector<uint8_t> &vec, std::vector<uint8_t> &buffer);
+};  // namespace CompactU16
 
-    buffer.back() |= 0x80;
-    buffer.push_back(num & 0x3);
-  };
-
-  static void encode(const std::vector<uint8_t> &vec,
-                     std::vector<uint8_t> &buffer) {
-    encode(vec.size(), buffer);
-    buffer.insert(buffer.end(), vec.begin(), vec.end());
-  }
-};
 struct Blockhash {
   PublicKey publicKey;
   uint64_t lastValidBlockHeight;
 };
+
 struct CompiledInstruction {
   uint8_t programIdIndex;
   std::vector<uint8_t> accountIndices;
