@@ -225,6 +225,7 @@ class Connection {
    * @return result from response
    */
   json sendJsonRpcRequest(const json &body) const;
+
   /**
    * @deprecated
    * Sign and send a transaction
@@ -391,6 +392,7 @@ class Connection {
 ///
 /// Websocket requests
 namespace subscription {
+
 /**
  * Subscribe to an account to receive notifications when the lamports or data
  * for a given account public key changes
