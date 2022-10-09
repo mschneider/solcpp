@@ -256,7 +256,8 @@ json SendTransactionConfig::toJson() const {
 
   return value;
 }
-
+///
+/// Connection
 Connection::Connection(const std::string &rpc_url,
                        const std::string &commitment)
     : rpc_url_(std::move(rpc_url)), commitment_(std::move(commitment)) {
