@@ -125,7 +125,18 @@ json jsonRequest(const std::string &method, const json &params = nullptr);
  * @param path Path to file
  */
 template <typename T>
-static T fromFile(const std::string &path);
+static T fromFile(const std::string &path) {
+  std::ifstream fileStream(path);
+  std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
+  auto response = json::parse(fileContent);
+  const std::string encoded = response["data"][0];
+  const std::string decoded = solana::b64decode(encoded);
+  if (decoded.size() != sizeof(T))
+    throw std::runtime_error("Invalid account data");
+  T accountInfo{};
+  memcpy(&accountInfo, decoded.data(), sizeof(T));
+  return accountInfo;
+}
 
 /**
  * Configuration object for sendTransaction
@@ -248,7 +259,20 @@ class Connection {
    */
   std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
 
+  /**
+   * Fetch the balance for the specified public key
+   */
   json getBalance(const PublicKey &pubkey);
+
+  /**
+   * @deprecated
+   * Sign and send a transaction
+   * @return transaction signature
+   */
+  [[deprecated]] std::string signAndSendTransaction(
+      const Keypair &keypair, const CompiledTransaction &tx,
+      bool skipPreflight = false,
+      const std::string &preflightCommitment = "finalized");
 
   /**
    * Sign and send a transaction
@@ -283,20 +307,30 @@ class Connection {
                            const SimulateTransactionConfig &config =
                                SimulateTransactionConfig()) const;
 
-  PublicKey getRecentBlockhash_DEPRECATED(
+  /**
+   * Fetch a recent blockhash from the cluster
+   * @deprecated Deprecated since Solana v1.8.0. Please use {@link
+   * getLatestBlockhash} instead.
+   * @return Blockhash
+   */
+  [[deprecated]] PublicKey getRecentBlockhash(
       const std::string &commitment = "finalized");
 
+  /**
+   * Fetch the latest blockhash from the cluster
+   */
   Blockhash getLatestBlockhash(const std::string &commitment = "finalized");
 
+  /**
+   * Returns the current block height of the node
+   */
   uint64_t getBlockHeight(const std::string &commitment = "finalized");
 
+  /**
+   * Fetch the current status of a signature
+   */
   json getSignatureStatuses(const std::vector<std::string> &signatures,
                             bool searchTransactionHistory = false);
-
-  [[deprecated]] std::string signAndSendTransaction(
-      const Keypair &keypair, const CompiledTransaction &tx,
-      bool skipPreflight = false,
-      const std::string &preflightCommitment = "finalized");
 
   template <typename T>
   inline T getAccountInfo(const std::string &account,

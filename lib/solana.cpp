@@ -224,20 +224,6 @@ json jsonRequest(const std::string &method, const json &params) {
   return req;
 }
 
-template <typename T>
-static T fromFile(const std::string &path) {
-  std::ifstream fileStream(path);
-  std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
-  auto response = json::parse(fileContent);
-  const std::string encoded = response["data"][0];
-  const std::string decoded = solana::b64decode(encoded);
-  if (decoded.size() != sizeof(T))
-    throw std::runtime_error("Invalid account data");
-  T accountInfo{};
-  memcpy(&accountInfo, decoded.data(), sizeof(T));
-  return accountInfo;
-}
-
 json SendTransactionConfig::toJson() const {
   json value = {{"encoding", encoding}};
 
@@ -332,47 +318,6 @@ json Connection::sendJsonRpcRequest(const json &body) const {
 ///
 /// 2. Invoke RPC endpoints
 ///
-PublicKey Connection::getRecentBlockhash_DEPRECATED(
-    const std::string &commitment) {
-  const json req = getBlockhashRequest(commitment);
-  cpr::Response r =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-  if (r.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(r.status_code));
-  json res = json::parse(r.text);
-  const std::string encoded = res["result"]["value"]["blockhash"];
-  return PublicKey::fromBase58(encoded);
-}
-Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
-  const json req = getBlockhashRequest(commitment, "getLatestBlockhash");
-  cpr::Response r =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-  if (r.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(r.status_code));
-  json res = json::parse(r.text);
-  const std::string encoded = res["result"]["value"]["blockhash"];
-  const uint64_t lastValidBlockHeight =
-      static_cast<uint64_t>(res["result"]["value"]["lastValidBlockHeight"]);
-  return {PublicKey::fromBase58(encoded), lastValidBlockHeight};
-}
-
-uint64_t Connection::getBlockHeight(const std::string &commitment) {
-  const json req = getBlockhashRequest(commitment, "getBlockHeight");
-  cpr::Response r =
-      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-  if (r.status_code != 200)
-    throw std::runtime_error("unexpected status_code " +
-                             std::to_string(r.status_code));
-  json res = json::parse(r.text);
-  const uint64_t blockHeight = res["result"];
-  return blockHeight;
-}
-
 json Connection::getSignatureStatuses(
     const std::vector<std::string> &signatures, bool searchTransactionHistory) {
   const json params = {
@@ -444,6 +389,47 @@ json Connection::getBalance(const PublicKey &pubkey) {
   const json reqJson = jsonRequest("getBalance", params);
   // send jsonRpc request
   return sendJsonRpcRequest(reqJson);
+}
+
+PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
+  const json req = getBlockhashRequest(commitment);
+  cpr::Response r =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+  json res = json::parse(r.text);
+  const std::string encoded = res["result"]["value"]["blockhash"];
+  return PublicKey::fromBase58(encoded);
+}
+
+Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
+  const json req = getBlockhashRequest(commitment, "getLatestBlockhash");
+  cpr::Response r =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+  json res = json::parse(r.text);
+  const std::string encoded = res["result"]["value"]["blockhash"];
+  const uint64_t lastValidBlockHeight =
+      static_cast<uint64_t>(res["result"]["value"]["lastValidBlockHeight"]);
+  return {PublicKey::fromBase58(encoded), lastValidBlockHeight};
+}
+
+uint64_t Connection::getBlockHeight(const std::string &commitment) {
+  const json req = getBlockhashRequest(commitment, "getBlockHeight");
+  cpr::Response r =
+      cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
+                cpr::Header{{"Content-Type", "application/json"}});
+  if (r.status_code != 200)
+    throw std::runtime_error("unexpected status_code " +
+                             std::to_string(r.status_code));
+  json res = json::parse(r.text);
+  const uint64_t blockHeight = res["result"];
+  return blockHeight;
 }
 
 }  // namespace rpc
