@@ -242,6 +242,28 @@ json SendTransactionConfig::toJson() const {
 
   return value;
 }
+
+json SimulateTransactionConfig::toJson() const {
+  json value = {{"encoding", BASE64}};
+
+  if (sigVerify.has_value()) {
+    value["sigVerify"] = sigVerify.value();
+  }
+  if (commitment.has_value()) {
+    value["commitment"] = commitment.value();
+  }
+  if (replaceRecentBlockhash.has_value()) {
+    value["replaceRecentBlockhash"] = replaceRecentBlockhash.value();
+  }
+  if (address.has_value()) {
+    value["accounts"] = {{"addresses", address.value()}};
+  }
+  if (minContextSlot.has_value()) {
+    value["minContextSlot"] = minContextSlot.value();
+  }
+  return value;
+}
+
 ///
 /// Connection
 Connection::Connection(const std::string &rpc_url,
@@ -434,17 +456,6 @@ json Connection::getSignatureStatuses(
 
 }  // namespace rpc
 
-namespace subscription {
-
-inline json accountSubscribeRequest(const std::string &account,
-                                    const std::string &commitment = "finalized",
-                                    const std::string &encoding = "base64") {
-  const json params = {account,
-                       {{"commitment", commitment}, {"encoding", encoding}}};
-
-  return rpc::jsonRequest("accountSubscribe", params);
-}
-
-}  // namespace subscription
+namespace subscription {}  // namespace subscription
 
 }  // namespace solana

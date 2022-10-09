@@ -403,7 +403,13 @@ namespace subscription {
  */
 inline json accountSubscribeRequest(const std::string &account,
                                     const std::string &commitment = "finalized",
-                                    const std::string &encoding = "base64");
+                                    const std::string &encoding = "base64") {
+  const json params = {account,
+                       {{"commitment", commitment}, {"encoding", encoding}}};
+
+  return rpc::jsonRequest("accountSubscribe", params);
+}
+
 }  // namespace subscription
 }  // namespace rpc
 }  // namespace solana
