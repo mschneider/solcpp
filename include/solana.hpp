@@ -198,26 +198,10 @@ struct SimulateTransactionConfig {
    */
   const std::optional<uint8_t> minContextSlot = std::nullopt;
 
-  json toJson() const {
-    json value = {{"encoding", BASE64}};
-
-    if (sigVerify.has_value()) {
-      value["sigVerify"] = sigVerify.value();
-    }
-    if (commitment.has_value()) {
-      value["commitment"] = commitment.value();
-    }
-    if (replaceRecentBlockhash.has_value()) {
-      value["replaceRecentBlockhash"] = replaceRecentBlockhash.value();
-    }
-    if (address.has_value()) {
-      value["accounts"] = {{"addresses", address.value()}};
-    }
-    if (minContextSlot.has_value()) {
-      value["minContextSlot"] = minContextSlot.value();
-    }
-    return value;
-  }
+  /**
+   * convert to json for RPC request param
+   */
+  json toJson() const;
 };
 
 ///
