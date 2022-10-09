@@ -28,23 +28,13 @@ struct PublicKey {
 
   array_t data;
 
-  static PublicKey empty() { return {}; }
+  static PublicKey empty();
 
-  static PublicKey fromBase58(const std::string &b58) {
-    PublicKey result = {};
-    size_t decodedSize = SIZE;
-    const auto ok = b58tobin(result.data.data(), &decodedSize, b58.c_str(), 0);
-    if (!ok) throw std::runtime_error("invalid base58 '" + b58 + "'");
-    if (decodedSize != SIZE)
-      throw std::runtime_error("not a valid PublicKey '" +
-                               std::to_string(decodedSize) +
-                               " != " + std::to_string(SIZE) + "'");
-    return result;
-  }
+  static PublicKey fromBase58(const std::string &b58);
 
-  bool operator==(const PublicKey &other) const { return data == other.data; }
+  bool operator==(const PublicKey &other) const;
 
-  std::string toBase58() const { return b58encode(data); }
+  std::string toBase58() const;
 };
 
 struct PrivateKey {
@@ -53,29 +43,14 @@ struct PrivateKey {
 
   array_t data;
 
-  std::vector<uint8_t> signMessage(const std::vector<uint8_t> message) const {
-    uint8_t sig[crypto_sign_BYTES];
-    unsigned long long sigSize;
-    if (0 != crypto_sign_detached(sig, &sigSize, message.data(), message.size(),
-                                  data.data()))
-      throw std::runtime_error("could not sign tx with private key");
-    return std::vector<uint8_t>(sig, sig + sigSize);
-  }
+  std::vector<uint8_t> signMessage(const std::vector<uint8_t> message) const;
 };
 
 struct Keypair {
   PublicKey publicKey;
   PrivateKey privateKey;
 
-  static Keypair fromFile(const std::string &path) {
-    Keypair result = {};
-    std::ifstream fileStream(path);
-    std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
-    result.privateKey.data = json::parse(fileContent);
-    crypto_sign_ed25519_sk_to_pk(result.publicKey.data.data(),
-                                 result.privateKey.data.data());
-    return result;
-  }
+  static Keypair fromFile(const std::string &path);
 };
 
 struct AccountMeta {
@@ -83,9 +58,7 @@ struct AccountMeta {
   bool isSigner;
   bool isWritable;
 
-  bool operator<(const AccountMeta &other) const {
-    return (isSigner > other.isSigner) || (isWritable > other.isWritable);
-  }
+  bool operator<(const AccountMeta &other) const;
 };
 
 struct Instruction {
