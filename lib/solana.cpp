@@ -318,14 +318,6 @@ json Connection::sendJsonRpcRequest(const json &body) const {
 ///
 /// 2. Invoke RPC endpoints
 ///
-json Connection::getSignatureStatuses(
-    const std::vector<std::string> &signatures, bool searchTransactionHistory) {
-  const json params = {
-      signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
-
-  return jsonRequest("getSignatureStatuses", params);
-}
-
 std::string Connection::signAndSendTransaction(
     const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight,
     const std::string &preflightCommitment) {
@@ -430,6 +422,14 @@ uint64_t Connection::getBlockHeight(const std::string &commitment) {
   json res = json::parse(r.text);
   const uint64_t blockHeight = res["result"];
   return blockHeight;
+}
+
+json Connection::getSignatureStatuses(
+    const std::vector<std::string> &signatures, bool searchTransactionHistory) {
+  const json params = {
+      signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
+
+  return jsonRequest("getSignatureStatuses", params);
 }
 
 }  // namespace rpc
