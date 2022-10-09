@@ -238,6 +238,25 @@ static T fromFile(const std::string &path) {
   return accountInfo;
 }
 
+json SendTransactionConfig::toJson() const {
+  json value = {{"encoding", encoding}};
+
+  if (skipPreflight.has_value()) {
+    value["skipPreflight"] = skipPreflight.value();
+  }
+  if (preflightCommitment.has_value()) {
+    value["preflightCommitment"] = preflightCommitment.value();
+  }
+  if (maxRetries.has_value()) {
+    value["maxRetries"] = maxRetries.value();
+  }
+  if (minContextSlot.has_value()) {
+    value["minContextSlot"] = minContextSlot.value();
+  }
+
+  return value;
+}
+
 Connection::Connection(const std::string &rpc_url,
                        const std::string &commitment)
     : rpc_url_(std::move(rpc_url)), commitment_(std::move(commitment)) {

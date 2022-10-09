@@ -127,8 +127,9 @@ json jsonRequest(const std::string &method, const json &params = nullptr);
 template <typename T>
 static T fromFile(const std::string &path);
 
-///
-/// Configuration object for sendTransaction
+/**
+ * Configuration object for sendTransaction
+ */
 struct SendTransactionConfig {
   /**
    * if true, skip the preflight transaction checks (default: false)
@@ -154,24 +155,10 @@ struct SendTransactionConfig {
    */
   const std::optional<uint8_t> minContextSlot = std::nullopt;
 
-  json toJson() const {
-    json value = {{"encoding", encoding}};
-
-    if (skipPreflight.has_value()) {
-      value["skipPreflight"] = skipPreflight.value();
-    }
-    if (preflightCommitment.has_value()) {
-      value["preflightCommitment"] = preflightCommitment.value();
-    }
-    if (maxRetries.has_value()) {
-      value["maxRetries"] = maxRetries.value();
-    }
-    if (minContextSlot.has_value()) {
-      value["minContextSlot"] = minContextSlot.value();
-    }
-
-    return value;
-  }
+  /**
+   * serialize to json
+   */
+  json toJson() const;
 };
 
 ///
