@@ -118,23 +118,14 @@ struct CompiledTransaction {
 namespace rpc {
 using json = nlohmann::json;
 
-json jsonRequest(const std::string &method,
-                               const json &params = nullptr);
+json jsonRequest(const std::string &method, const json &params = nullptr);
 
-// Read AccountInfo dumped in a file
+/**
+ * Read AccountInfo dumped in a file
+ * @param path Path to file
+ */
 template <typename T>
-static T fromFile(const std::string &path) {
-  std::ifstream fileStream(path);
-  std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
-  auto response = json::parse(fileContent);
-  const std::string encoded = response["data"][0];
-  const std::string decoded = solana::b64decode(encoded);
-  if (decoded.size() != sizeof(T))
-    throw std::runtime_error("Invalid account data");
-  T accountInfo{};
-  memcpy(&accountInfo, decoded.data(), sizeof(T));
-  return accountInfo;
-}
+static T fromFile(const std::string &path);
 
 ///
 /// Configuration object for sendTransaction

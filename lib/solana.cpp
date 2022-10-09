@@ -224,6 +224,20 @@ json jsonRequest(const std::string &method, const json &params) {
   return req;
 }
 
+template <typename T>
+static T fromFile(const std::string &path) {
+  std::ifstream fileStream(path);
+  std::string fileContent(std::istreambuf_iterator<char>(fileStream), {});
+  auto response = json::parse(fileContent);
+  const std::string encoded = response["data"][0];
+  const std::string decoded = solana::b64decode(encoded);
+  if (decoded.size() != sizeof(T))
+    throw std::runtime_error("Invalid account data");
+  T accountInfo{};
+  memcpy(&accountInfo, decoded.data(), sizeof(T));
+  return accountInfo;
+}
+
 Connection::Connection(const std::string &rpc_url,
                        const std::string &commitment)
     : rpc_url_(std::move(rpc_url)), commitment_(std::move(commitment)) {
