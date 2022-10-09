@@ -217,6 +217,13 @@ std::vector<uint8_t> CompiledTransaction::sign(const Keypair &keypair) const {
 }
 
 namespace rpc {
+
+json jsonRequest(const std::string &method, const json &params) {
+  json req = {{"jsonrpc", "2.0"}, {"id", 1}, {"method", method}};
+  if (params != nullptr) req["params"] = params;
+  return req;
+}
+
 Connection::Connection(const std::string &rpc_url,
                        const std::string &commitment)
     : rpc_url_(std::move(rpc_url)), commitment_(std::move(commitment)) {

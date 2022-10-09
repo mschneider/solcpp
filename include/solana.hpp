@@ -117,12 +117,10 @@ struct CompiledTransaction {
 
 namespace rpc {
 using json = nlohmann::json;
-inline json jsonRequest(const std::string &method,
-                        const json &params = nullptr) {
-  json req = {{"jsonrpc", "2.0"}, {"id", 1}, {"method", method}};
-  if (params != nullptr) req["params"] = params;
-  return req;
-}
+
+json jsonRequest(const std::string &method,
+                               const json &params = nullptr);
+
 // Read AccountInfo dumped in a file
 template <typename T>
 static T fromFile(const std::string &path) {
