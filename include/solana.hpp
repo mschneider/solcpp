@@ -285,14 +285,19 @@ class Connection {
 
   PublicKey getRecentBlockhash_DEPRECATED(
       const std::string &commitment = "finalized");
+
   Blockhash getLatestBlockhash(const std::string &commitment = "finalized");
+
   uint64_t getBlockHeight(const std::string &commitment = "finalized");
+
   json getSignatureStatuses(const std::vector<std::string> &signatures,
                             bool searchTransactionHistory = false);
+
   [[deprecated]] std::string signAndSendTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       bool skipPreflight = false,
       const std::string &preflightCommitment = "finalized");
+
   template <typename T>
   inline T getAccountInfo(const std::string &account,
                           const std::string &encoding = "base64",
@@ -317,9 +322,12 @@ class Connection {
     memcpy(&result, decoded.data(), sizeof(T));
     return result;
   }
-  /// Returns account information for a list of pubKeys
-  /// Returns a map of {pubKey : AccountInfo} for accounts that exist.
-  /// Accounts that don't exist return a `null` result and are skipped
+
+  /**
+   * Returns account information for a list of pubKeys
+   * Returns a map of {pubKey : AccountInfo} for accounts that exist.
+   * Accounts that don't exist return a `null` result and are skipped
+   */
   template <typename T>
   inline std::map<std::string, T> getMultipleAccounts(
       const std::vector<std::string> &accounts,
