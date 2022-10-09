@@ -220,29 +220,11 @@ class Connection {
    */
   Connection(const std::string &rpc_url = MAINNET_BETA,
              const std::string &commitment = "finalized");
-  ///
-
-  /// 1. Build requests
-  ///
-  json getAccountInfoRequest(const std::string &account,
-                             const std::string &encoding = "base64",
-                             const size_t offset = 0, const size_t length = 0);
-  json getMultipleAccountsRequest(const std::vector<std::string> &accounts,
-                                  const std::string &encoding = "base64",
-                                  const size_t offset = 0,
-                                  const size_t length = 0);
-  json getBlockhashRequest(const std::string &commitment = "finalized",
-                           const std::string &method = "getRecentBlockhash");
-
   /*
    * send rpc request
    * @return result from response
    */
   json sendJsonRpcRequest(const json &body) const;
-
-  ///
-  /// 2. Invoke RPC endpoints
-  ///
   /**
    * @deprecated
    * Sign and send a transaction
@@ -328,16 +310,20 @@ class Connection {
   inline T getAccountInfo(const std::string &account,
                           const std::string &encoding = "base64",
                           const size_t offset = 0, const size_t length = 0) {
-    const json req = getAccountInfoRequest(account, encoding, offset, length);
-    cpr::Response r =
-        cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
-                  cpr::Header{{"Content-Type", "application/json"}});
-    if (r.status_code != 200)
-      throw std::runtime_error("unexpected status_code " +
-                               std::to_string(r.status_code));
-
-    json res = json::parse(r.text);
-    const std::string encoded = res["result"]["value"]["data"][0];
+    // create Params
+    json params = {account};
+    json options = {{"encoding", encoding}};
+    if (offset && length) {
+      json dataSlice = {"dataSlice", {{"offset", offset}, {"length", length}}};
+      options.emplace(dataSlice);
+    }
+    params.emplace_back(options);
+    // create request
+    const auto reqJson = jsonRequest("getAccountInfo", params);
+    // send jsonRpc request
+    const json res = sendJsonRpcRequest(reqJson);
+    // Account info from response
+    const std::string encoded = res["value"]["data"][0];
     const std::string decoded = b64decode(encoded);
     if (decoded.size() != sizeof(T))  // decoded should fit into T
       throw std::runtime_error("invalid response length " +
@@ -359,17 +345,24 @@ class Connection {
       const std::vector<std::string> &accounts,
       const std::string &encoding = "base64", const size_t offset = 0,
       const size_t length = 0) {
-    const json req =
-        getMultipleAccountsRequest(accounts, encoding, offset, length);
-    cpr::Response r =
-        cpr::Post(cpr::Url{rpc_url_}, cpr::Body{req.dump()},
-                  cpr::Header{{"Content-Type", "application/json"}});
-    if (r.status_code != 200)
-      throw std::runtime_error("unexpected status_code " +
-                               std::to_string(r.status_code));
-
-    json res = json::parse(r.text);
-    const auto &account_info_vec = res["result"]["value"];
+    // create params
+    json pubKeys = json::array();
+    for (auto &account : accounts) {
+      pubKeys.emplace_back(account);
+    }
+    json params = {};
+    params.emplace_back(pubKeys);
+    json options = {{"encoding", encoding}};
+    if (offset && length) {
+      json dataSlice = {"dataSlice", {{"offset", offset}, {"length", length}}};
+      options.emplace(dataSlice);
+    }
+    params.emplace_back(options);
+    // create request
+    const json reqJson = jsonRequest("getMultipleAccounts", params);
+    // send jsonRpc request
+    const json res = sendJsonRpcRequest(reqJson);
+    const auto &account_info_vec = res["value"];
     std::map<std::string, T> result;
     int index = -1;
     for (const auto &account_info : account_info_vec) {
@@ -383,8 +376,9 @@ class Connection {
                                  std::to_string(sizeof(T)));
       T account{};
       memcpy(&account, decoded.data(), sizeof(T));
-      result[req["params"][0][index]] = account;  // Retrieve the corresponding
-                                                  // pubKey from the request
+      result[reqJson["params"][0][index]] =
+          account;  // Retrieve the corresponding
+                    // pubKey from the request
     }
     return result;
   }
