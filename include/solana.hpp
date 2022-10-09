@@ -53,6 +53,9 @@ struct Keypair {
   static Keypair fromFile(const std::string &path);
 };
 
+/**
+ * Account metadata used to define instructions
+ */
 struct AccountMeta {
   PublicKey pubkey;
   bool isSigner;
@@ -78,6 +81,9 @@ struct Blockhash {
   uint64_t lastValidBlockHeight;
 };
 
+/**
+ * An instruction to execute by a program
+ */
 struct CompiledInstruction {
   uint8_t programIdIndex;
   std::vector<uint8_t> accountIndices;
@@ -315,6 +321,9 @@ class Connection {
   json getSignatureStatuses(const std::vector<std::string> &signatures,
                             bool searchTransactionHistory = false);
 
+  /**
+   * Fetch all the account info for the specified public key
+   */
   template <typename T>
   inline T getAccountInfo(const std::string &account,
                           const std::string &encoding = "base64",
@@ -388,14 +397,13 @@ class Connection {
 ///
 /// Websocket requests
 namespace subscription {
+/**
+ * Subscribe to an account to receive notifications when the lamports or data
+ * for a given account public key changes
+ */
 inline json accountSubscribeRequest(const std::string &account,
                                     const std::string &commitment = "finalized",
-                                    const std::string &encoding = "base64") {
-  const json params = {account,
-                       {{"commitment", commitment}, {"encoding", encoding}}};
-
-  return jsonRequest("accountSubscribe", params);
-}
+                                    const std::string &encoding = "base64");
 }  // namespace subscription
 }  // namespace rpc
 }  // namespace solana
