@@ -2,6 +2,7 @@
 #include <sodium.h>
 
 #include <cstdint>
+#include <iostream>
 #include <iterator>
 #include <optional>
 #include <ostream>
@@ -375,7 +376,7 @@ std::string Connection::sendEncodedTransaction(
   return sendJsonRpcRequest(reqJson);
 }
 
-json Connection::simulateTransaction(
+SimulateTransaction Connection::simulateTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SimulateTransactionConfig &config) const {
   // signed and encode transaction
@@ -384,8 +385,11 @@ json Connection::simulateTransaction(
   // create request
   const json params = {b64Tx, config.toJson()};
   const auto reqJson = jsonRequest("simulateTransaction", params);
+  const json res = sendJsonRpcRequest(reqJson)["value"];
+  std::vector<std::string> logs = res["logs"].get<std::vector<std::string>>();
+  int unitsconsumed = res["unitsConsumed"];
   // send jsonRpc request
-  return sendJsonRpcRequest(reqJson)["value"];
+  return {logs, unitsconsumed};
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
@@ -397,12 +401,14 @@ std::string Connection::requestAirdrop(const PublicKey &pubkey,
   return sendJsonRpcRequest(reqJson);
 }
 
-json Connection::getBalance(const PublicKey &pubkey) {
+Balance Connection::getBalance(const PublicKey &pubkey) {
   // create request
   const json params = {pubkey.toBase58()};
   const json reqJson = jsonRequest("getBalance", params);
+  auto res = sendJsonRpcRequest(reqJson);
+  long lamports = res["value"];
   // send jsonRpc request
-  return sendJsonRpcRequest(reqJson);
+  return {lamports};
 }
 
 PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
