@@ -398,7 +398,7 @@ std::string Connection::requestAirdrop(const PublicKey &pubkey,
   return sendJsonRpcRequest(reqJson);
 }
 
-GetBalance Connection::getBalance(const PublicKey &pubkey) {
+Balance Connection::getBalance(const PublicKey &pubkey) {
   // create request
   const json params = {pubkey.toBase58()};
   const json reqJson = jsonRequest("getBalance", params);
