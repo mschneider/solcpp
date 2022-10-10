@@ -81,6 +81,10 @@ struct Blockhash {
   uint64_t lastValidBlockHeight;
 };
 
+struct GetBalance{
+  long lamports;
+};
+
 /**
  * An instruction to execute by a program
  */
@@ -294,7 +298,7 @@ class Connection {
   /**
    * Fetch the balance for the specified public key
    */
-  json getBalance(const PublicKey &pubkey);
+  GetBalance getBalance(const PublicKey &pubkey);
 
   /**
    * Fetch a recent blockhash from the cluster

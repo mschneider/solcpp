@@ -64,7 +64,7 @@ TEST_CASE("Request Airdrop") {
   std::this_thread::sleep_for(std::chrono::seconds(15));
   auto new_sol = connection.getBalance(keyPair.publicKey);
   // TODO: validate using confirmTransaction
-  CHECK_GT(new_sol["value"], prev_sol["value"]);
+  CHECK_GT(new_sol.lamports, prev_sol.lamports);
 }
 
 TEST_CASE("base58 decode & encode") {

@@ -1,5 +1,6 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
+#include <iostream>
 
 #include <cstdint>
 #include <iterator>
@@ -218,20 +219,6 @@ std::vector<uint8_t> CompiledTransaction::sign(const Keypair &keypair) const {
 
 namespace rpc {
 
-struct Context {
-  int slot;
-};
-
-struct Result {
-  struct Context context;
-  int value;
-};
-
-struct getBalance {
-  float jsonrpc;
-  struct Result result;
-  int id;
-};
 
 json jsonRequest(const std::string &method, const json &params) {
   json req = {{"jsonrpc", "2.0"}, {"id", 1}, {"method", method}};
@@ -412,12 +399,14 @@ std::string Connection::requestAirdrop(const PublicKey &pubkey,
   return sendJsonRpcRequest(reqJson);
 }
 
-json Connection::getBalance(const PublicKey &pubkey) {
+GetBalance Connection::getBalance(const PublicKey &pubkey) {
   // create request
   const json params = {pubkey.toBase58()};
   const json reqJson = jsonRequest("getBalance", params);
+  auto res=sendJsonRpcRequest(reqJson);
+  long lamports=res["value"];
   // send jsonRpc request
-  return sendJsonRpcRequest(reqJson);
+  return {lamports};
 }
 
 PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
