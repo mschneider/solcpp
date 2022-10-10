@@ -69,7 +69,7 @@ int main() {
   const auto tx = solana::CompiledTransaction::fromInstructions(
       ixs, keypair.publicKey, recentBlockhash);
 
-  const auto b58Sig = connection.signAndSendTransaction(keypair, tx);
+  const auto b58Sig = connection.sendTransaction(keypair, tx);
   spdlog::info(
       "placed order. check: https://explorer.solana.com/tx/{}?cluster=devnet",
       b58Sig);
