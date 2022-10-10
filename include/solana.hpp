@@ -85,7 +85,9 @@ struct Balance {
   long lamports;
 };
 
-struct SimulateTransaction {
+struct SimulateTransactionResponse {
+  std::string err;
+  std::vector<std::string> accounts;
   std::vector<std::string> logs;
   int unitsconsumed;
 };
@@ -273,7 +275,7 @@ class Connection {
    * Simulate sending a transaction
    * @return SimulatedTransactionResponse
    */
-  SimulateTransaction simulateTransaction(
+  SimulateTransactionResponse simulateTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       const SimulateTransactionConfig &config =
           SimulateTransactionConfig()) const;

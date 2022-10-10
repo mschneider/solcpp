@@ -335,7 +335,7 @@ std::string Connection::sendEncodedTransaction(
   return sendJsonRpcRequest(reqJson);
 }
 
-SimulateTransaction Connection::simulateTransaction(
+SimulateTransactionResponse Connection::simulateTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SimulateTransactionConfig &config) const {
   // signed and encode transaction
