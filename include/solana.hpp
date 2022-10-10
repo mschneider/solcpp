@@ -85,6 +85,11 @@ struct Balance {
   long lamports;
 };
 
+struct SimulateTransaction {
+  std::vector<std::string> logs;
+  int unitsconsumed;
+};
+
 /**
  * An instruction to execute by a program
  */
@@ -285,10 +290,10 @@ class Connection {
    * Simulate sending a transaction
    * @return SimulatedTransactionResponse
    */
-  json simulateTransaction(const Keypair &keypair,
-                           const CompiledTransaction &tx,
-                           const SimulateTransactionConfig &config =
-                               SimulateTransactionConfig()) const;
+  SimulateTransaction simulateTransaction(
+      const Keypair &keypair, const CompiledTransaction &tx,
+      const SimulateTransactionConfig &config =
+          SimulateTransactionConfig()) const;
 
   /**
    * Request an allocation of lamports to the specified address
@@ -298,7 +303,7 @@ class Connection {
   /**
    * Fetch the balance for the specified public key
    */
-  GetBalance getBalance(const PublicKey &pubkey);
+  Balance getBalance(const PublicKey &pubkey);
 
   /**
    * Fetch a recent blockhash from the cluster
