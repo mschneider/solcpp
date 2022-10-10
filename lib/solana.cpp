@@ -345,22 +345,22 @@ SimulateTransactionResponse Connection::simulateTransaction(
   const json params = {b64Tx, config.toJson()};
   const auto reqJson = jsonRequest("simulateTransaction", params);
   const json res = sendJsonRpcRequest(reqJson)["value"];
-  std::string err="";
+  std::string err = "";
   std::vector<std::string> accounts;
   std::vector<std::string> logs;
-  if(!res["err"].is_null()){
-    err=res["err"];
+  if (!res["err"].is_null()) {
+    err = res["err"];
   }
- 
-  if(!res["accounts"].is_null()){
+
+  if (!res["accounts"].is_null()) {
     accounts = res["accounts"].get<std::vector<std::string>>();
   }
-  if(!res["logs"].is_null()){
+  if (!res["logs"].is_null()) {
     logs = res["logs"].get<std::vector<std::string>>();
   }
   int unitsconsumed = res["unitsConsumed"];
   // send jsonRpc request
-  return {err,accounts,logs, unitsconsumed};
+  return {err, accounts, logs, unitsconsumed};
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
