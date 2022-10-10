@@ -218,6 +218,21 @@ std::vector<uint8_t> CompiledTransaction::sign(const Keypair &keypair) const {
 
 namespace rpc {
 
+  struct Context{
+    int slot;
+  };
+
+  struct Result{
+      struct Context context;
+      int value;
+  };
+
+  struct getBalance{
+    float jsonrpc;
+    struct Result result;
+    int id;
+  };
+
 json jsonRequest(const std::string &method, const json &params) {
   json req = {{"jsonrpc", "2.0"}, {"id", 1}, {"method", method}};
   if (params != nullptr) req["params"] = params;
