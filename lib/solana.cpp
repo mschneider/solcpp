@@ -1,8 +1,8 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
-#include <iostream>
 
 #include <cstdint>
+#include <iostream>
 #include <iterator>
 #include <optional>
 #include <ostream>
@@ -219,7 +219,6 @@ std::vector<uint8_t> CompiledTransaction::sign(const Keypair &keypair) const {
 
 namespace rpc {
 
-
 json jsonRequest(const std::string &method, const json &params) {
   json req = {{"jsonrpc", "2.0"}, {"id", 1}, {"method", method}};
   if (params != nullptr) req["params"] = params;
@@ -403,8 +402,8 @@ GetBalance Connection::getBalance(const PublicKey &pubkey) {
   // create request
   const json params = {pubkey.toBase58()};
   const json reqJson = jsonRequest("getBalance", params);
-  auto res=sendJsonRpcRequest(reqJson);
-  long lamports=res["value"];
+  auto res = sendJsonRpcRequest(reqJson);
+  long lamports = res["value"];
   // send jsonRpc request
   return {lamports};
 }

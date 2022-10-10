@@ -81,7 +81,7 @@ struct Blockhash {
   uint64_t lastValidBlockHeight;
 };
 
-struct GetBalance{
+struct GetBalance {
   long lamports;
 };
 
