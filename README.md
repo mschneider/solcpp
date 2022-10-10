@@ -56,7 +56,7 @@ const solana::CompiledTransaction tx = {
 // 3. send & sign tx
 const auto keypair =
   solana::Keypair::fromFile("id.json");
-const auto b58Sig = connection.signAndSendTransaction(keypair, tx);
+const auto b58Sig = connection.sendTransaction(keypair, tx);
 spdlog::info(
   "sent tx. check: https://explorer.solana.com/tx/{}?cluster=devnet",
   b58Sig);
