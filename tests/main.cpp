@@ -33,9 +33,10 @@ TEST_CASE("Simulate & Send Transaction") {
 
   const auto simulateRes = connection.simulateTransaction(keyPair, compiledTx);
   // consumed units should be greater than unity
-  CHECK_GT(simulateRes.unitsconsumed, 0);
+  CHECK_GT(simulateRes.unitsConsumed, 0);
   // logs should be an array
-  // CHECK_EQ(simulateRes["logs"].is_array(), true);
+  
+  CHECK_EQ(simulateRes.logs.empty(), false);
 
   ///
   /// Test sendTransaction
@@ -60,7 +61,7 @@ TEST_CASE("Request Airdrop") {
   auto connection = solana::rpc::Connection(solana::DEVNET);
 
   auto prev_sol = connection.getBalance(keyPair.publicKey);
-  auto result = connection.requestAirdrop(keyPair.publicKey, 1000000000);
+  auto result = connection.requestAirdrop(keyPair.publicKey, 10000);
   std::this_thread::sleep_for(std::chrono::seconds(15));
   auto new_sol = connection.getBalance(keyPair.publicKey);
   // TODO: validate using confirmTransaction

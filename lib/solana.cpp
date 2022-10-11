@@ -358,9 +358,9 @@ SimulatedTransactionResponse Connection::simulateTransaction(
   if (!res["logs"].is_null()) {
     logs = res["logs"].get<std::vector<std::string>>();
   }
-  int unitsconsumed = res["unitsConsumed"];
+  uint64_t unitsConsumed = res["unitsConsumed"];
   // send jsonRpc request
-  return {err, accounts, logs, unitsconsumed};
+  return {err, accounts, logs, unitsConsumed};
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
