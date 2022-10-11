@@ -334,7 +334,7 @@ std::string Connection::sendEncodedTransaction(
   return sendJsonRpcRequest(reqJson);
 }
 
-SimulateTransactionResponse Connection::simulateTransaction(
+SimulatedTransactionResponse Connection::simulateTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SimulateTransactionConfig &config) const {
   // signed and encode transaction
@@ -357,9 +357,9 @@ SimulateTransactionResponse Connection::simulateTransaction(
   if (!res["logs"].is_null()) {
     logs = res["logs"].get<std::vector<std::string>>();
   }
-  int unitsconsumed = res["unitsConsumed"];
+  uint64_t unitsConsumed = res["unitsConsumed"];
   // send jsonRpc request
-  return {err, accounts, logs, unitsconsumed};
+  return {err, accounts, logs, unitsConsumed};
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
@@ -376,7 +376,7 @@ Balance Connection::getBalance(const PublicKey &pubkey) {
   const json params = {pubkey.toBase58()};
   const json reqJson = jsonRequest("getBalance", params);
   auto res = sendJsonRpcRequest(reqJson);
-  long lamports = res["value"];
+  uint64_t lamports = res["value"];
   // send jsonRpc request
   return {lamports};
 }

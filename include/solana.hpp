@@ -82,14 +82,16 @@ struct Blockhash {
 };
 
 struct Balance {
-  long lamports;
+  uint64_t lamports;
 };
 
-struct SimulateTransactionResponse {
+struct SimulatedTransactionResponse {
   std::string err;
   std::vector<std::string> accounts;
   std::vector<std::string> logs;
-  int unitsConsumed;
+
+  uint64_t unitsConsumed;
+
 };
 
 /**
@@ -275,7 +277,7 @@ class Connection {
    * Simulate sending a transaction
    * @return SimulatedTransactionResponse
    */
-  SimulateTransactionResponse simulateTransaction(
+  SimulatedTransactionResponse simulateTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       const SimulateTransactionConfig &config =
           SimulateTransactionConfig()) const;
