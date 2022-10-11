@@ -335,7 +335,7 @@ std::string Connection::sendEncodedTransaction(
   return sendJsonRpcRequest(reqJson);
 }
 
-SimulateTransactionResponse Connection::simulateTransaction(
+SimulatedTransactionResponse Connection::simulateTransaction(
     const Keypair &keypair, const CompiledTransaction &compiledTx,
     const SimulateTransactionConfig &config) const {
   // signed and encode transaction
@@ -377,7 +377,7 @@ Balance Connection::getBalance(const PublicKey &pubkey) {
   const json params = {pubkey.toBase58()};
   const json reqJson = jsonRequest("getBalance", params);
   auto res = sendJsonRpcRequest(reqJson);
-  long lamports = res["value"];
+  uint64_t lamports = res["value"];
   // send jsonRpc request
   return {lamports};
 }
