@@ -2,7 +2,6 @@
 #include <sodium.h>
 
 #include <cstdint>
-#include <iostream>
 #include <iterator>
 #include <optional>
 #include <ostream>
