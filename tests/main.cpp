@@ -33,9 +33,7 @@ TEST_CASE("Simulate & Send Transaction") {
 
   const auto simulateRes = connection.simulateTransaction(keyPair, compiledTx);
   // consumed units should be greater than unity
-  CHECK_GT(simulateRes.unitsconsumed, 0);
-  // logs should be an array
-  // CHECK_EQ(simulateRes["logs"].is_array(), true);
+  CHECK_GT(simulateRes.unitsConsumed, 0);
 
   ///
   /// Test sendTransaction
