@@ -91,7 +91,6 @@ struct SimulatedTransactionResponse {
   std::vector<std::string> logs;
 
   uint64_t unitsConsumed;
-
 };
 
 /**
