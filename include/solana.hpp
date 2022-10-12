@@ -99,6 +99,29 @@ void to_json(json &j, const SimulatedTransactionResponse &res);
  */
 void from_json(const json &j, SimulatedTransactionResponse &res);
 
+struct SignatureStatus {
+  /** when the transaction was processed */
+  uint64_t slot;
+  /** the number of blocks that have been confirmed and voted on in the fork
+   * containing `slot` */
+  std::optional<uint64_t> confirmations = std::nullopt;
+  /** transaction error, if any */
+  std::optional<std::string> err = std::nullopt;
+  /** cluster confirmation status, if data available. Possible responses:
+   * `processed`, `confirmed`, `finalized` */
+  std::string confirmationStatus;
+};
+
+/**
+ * SignatureStatus to json
+ */
+void to_json(json &j, const SignatureStatus &status);
+
+/**
+ * SignatureStatus from json
+ */
+void from_json(const json &j, SignatureStatus &status);
+
 /**
  * An instruction to execute by a program
  */
@@ -318,10 +341,11 @@ class Connection {
   uint64_t getBlockHeight(const std::string &commitment = "finalized") const;
 
   /**
-   * Fetch the current status of a signature
+   * Fetch the current statuses of a batch of signatures
    */
-  json getSignatureStatuses(const std::vector<std::string> &signatures,
-                            bool searchTransactionHistory = false) const;
+  std::vector<SignatureStatus> getSignatureStatuses(
+      const std::vector<std::string> &signatures,
+      bool searchTransactionHistory = false) const;
 
   /**
    * Fetch all the account info for the specified public key

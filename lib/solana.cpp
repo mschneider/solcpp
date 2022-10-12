@@ -71,9 +71,6 @@ bool AccountMeta::operator<(const AccountMeta &other) const {
 ///
 /// SimulatedTransactionResponse
 
-/**
- * SimulatedTransactionResponse to json
- */
 void to_json(json &j, const SimulatedTransactionResponse &res) {
   if (res.err.has_value()) {
     j["err"] = res.err.value();
@@ -89,9 +86,6 @@ void to_json(json &j, const SimulatedTransactionResponse &res) {
   }
 }
 
-/**
- * SimulatedTransactionResponse from json
- */
 void from_json(const json &j, SimulatedTransactionResponse &res) {
   if (!j["err"].is_null()) {
     res.err = std::optional{j["err"]};
@@ -105,6 +99,31 @@ void from_json(const json &j, SimulatedTransactionResponse &res) {
   if (!j["unitsConsumed"].is_null()) {
     res.unitsConsumed = std::optional{j["unitsConsumed"]};
   }
+}
+
+///
+/// SignatureStatus
+
+void to_json(json &j, const SignatureStatus &status) {
+  j["slot"] = status.slot;
+  if (status.confirmations.has_value()) {
+    j["confirmations"] = status.confirmations.value();
+  }
+  if (status.err.has_value()) {
+    j["err"] = status.err.value();
+  }
+  j["confirmationStatus"] = status.confirmationStatus;
+}
+
+void from_json(const json &j, SignatureStatus &res) {
+  res.slot = j["slot"];
+  if (!j["confirmations"].is_null()) {
+    res.confirmations = std::optional{j["confirmations"]};
+  }
+  if (!j["err"].is_null()) {
+    res.err = std::optional{j["err"]};
+  }
+  res.confirmationStatus = j["confirmationStatus"];
 }
 
 ///
@@ -434,13 +453,13 @@ uint64_t Connection::getBlockHeight(const std::string &commitment) const {
   return sendJsonRpcRequest(reqJson);
 }
 
-json Connection::getSignatureStatuses(
+std::vector<SignatureStatus> Connection::getSignatureStatuses(
     const std::vector<std::string> &signatures,
     bool searchTransactionHistory) const {
   const json params = {
       signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
   const auto reqJson = jsonRequest("getSignatureStatuses", params);
-  return sendJsonRpcRequest(reqJson);
+  return sendJsonRpcRequest(reqJson)["value"];
 }
 
 }  // namespace rpc
