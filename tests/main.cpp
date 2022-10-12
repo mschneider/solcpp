@@ -1,5 +1,4 @@
 #include <chrono>
-#include <iostream>
 #include <string>
 #include <thread>
 
@@ -33,14 +32,15 @@ TEST_CASE("Simulate & Send Transaction") {
 
   const auto simulateRes = connection.simulateTransaction(keyPair, compiledTx);
   // consumed units should be greater than unity
-  CHECK_GT(simulateRes.unitsConsumed, 0);
+  CHECK_GT(simulateRes.unitsConsumed.value(), 0);
+  CHECK_EQ(simulateRes.logs.value().empty(), false);
 
-  CHECK_EQ(simulateRes.logs.empty(), false);
+  const solana::rpc::json to_json = simulateRes;
+  CHECK_EQ(simulateRes.unitsConsumed.value(), to_json["unitsConsumed"]);
 
   ///
   /// Test sendTransaction
   ///
-
   const std::string transactionSignature =
       connection.sendTransaction(keyPair, compiledTx);
   // serialize transaction

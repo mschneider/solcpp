@@ -86,12 +86,22 @@ struct Balance {
 };
 
 struct SimulatedTransactionResponse {
-  std::string err;
-  std::vector<std::string> accounts;
-  std::vector<std::string> logs;
-
-  uint64_t unitsConsumed;
+  std::optional<std::string> err = std::nullopt;
+  std::optional<std::vector<std::string>> accounts = std::nullopt;
+  std::optional<std::vector<std::string>> logs = std::nullopt;
+  std::optional<uint64_t> unitsConsumed = std::nullopt;
+  // returnData?: TransactionReturnData | null;
 };
+
+/**
+ * SimulatedTransactionResponse to json
+ */
+void to_json(json &j, const SimulatedTransactionResponse &res);
+
+/**
+ * SimulatedTransactionResponse from json
+ */
+void from_json(const json &j, SimulatedTransactionResponse &res);
 
 /**
  * An instruction to execute by a program

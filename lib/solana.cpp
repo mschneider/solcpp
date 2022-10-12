@@ -69,6 +69,45 @@ bool AccountMeta::operator<(const AccountMeta &other) const {
 }
 
 ///
+/// SimulatedTransactionResponse
+
+/**
+ * SimulatedTransactionResponse to json
+ */
+void to_json(json &j, const SimulatedTransactionResponse &res) {
+  if (res.err.has_value()) {
+    j["err"] = res.err.value();
+  } 
+  if (res.accounts.has_value()) {
+    j["accounts"] = res.accounts.value();
+  } 
+  if (res.logs.has_value()) {
+    j["logs"] = res.logs.value();
+  } 
+  if (res.unitsConsumed.has_value()) {
+    j["unitsConsumed"] = res.unitsConsumed.value();
+  } 
+}
+
+/**
+ * SimulatedTransactionResponse from json
+ */
+void from_json(const json &j, SimulatedTransactionResponse &res) {
+  if (!j["err"].is_null()) {
+    res.err = std::optional{j["err"]};
+  } 
+  if (!j["accounts"].is_null()) {
+    res.accounts = std::optional{j["accounts"]};
+  } 
+  if (!j["logs"].is_null()) {
+    res.logs = std::optional{j["logs"]};
+  } 
+  if (!j["unitsConsumed"].is_null()) {
+    res.unitsConsumed = std::optional{j["unitsConsumed"]};
+  } 
+}
+
+///
 /// CompactU16
 namespace CompactU16 {
 void encode(uint16_t num, std::vector<uint8_t> &buffer) {
@@ -343,23 +382,8 @@ SimulatedTransactionResponse Connection::simulateTransaction(
   // create request
   const json params = {b64Tx, config.toJson()};
   const auto reqJson = jsonRequest("simulateTransaction", params);
-  const json res = sendJsonRpcRequest(reqJson)["value"];
-  std::string err = "";
-  std::vector<std::string> accounts;
-  std::vector<std::string> logs;
-  if (!res["err"].is_null()) {
-    err = res["err"];
-  }
-
-  if (!res["accounts"].is_null()) {
-    accounts = res["accounts"].get<std::vector<std::string>>();
-  }
-  if (!res["logs"].is_null()) {
-    logs = res["logs"].get<std::vector<std::string>>();
-  }
-  uint64_t unitsConsumed = res["unitsConsumed"];
   // send jsonRpc request
-  return {err, accounts, logs, unitsConsumed};
+  return sendJsonRpcRequest(reqJson)["value"];
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
