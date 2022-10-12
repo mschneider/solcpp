@@ -348,6 +348,13 @@ class Connection {
       bool searchTransactionHistory = false) const;
 
   /**
+   * Fetch the current status of a signature
+   */
+  SignatureStatus getSignatureStatus(
+      const std::string &signature,
+      bool searchTransactionHistory = false) const;
+
+  /**
    * Fetch all the account info for the specified public key
    */
   template <typename T>

@@ -456,10 +456,17 @@ uint64_t Connection::getBlockHeight(const std::string &commitment) const {
 std::vector<SignatureStatus> Connection::getSignatureStatuses(
     const std::vector<std::string> &signatures,
     bool searchTransactionHistory) const {
+  // create request
   const json params = {
       signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
   const auto reqJson = jsonRequest("getSignatureStatuses", params);
+  // send jsonRpc request
   return sendJsonRpcRequest(reqJson)["value"];
+}
+
+SignatureStatus Connection::getSignatureStatus(
+    const std::string &signature, bool searchTransactionHistory) const {
+  return getSignatureStatuses({signature}, searchTransactionHistory)[0];
 }
 
 }  // namespace rpc

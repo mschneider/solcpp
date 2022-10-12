@@ -60,15 +60,14 @@ TEST_CASE("Request Airdrop") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
-  const auto result = connection.requestAirdrop(keyPair.publicKey, 50001);
-  std::vector<std::string> signatures;
-  signatures.push_back(result);
+  const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
   // check signature status
-  auto res = connection.getSignatureStatuses(signatures, true);
-  while (res["value"][0]["confirmationStatus"] != "finalized") {
-    res = connection.getSignatureStatuses(signatures, true);
+  auto res = connection.getSignatureStatus(signature, true);
+  while (res.confirmationStatus != "finalized") {
+    res = connection.getSignatureStatus(signature, true);
     std::this_thread::sleep_for(std::chrono::seconds(2));
   }
+  // check if balance is updated after status is finalized
   const auto new_sol = connection.getBalance(keyPair.publicKey);
   CHECK_GT(new_sol, prev_sol);
 }
