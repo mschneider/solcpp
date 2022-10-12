@@ -77,16 +77,16 @@ bool AccountMeta::operator<(const AccountMeta &other) const {
 void to_json(json &j, const SimulatedTransactionResponse &res) {
   if (res.err.has_value()) {
     j["err"] = res.err.value();
-  } 
+  }
   if (res.accounts.has_value()) {
     j["accounts"] = res.accounts.value();
-  } 
+  }
   if (res.logs.has_value()) {
     j["logs"] = res.logs.value();
-  } 
+  }
   if (res.unitsConsumed.has_value()) {
     j["unitsConsumed"] = res.unitsConsumed.value();
-  } 
+  }
 }
 
 /**
@@ -95,16 +95,16 @@ void to_json(json &j, const SimulatedTransactionResponse &res) {
 void from_json(const json &j, SimulatedTransactionResponse &res) {
   if (!j["err"].is_null()) {
     res.err = std::optional{j["err"]};
-  } 
+  }
   if (!j["accounts"].is_null()) {
     res.accounts = std::optional{j["accounts"]};
-  } 
+  }
   if (!j["logs"].is_null()) {
     res.logs = std::optional{j["logs"]};
-  } 
+  }
   if (!j["unitsConsumed"].is_null()) {
     res.unitsConsumed = std::optional{j["unitsConsumed"]};
-  } 
+  }
 }
 
 ///
@@ -340,7 +340,7 @@ json Connection::sendJsonRpcRequest(const json &body) const {
 ///
 std::string Connection::signAndSendTransaction(
     const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight,
-    const std::string &preflightCommitment) {
+    const std::string &preflightCommitment) const {
   const SendTransactionConfig config{skipPreflight, preflightCommitment};
   return sendTransaction(keypair, tx, config);
 }
@@ -387,7 +387,7 @@ SimulatedTransactionResponse Connection::simulateTransaction(
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
-                                       uint64_t lamports) {
+                                       uint64_t lamports) const {
   // create request
   const json params = {pubkey.toBase58(), lamports};
   const json reqJson = jsonRequest("requestAirdrop", params);
@@ -395,17 +395,15 @@ std::string Connection::requestAirdrop(const PublicKey &pubkey,
   return sendJsonRpcRequest(reqJson);
 }
 
-Balance Connection::getBalance(const PublicKey &pubkey) {
+uint64_t Connection::getBalance(const PublicKey &pubkey) const {
   // create request
   const json params = {pubkey.toBase58()};
   const json reqJson = jsonRequest("getBalance", params);
-  auto res = sendJsonRpcRequest(reqJson);
-  uint64_t lamports = res["value"];
   // send jsonRpc request
-  return {lamports};
+  return sendJsonRpcRequest(reqJson)["value"];
 }
 
-PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
+PublicKey Connection::getRecentBlockhash(const std::string &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getRecentBlockhash", params);
@@ -414,7 +412,7 @@ PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
       sendJsonRpcRequest(reqJson)["value"]["blockhash"]);
 }
 
-Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
+Blockhash Connection::getLatestBlockhash(const std::string &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getLatestBlockhash", params);
@@ -428,7 +426,7 @@ Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
   return {blockhash, lastValidBlockHeight};
 }
 
-uint64_t Connection::getBlockHeight(const std::string &commitment) {
+uint64_t Connection::getBlockHeight(const std::string &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getBlockHeight", params);
@@ -437,7 +435,8 @@ uint64_t Connection::getBlockHeight(const std::string &commitment) {
 }
 
 json Connection::getSignatureStatuses(
-    const std::vector<std::string> &signatures, bool searchTransactionHistory) {
+    const std::vector<std::string> &signatures,
+    bool searchTransactionHistory) const {
   const json params = {
       signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
   const auto reqJson = jsonRequest("getSignatureStatuses", params);

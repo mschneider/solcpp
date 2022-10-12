@@ -57,20 +57,20 @@ TEST_CASE("Simulate & Send Transaction") {
 
 TEST_CASE("Request Airdrop") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
-  auto connection = solana::rpc::Connection(solana::DEVNET);
-
-  auto prev_sol = connection.getBalance(keyPair.publicKey);
-  auto result = connection.requestAirdrop(keyPair.publicKey, 50001);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  // request Airdrop
+  const auto prev_sol = connection.getBalance(keyPair.publicKey);
+  const auto result = connection.requestAirdrop(keyPair.publicKey, 50001);
   std::vector<std::string> signatures;
   signatures.push_back(result);
+  // check signature status
   auto res = connection.getSignatureStatuses(signatures, true);
   while (res["value"][0]["confirmationStatus"] != "finalized") {
     res = connection.getSignatureStatuses(signatures, true);
     std::this_thread::sleep_for(std::chrono::seconds(2));
   }
-  auto new_sol = connection.getBalance(keyPair.publicKey);
-  // TODO: validate using confirmTransaction
-  CHECK_GT(new_sol.lamports, prev_sol.lamports);
+  const auto new_sol = connection.getBalance(keyPair.publicKey);
+  CHECK_GT(new_sol, prev_sol);
 }
 
 TEST_CASE("base58 decode & encode") {

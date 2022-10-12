@@ -81,10 +81,6 @@ struct Blockhash {
   uint64_t lastValidBlockHeight;
 };
 
-struct Balance {
-  uint64_t lamports;
-};
-
 struct SimulatedTransactionResponse {
   std::optional<std::string> err = std::nullopt;
   std::optional<std::vector<std::string>> accounts = std::nullopt;
@@ -256,7 +252,7 @@ class Connection {
   [[deprecated]] std::string signAndSendTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       bool skipPreflight = false,
-      const std::string &preflightCommitment = "finalized");
+      const std::string &preflightCommitment = "finalized") const;
 
   /**
    * Sign and send a transaction
@@ -294,12 +290,12 @@ class Connection {
   /**
    * Request an allocation of lamports to the specified address
    */
-  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
+  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports) const;
 
   /**
    * Fetch the balance for the specified public key
    */
-  Balance getBalance(const PublicKey &pubkey);
+  uint64_t getBalance(const PublicKey &pubkey) const;
 
   /**
    * Fetch a recent blockhash from the cluster
@@ -308,23 +304,24 @@ class Connection {
    * @return Blockhash
    */
   [[deprecated]] PublicKey getRecentBlockhash(
-      const std::string &commitment = "finalized");
+      const std::string &commitment = "finalized") const;
 
   /**
    * Fetch the latest blockhash from the cluster
    */
-  Blockhash getLatestBlockhash(const std::string &commitment = "finalized");
+  Blockhash getLatestBlockhash(
+      const std::string &commitment = "finalized") const;
 
   /**
    * Returns the current block height of the node
    */
-  uint64_t getBlockHeight(const std::string &commitment = "finalized");
+  uint64_t getBlockHeight(const std::string &commitment = "finalized") const;
 
   /**
    * Fetch the current status of a signature
    */
   json getSignatureStatuses(const std::vector<std::string> &signatures,
-                            bool searchTransactionHistory = false);
+                            bool searchTransactionHistory = false) const;
 
   /**
    * Fetch all the account info for the specified public key
@@ -332,7 +329,8 @@ class Connection {
   template <typename T>
   inline T getAccountInfo(const std::string &account,
                           const std::string &encoding = "base64",
-                          const size_t offset = 0, const size_t length = 0) {
+                          const size_t offset = 0,
+                          const size_t length = 0) const {
     // create Params
     json params = {account};
     json options = {{"encoding", encoding}};
@@ -367,7 +365,7 @@ class Connection {
   inline std::map<std::string, T> getMultipleAccounts(
       const std::vector<std::string> &accounts,
       const std::string &encoding = "base64", const size_t offset = 0,
-      const size_t length = 0) {
+      const size_t length = 0) const {
     // create params
     json pubKeys = json::array();
     for (auto &account : accounts) {
