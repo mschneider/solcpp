@@ -416,8 +416,8 @@ json Connection::getSignatureStatuses(
     const std::vector<std::string> &signatures, bool searchTransactionHistory) {
   const json params = {
       signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
-
-  return jsonRequest("getSignatureStatuses", params);
+  const auto reqJson=jsonRequest("getSignatureStatuses", params);
+  return sendJsonRpcRequest(reqJson);
 }
 
 }  // namespace rpc

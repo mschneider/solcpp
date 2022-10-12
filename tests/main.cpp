@@ -37,7 +37,6 @@ TEST_CASE("Simulate & Send Transaction") {
 
   CHECK_EQ(simulateRes.logs.empty(), false);
 
-
   ///
   /// Test sendTransaction
   ///
@@ -61,8 +60,14 @@ TEST_CASE("Request Airdrop") {
   auto connection = solana::rpc::Connection(solana::DEVNET);
 
   auto prev_sol = connection.getBalance(keyPair.publicKey);
-  auto result = connection.requestAirdrop(keyPair.publicKey, 10000);
-  std::this_thread::sleep_for(std::chrono::seconds(15));
+  auto result = connection.requestAirdrop(keyPair.publicKey, 50001);
+  std::vector<std::string> signatures;
+  signatures.push_back(result);
+  auto res = connection.getSignatureStatuses(signatures, true);
+  while (res["value"][0]["confirmationStatus"] != "finalized") {
+    res = connection.getSignatureStatuses(signatures, true);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+  }
   auto new_sol = connection.getBalance(keyPair.publicKey);
   // TODO: validate using confirmTransaction
   CHECK_GT(new_sol.lamports, prev_sol.lamports);
