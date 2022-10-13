@@ -1,8 +1,7 @@
-#include <chrono>
-#include <cstdint>
-#include <ostream>
+
+#include <iostream>
 #include <string>
-#include <thread>
+
 
 #include "solana.hpp"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -62,16 +61,18 @@ TEST_CASE("Request Airdrop") {
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
   uint8_t timeout = 15;
   // check signature status
-  // this is a temporary fix. This will be changed to the confirmTransaction
-  // function call once it gets implemented
-  while (timeout > 0) {
-    const auto res = connection.getSignatureStatus(signature, true).value;
-    if (res.has_value() && res.value().confirmationStatus == "finalized") {
-      break;
-    }
-    timeout--;
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+  //while (true) {
+  //  const auto res = connection.getSignatureStatus(signature, true).value;
+  //  if (res.has_value() && res.value().confirmationStatus == "finalized") {
+  //    break;
+  //  }
+  //  std::this_thread::sleep_for(std::chrono::seconds(1));
+  //}
+  bool confirmation=false;
+  while(!confirmation){
+    confirmation=connection.confirmTransaction(signature,15,"finalized");
   }
+  
   // check if balance is updated after status is finalized
   const auto new_sol = connection.getBalance(keyPair.publicKey);
   CHECK_GT(new_sol, prev_sol);

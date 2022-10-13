@@ -1,5 +1,7 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
+#include <thread>
+#include <chrono>
 
 #include <cstdint>
 #include <iterator>
@@ -493,6 +495,20 @@ Connection::getSignatureStatus(const std::string &signature,
                                bool searchTransactionHistory) const {
   const auto res = getSignatureStatuses({signature}, searchTransactionHistory);
   return {res.context, res.value[0]};
+}
+
+bool Connection::confirmTransaction(std::string transactionSignature,
+                                    int timeout, 
+                                    std::string confirmLevel) const {
+  while (timeout>0) {
+    const auto res = getSignatureStatus(transactionSignature, true).value;
+    if (res.has_value() && res.value().confirmationStatus == confirmLevel) {
+      return true;
+    }
+    timeout--;
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+  }
+  return false;
 }
 
 }  // namespace rpc
