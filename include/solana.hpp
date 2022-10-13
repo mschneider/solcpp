@@ -363,14 +363,14 @@ class Connection {
   /**
    * Fetch the current statuses of a batch of signatures
    */
-  std::vector<SignatureStatus> getSignatureStatuses(
-      const std::vector<std::string> &signatures,
-      bool searchTransactionHistory = false) const;
+  RpcResponseAndContext<std::vector<std::optional<SignatureStatus>>>
+  getSignatureStatuses(const std::vector<std::string> &signatures,
+                       bool searchTransactionHistory = false) const;
 
   /**
    * Fetch the current status of a signature
    */
-  SignatureStatus getSignatureStatus(
+  RpcResponseAndContext<std::optional<SignatureStatus>> getSignatureStatus(
       const std::string &signature,
       bool searchTransactionHistory = false) const;
 

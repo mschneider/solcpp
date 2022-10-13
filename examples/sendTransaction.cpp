@@ -49,23 +49,12 @@ int main() {
                     currentBlockHeight);
       return EXIT_FAILURE;
     }
-
-    const json req = connection.getSignatureStatuses({b58Sig});
-    const std::string jsonSerialized = req.dump();
-    spdlog::info("REQ: {}", jsonSerialized);
-
-    cpr::Response r =
-        cpr::Post(cpr::Url{rpc_url}, cpr::Body{jsonSerialized},
-                  cpr::Header{{"Content-Type", "application/json"}});
-    if (r.status_code == 0 || r.status_code >= 400) {
-      spdlog::error("Error: {}, {}", r.status_code, r.error.message);
-      return EXIT_FAILURE;
-    } else {
-      spdlog::info("RES: {}", r.text);
-      json res = json::parse(r.text);
-
-      if (res["result"]["value"][0] != nullptr) break;
+    const auto res = connection.getSignatureStatus(b58Sig).value;
+    if (res.has_value() && res.value().confirmationStatus == "finalized") {
+      break;
     }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
+
   return EXIT_SUCCESS;
 }
