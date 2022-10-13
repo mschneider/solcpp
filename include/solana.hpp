@@ -123,6 +123,26 @@ void to_json(json &j, const SignatureStatus &status);
 void from_json(const json &j, SignatureStatus &status);
 
 /**
+ * Extra contextual information for RPC responses
+ */
+struct Context {
+  uint64_t slot;
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Context, slot);
+
+/**
+ * RPC Response with extra contextual information
+ */
+template <typename T>
+struct RpcResponseAndContext {
+  /** response context */
+  Context context;
+  /** response value */
+  T value;
+};
+
+/**
  * An instruction to execute by a program
  */
 struct CompiledInstruction {
