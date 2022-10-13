@@ -36,12 +36,9 @@ TEST_CASE("Simulate & Send Transaction") {
   CHECK_GT(simulateRes.unitsConsumed.value(), 0);
   CHECK_EQ(simulateRes.logs.value().empty(), false);
 
-<<<<<<< HEAD
-=======
   const solana::rpc::json to_json = simulateRes;
   CHECK_EQ(simulateRes.unitsConsumed.value(), to_json["unitsConsumed"]);
 
->>>>>>> 26a98070dbbbe2e21aa6af125f43a881352d30b0
   ///
   /// Test sendTransaction
   ///
