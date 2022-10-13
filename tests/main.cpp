@@ -1,4 +1,5 @@
 #include <chrono>
+#include <iostream>
 #include <string>
 #include <thread>
 
@@ -62,10 +63,12 @@ TEST_CASE("Request Airdrop") {
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
   // check signature status
-  auto res = connection.getSignatureStatus(signature, true);
-  while (res.confirmationStatus != "finalized") {
-    res = connection.getSignatureStatus(signature, true);
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+  while (true) {
+    const auto res = connection.getSignatureStatus(signature, true).value;
+    if (res.has_value() && res.value().confirmationStatus == "finalized") {
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
   // check if balance is updated after status is finalized
   const auto new_sol = connection.getBalance(keyPair.publicKey);

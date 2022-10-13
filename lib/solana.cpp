@@ -453,20 +453,36 @@ uint64_t Connection::getBlockHeight(const std::string &commitment) const {
   return sendJsonRpcRequest(reqJson);
 }
 
-std::vector<SignatureStatus> Connection::getSignatureStatuses(
-    const std::vector<std::string> &signatures,
-    bool searchTransactionHistory) const {
+RpcResponseAndContext<std::vector<std::optional<SignatureStatus>>>
+Connection::getSignatureStatuses(const std::vector<std::string> &signatures,
+                                 bool searchTransactionHistory) const {
   // create request
   const json params = {
       signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
   const auto reqJson = jsonRequest("getSignatureStatuses", params);
   // send jsonRpc request
-  return sendJsonRpcRequest(reqJson)["value"];
+  const json res = sendJsonRpcRequest(reqJson);
+  // parse response and handle null status
+  const std::vector<json> value = res["value"];
+  std::vector<std::optional<SignatureStatus>> status_list;
+  status_list.reserve(value.size());
+
+  for (const json &status : value) {
+    if (status.is_null()) {
+      status_list.push_back(std::nullopt);
+    } else {
+      status_list.push_back(std::optional{status});
+    }
+  }
+
+  return {res["context"], status_list};
 }
 
-SignatureStatus Connection::getSignatureStatus(
-    const std::string &signature, bool searchTransactionHistory) const {
-  return getSignatureStatuses({signature}, searchTransactionHistory)[0];
+RpcResponseAndContext<std::optional<SignatureStatus>>
+Connection::getSignatureStatus(const std::string &signature,
+                               bool searchTransactionHistory) const {
+  const auto res = getSignatureStatuses({signature}, searchTransactionHistory);
+  return {res.context, res.value[0]};
 }
 
 }  // namespace rpc
