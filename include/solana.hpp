@@ -81,17 +81,65 @@ struct Blockhash {
   uint64_t lastValidBlockHeight;
 };
 
-struct Balance {
-  uint64_t lamports;
+struct SimulatedTransactionResponse {
+  std::optional<std::string> err = std::nullopt;
+  std::optional<std::vector<std::string>> accounts = std::nullopt;
+  std::optional<std::vector<std::string>> logs = std::nullopt;
+  std::optional<uint64_t> unitsConsumed = std::nullopt;
+  // returnData?: TransactionReturnData | null;
 };
 
-struct SimulatedTransactionResponse {
-  std::string err;
-  std::vector<std::string> accounts;
-  std::vector<std::string> logs;
+/**
+ * SimulatedTransactionResponse to json
+ */
+void to_json(json &j, const SimulatedTransactionResponse &res);
 
-  uint64_t unitsConsumed;
+/**
+ * SimulatedTransactionResponse from json
+ */
+void from_json(const json &j, SimulatedTransactionResponse &res);
 
+struct SignatureStatus {
+  /** when the transaction was processed */
+  uint64_t slot;
+  /** the number of blocks that have been confirmed and voted on in the fork
+   * containing `slot` */
+  std::optional<uint64_t> confirmations = std::nullopt;
+  /** transaction error, if any */
+  std::optional<std::string> err = std::nullopt;
+  /** cluster confirmation status, if data available. Possible responses:
+   * `processed`, `confirmed`, `finalized` */
+  std::string confirmationStatus;
+};
+
+/**
+ * SignatureStatus to json
+ */
+void to_json(json &j, const SignatureStatus &status);
+
+/**
+ * SignatureStatus from json
+ */
+void from_json(const json &j, SignatureStatus &status);
+
+/**
+ * Extra contextual information for RPC responses
+ */
+struct Context {
+  uint64_t slot;
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Context, slot);
+
+/**
+ * RPC Response with extra contextual information
+ */
+template <typename T>
+struct RpcResponseAndContext {
+  /** response context */
+  Context context;
+  /** response value */
+  T value;
 };
 
 /**
@@ -247,7 +295,7 @@ class Connection {
   [[deprecated]] std::string signAndSendTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       bool skipPreflight = false,
-      const std::string &preflightCommitment = "finalized");
+      const std::string &preflightCommitment = "finalized") const;
 
   /**
    * Sign and send a transaction
@@ -285,12 +333,12 @@ class Connection {
   /**
    * Request an allocation of lamports to the specified address
    */
-  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports);
+  std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports) const;
 
   /**
    * Fetch the balance for the specified public key
    */
-  Balance getBalance(const PublicKey &pubkey);
+  uint64_t getBalance(const PublicKey &pubkey) const;
 
   /**
    * Fetch a recent blockhash from the cluster
@@ -299,23 +347,32 @@ class Connection {
    * @return Blockhash
    */
   [[deprecated]] PublicKey getRecentBlockhash(
-      const std::string &commitment = "finalized");
+      const std::string &commitment = "finalized") const;
 
   /**
    * Fetch the latest blockhash from the cluster
    */
-  Blockhash getLatestBlockhash(const std::string &commitment = "finalized");
+  Blockhash getLatestBlockhash(
+      const std::string &commitment = "finalized") const;
 
   /**
    * Returns the current block height of the node
    */
-  uint64_t getBlockHeight(const std::string &commitment = "finalized");
+  uint64_t getBlockHeight(const std::string &commitment = "finalized") const;
+
+  /**
+   * Fetch the current statuses of a batch of signatures
+   */
+  RpcResponseAndContext<std::vector<std::optional<SignatureStatus>>>
+  getSignatureStatuses(const std::vector<std::string> &signatures,
+                       bool searchTransactionHistory = false) const;
 
   /**
    * Fetch the current status of a signature
    */
-  json getSignatureStatuses(const std::vector<std::string> &signatures,
-                            bool searchTransactionHistory = false);
+  RpcResponseAndContext<std::optional<SignatureStatus>> getSignatureStatus(
+      const std::string &signature,
+      bool searchTransactionHistory = false) const;
 
   /**
    * Fetch all the account info for the specified public key
@@ -323,7 +380,8 @@ class Connection {
   template <typename T>
   inline T getAccountInfo(const std::string &account,
                           const std::string &encoding = "base64",
-                          const size_t offset = 0, const size_t length = 0) {
+                          const size_t offset = 0,
+                          const size_t length = 0) const {
     // create Params
     json params = {account};
     json options = {{"encoding", encoding}};
@@ -358,7 +416,7 @@ class Connection {
   inline std::map<std::string, T> getMultipleAccounts(
       const std::vector<std::string> &accounts,
       const std::string &encoding = "base64", const size_t offset = 0,
-      const size_t length = 0) {
+      const size_t length = 0) const {
     // create params
     json pubKeys = json::array();
     for (auto &account : accounts) {

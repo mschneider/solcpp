@@ -69,6 +69,64 @@ bool AccountMeta::operator<(const AccountMeta &other) const {
 }
 
 ///
+/// SimulatedTransactionResponse
+
+void to_json(json &j, const SimulatedTransactionResponse &res) {
+  if (res.err.has_value()) {
+    j["err"] = res.err.value();
+  }
+  if (res.accounts.has_value()) {
+    j["accounts"] = res.accounts.value();
+  }
+  if (res.logs.has_value()) {
+    j["logs"] = res.logs.value();
+  }
+  if (res.unitsConsumed.has_value()) {
+    j["unitsConsumed"] = res.unitsConsumed.value();
+  }
+}
+
+void from_json(const json &j, SimulatedTransactionResponse &res) {
+  if (!j["err"].is_null()) {
+    res.err = std::optional{j["err"]};
+  }
+  if (!j["accounts"].is_null()) {
+    res.accounts = std::optional{j["accounts"]};
+  }
+  if (!j["logs"].is_null()) {
+    res.logs = std::optional{j["logs"]};
+  }
+  if (!j["unitsConsumed"].is_null()) {
+    res.unitsConsumed = std::optional{j["unitsConsumed"]};
+  }
+}
+
+///
+/// SignatureStatus
+
+void to_json(json &j, const SignatureStatus &status) {
+  j["slot"] = status.slot;
+  if (status.confirmations.has_value()) {
+    j["confirmations"] = status.confirmations.value();
+  }
+  if (status.err.has_value()) {
+    j["err"] = status.err.value();
+  }
+  j["confirmationStatus"] = status.confirmationStatus;
+}
+
+void from_json(const json &j, SignatureStatus &res) {
+  res.slot = j["slot"];
+  if (!j["confirmations"].is_null()) {
+    res.confirmations = std::optional{j["confirmations"]};
+  }
+  if (!j["err"].is_null()) {
+    res.err = std::optional{j["err"]};
+  }
+  res.confirmationStatus = j["confirmationStatus"];
+}
+
+///
 /// CompactU16
 namespace CompactU16 {
 void encode(uint16_t num, std::vector<uint8_t> &buffer) {
@@ -301,7 +359,7 @@ json Connection::sendJsonRpcRequest(const json &body) const {
 ///
 std::string Connection::signAndSendTransaction(
     const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight,
-    const std::string &preflightCommitment) {
+    const std::string &preflightCommitment) const {
   const SendTransactionConfig config{skipPreflight, preflightCommitment};
   return sendTransaction(keypair, tx, config);
 }
@@ -343,27 +401,12 @@ SimulatedTransactionResponse Connection::simulateTransaction(
   // create request
   const json params = {b64Tx, config.toJson()};
   const auto reqJson = jsonRequest("simulateTransaction", params);
-  const json res = sendJsonRpcRequest(reqJson)["value"];
-  std::string err = "";
-  std::vector<std::string> accounts;
-  std::vector<std::string> logs;
-  if (!res["err"].is_null()) {
-    err = res["err"];
-  }
-
-  if (!res["accounts"].is_null()) {
-    accounts = res["accounts"].get<std::vector<std::string>>();
-  }
-  if (!res["logs"].is_null()) {
-    logs = res["logs"].get<std::vector<std::string>>();
-  }
-  uint64_t unitsConsumed = res["unitsConsumed"];
   // send jsonRpc request
-  return {err, accounts, logs, unitsConsumed};
+  return sendJsonRpcRequest(reqJson)["value"];
 }
 
 std::string Connection::requestAirdrop(const PublicKey &pubkey,
-                                       uint64_t lamports) {
+                                       uint64_t lamports) const {
   // create request
   const json params = {pubkey.toBase58(), lamports};
   const json reqJson = jsonRequest("requestAirdrop", params);
@@ -371,17 +414,15 @@ std::string Connection::requestAirdrop(const PublicKey &pubkey,
   return sendJsonRpcRequest(reqJson);
 }
 
-Balance Connection::getBalance(const PublicKey &pubkey) {
+uint64_t Connection::getBalance(const PublicKey &pubkey) const {
   // create request
   const json params = {pubkey.toBase58()};
   const json reqJson = jsonRequest("getBalance", params);
-  auto res = sendJsonRpcRequest(reqJson);
-  uint64_t lamports = res["value"];
   // send jsonRpc request
-  return {lamports};
+  return sendJsonRpcRequest(reqJson)["value"];
 }
 
-PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
+PublicKey Connection::getRecentBlockhash(const std::string &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getRecentBlockhash", params);
@@ -390,7 +431,7 @@ PublicKey Connection::getRecentBlockhash(const std::string &commitment) {
       sendJsonRpcRequest(reqJson)["value"]["blockhash"]);
 }
 
-Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
+Blockhash Connection::getLatestBlockhash(const std::string &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getLatestBlockhash", params);
@@ -404,7 +445,7 @@ Blockhash Connection::getLatestBlockhash(const std::string &commitment) {
   return {blockhash, lastValidBlockHeight};
 }
 
-uint64_t Connection::getBlockHeight(const std::string &commitment) {
+uint64_t Connection::getBlockHeight(const std::string &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getBlockHeight", params);
@@ -412,12 +453,36 @@ uint64_t Connection::getBlockHeight(const std::string &commitment) {
   return sendJsonRpcRequest(reqJson);
 }
 
-json Connection::getSignatureStatuses(
-    const std::vector<std::string> &signatures, bool searchTransactionHistory) {
+RpcResponseAndContext<std::vector<std::optional<SignatureStatus>>>
+Connection::getSignatureStatuses(const std::vector<std::string> &signatures,
+                                 bool searchTransactionHistory) const {
+  // create request
   const json params = {
       signatures, {{"searchTransactionHistory", searchTransactionHistory}}};
-  const auto reqJson=jsonRequest("getSignatureStatuses", params);
-  return sendJsonRpcRequest(reqJson);
+  const auto reqJson = jsonRequest("getSignatureStatuses", params);
+  // send jsonRpc request
+  const json res = sendJsonRpcRequest(reqJson);
+  // parse response and handle null status
+  const std::vector<json> value = res["value"];
+  std::vector<std::optional<SignatureStatus>> status_list;
+  status_list.reserve(value.size());
+
+  for (const json &status : value) {
+    if (status.is_null()) {
+      status_list.push_back(std::nullopt);
+    } else {
+      status_list.push_back(std::optional{status});
+    }
+  }
+
+  return {res["context"], status_list};
+}
+
+RpcResponseAndContext<std::optional<SignatureStatus>>
+Connection::getSignatureStatus(const std::string &signature,
+                               bool searchTransactionHistory) const {
+  const auto res = getSignatureStatuses({signature}, searchTransactionHistory);
+  return {res.context, res.value[0]};
 }
 
 }  // namespace rpc

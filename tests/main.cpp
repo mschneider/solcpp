@@ -33,14 +33,18 @@ TEST_CASE("Simulate & Send Transaction") {
 
   const auto simulateRes = connection.simulateTransaction(keyPair, compiledTx);
   // consumed units should be greater than unity
-  CHECK_GT(simulateRes.unitsConsumed, 0);
+  CHECK_GT(simulateRes.unitsConsumed.value(), 0);
+  CHECK_EQ(simulateRes.logs.value().empty(), false);
 
-  CHECK_EQ(simulateRes.logs.empty(), false);
+<<<<<<< HEAD
+=======
+  const solana::rpc::json to_json = simulateRes;
+  CHECK_EQ(simulateRes.unitsConsumed.value(), to_json["unitsConsumed"]);
 
+>>>>>>> 26a98070dbbbe2e21aa6af125f43a881352d30b0
   ///
   /// Test sendTransaction
   ///
-
   const std::string transactionSignature =
       connection.sendTransaction(keyPair, compiledTx);
   // serialize transaction
@@ -57,20 +61,21 @@ TEST_CASE("Simulate & Send Transaction") {
 
 TEST_CASE("Request Airdrop") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
-  auto connection = solana::rpc::Connection(solana::DEVNET);
-
-  auto prev_sol = connection.getBalance(keyPair.publicKey);
-  auto result = connection.requestAirdrop(keyPair.publicKey, 50001);
-  std::vector<std::string> signatures;
-  signatures.push_back(result);
-  auto res = connection.getSignatureStatuses(signatures, true);
-  while (res["value"][0]["confirmationStatus"] != "finalized") {
-    res = connection.getSignatureStatuses(signatures, true);
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  // request Airdrop
+  const auto prev_sol = connection.getBalance(keyPair.publicKey);
+  const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
+  // check signature status
+  while (true) {
+    const auto res = connection.getSignatureStatus(signature, true).value;
+    if (res.has_value() && res.value().confirmationStatus == "finalized") {
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
-  auto new_sol = connection.getBalance(keyPair.publicKey);
-  // TODO: validate using confirmTransaction
-  CHECK_GT(new_sol.lamports, prev_sol.lamports);
+  // check if balance is updated after status is finalized
+  const auto new_sol = connection.getBalance(keyPair.publicKey);
+  CHECK_GT(new_sol, prev_sol);
 }
 
 TEST_CASE("base58 decode & encode") {
