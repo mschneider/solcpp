@@ -62,14 +62,7 @@ TEST_CASE("Request Airdrop") {
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
-  // check signature status
-  //while (true) {
-  //  const auto res = connection.getSignatureStatus(signature, true).value;
-  //  if (res.has_value() && res.value().confirmationStatus == "finalized") {
-  //    break;
-  //  }
-  //  std::this_thread::sleep_for(std::chrono::seconds(1));
-  //}
+  
   bool confirmation=false;
   while(!confirmation){
     confirmation=connection.confirmTransaction(signature,15,"finalized");
