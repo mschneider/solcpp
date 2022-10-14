@@ -2,6 +2,8 @@
 #include <spdlog/spdlog.h>
 
 #include <nlohmann/json.hpp>
+
+#include "solana.hpp"
 using json = nlohmann::json;
 
 #include "mango_v3.hpp"
@@ -12,7 +14,10 @@ int main() {
   auto connection = solana::rpc::Connection(rpc_url);
   const std::string account = "98pjRuQjK3qA6gXts96PqZT4Ze5QmnCmt3QYjhbUSPue";
   const mango_v3::MangoGroup grp =
-      connection.getAccountInfo<mango_v3::MangoGroup>(account);
+      connection
+          .getAccountInfo<mango_v3::MangoGroup>(
+              solana::PublicKey::fromBase58(account))
+          .value.data;
   const auto group = &grp;
 
   spdlog::info("DEC:");

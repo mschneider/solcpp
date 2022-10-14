@@ -447,43 +447,10 @@ class Connection {
       bool searchTransactionHistory = false) const;
 
   /**
-   * Fetch all the account info for the specified public key
-   */
-  template <typename T>
-  inline T getAccountInfo(const std::string &account,
-                          const std::string &encoding = "base64",
-                          const size_t offset = 0,
-                          const size_t length = 0) const {
-    // create Params
-    json params = {account};
-    json options = {{"encoding", encoding}};
-    if (offset && length) {
-      json dataSlice = {"dataSlice", {{"offset", offset}, {"length", length}}};
-      options.emplace(dataSlice);
-    }
-    params.emplace_back(options);
-    // create request
-    const auto reqJson = jsonRequest("getAccountInfo", params);
-    // send jsonRpc request
-    const json res = sendJsonRpcRequest(reqJson);
-    // Account info from response
-    const std::string encoded = res["value"]["data"][0];
-    const std::string decoded = b64decode(encoded);
-    if (decoded.size() != sizeof(T))  // decoded should fit into T
-      throw std::runtime_error("invalid response length " +
-                               std::to_string(decoded.size()) + " expected " +
-                               std::to_string(sizeof(T)));
-
-    T result{};
-    memcpy(&result, decoded.data(), sizeof(T));
-    return result;
-  }
-
-  /**
    * Fetch parsed account info for the specified public key
    */
   template <typename T>
-  RpcResponseAndContext<AccountInfo<T>> getAccountInfo_new(
+  RpcResponseAndContext<AccountInfo<T>> getAccountInfo(
       const PublicKey &publicKey,
       const GetAccountInfoConfig &config = GetAccountInfoConfig{}) const {
     // create request

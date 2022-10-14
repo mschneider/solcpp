@@ -1,13 +1,16 @@
 #include <spdlog/spdlog.h>
 
 #include "mango_v3.hpp"
+#include "solana.hpp"
 
 int main() {
   std::string resources_dir = FIXTURES_DIR;
   const auto &config = mango_v3::DEVNET;
   auto connection = solana::rpc::Connection(config.endpoint);
-  const auto group =
-      connection.getAccountInfo<mango_v3::MangoGroup>(config.group);
+  const auto group = connection
+                         .getAccountInfo<mango_v3::MangoGroup>(
+                             solana::PublicKey::fromBase58(config.group))
+                         .value.data;
 
   const auto symbolIt =
       std::find(config.symbols.begin(), config.symbols.end(), "BTC");
@@ -17,7 +20,7 @@ int main() {
   const auto perpMarketPk = group.perpMarkets[marketIndex].perpMarket;
 
   const auto market =
-      connection.getAccountInfo<mango_v3::PerpMarket>(perpMarketPk.toBase58());
+      connection.getAccountInfo<mango_v3::PerpMarket>(perpMarketPk).value.data;
   assert(market.mangoGroup.toBase58() == config.group);
 
   const auto recentBlockhash = connection.getLatestBlockhash();
