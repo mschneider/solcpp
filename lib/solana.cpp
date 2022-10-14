@@ -72,7 +72,6 @@ bool AccountMeta::operator<(const AccountMeta &other) const {
 
 ///
 /// SimulatedTransactionResponse
-
 void to_json(json &j, const SimulatedTransactionResponse &res) {
   if (res.err.has_value()) {
     j["err"] = res.err.value();
@@ -105,7 +104,6 @@ void from_json(const json &j, SimulatedTransactionResponse &res) {
 
 ///
 /// SignatureStatus
-
 void to_json(json &j, const SignatureStatus &status) {
   j["slot"] = status.slot;
   if (status.confirmations.has_value()) {
@@ -284,44 +282,57 @@ json jsonRequest(const std::string &method, const json &params) {
   return req;
 }
 
-json SendTransactionConfig::toJson() const {
-  json value = {{"encoding", encoding}};
+///
+/// SendTransactionConfig
+void to_json(json &j, const SendTransactionConfig &config) {
+  j["encoding"] = config.encoding;
 
-  if (skipPreflight.has_value()) {
-    value["skipPreflight"] = skipPreflight.value();
+  if (config.skipPreflight.has_value()) {
+    j["skipPreflight"] = config.skipPreflight.value();
   }
-  if (preflightCommitment.has_value()) {
-    value["preflightCommitment"] = preflightCommitment.value();
+  if (config.preflightCommitment.has_value()) {
+    j["preflightCommitment"] = config.preflightCommitment.value();
   }
-  if (maxRetries.has_value()) {
-    value["maxRetries"] = maxRetries.value();
+  if (config.maxRetries.has_value()) {
+    j["maxRetries"] = config.maxRetries.value();
   }
-  if (minContextSlot.has_value()) {
-    value["minContextSlot"] = minContextSlot.value();
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
   }
-
-  return value;
 }
 
-json SimulateTransactionConfig::toJson() const {
-  json value = {{"encoding", BASE64}};
+///
+/// SimulateTransactionConfig
+void to_json(json &j, const SimulateTransactionConfig &config) {
+  j["encoding"] = BASE64;
 
-  if (sigVerify.has_value()) {
-    value["sigVerify"] = sigVerify.value();
+  if (config.sigVerify.has_value()) {
+    j["sigVerify"] = config.sigVerify.value();
   }
-  if (commitment.has_value()) {
-    value["commitment"] = commitment.value();
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
   }
-  if (replaceRecentBlockhash.has_value()) {
-    value["replaceRecentBlockhash"] = replaceRecentBlockhash.value();
+  if (config.replaceRecentBlockhash.has_value()) {
+    j["replaceRecentBlockhash"] = config.replaceRecentBlockhash.value();
   }
-  if (address.has_value()) {
-    value["accounts"] = {{"addresses", address.value()}};
+  if (config.address.has_value()) {
+    j["accounts"] = {{"addresses", config.address.value()}};
   }
-  if (minContextSlot.has_value()) {
-    value["minContextSlot"] = minContextSlot.value();
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
   }
-  return value;
+}
+
+///
+/// GetAccountInfoConfig
+void to_json(json &j, const GetAccountInfoConfig &config) {
+  j["encoding"] = BASE64;
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
+  }
 }
 
 ///
@@ -335,9 +346,6 @@ Connection::Connection(const std::string &rpc_url,
                              std::to_string(sodium_result));
 }
 
-///
-/// 1. Build requests
-///
 json Connection::sendJsonRpcRequest(const json &body) const {
   cpr::Response res =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{body.dump()},
@@ -356,9 +364,6 @@ json Connection::sendJsonRpcRequest(const json &body) const {
   return resJson["result"];
 }
 
-///
-/// 2. Invoke RPC endpoints
-///
 std::string Connection::signAndSendTransaction(
     const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight,
     const std::string &preflightCommitment) const {
@@ -388,7 +393,7 @@ std::string Connection::sendRawTransaction(
 std::string Connection::sendEncodedTransaction(
     const std::string &b64Tx, const SendTransactionConfig &config) const {
   // create request
-  const json params = {b64Tx, config.toJson()};
+  const json params = {b64Tx, config};
   const json reqJson = jsonRequest("sendTransaction", params);
   // send jsonRpc request
   return sendJsonRpcRequest(reqJson);
@@ -401,7 +406,7 @@ SimulatedTransactionResponse Connection::simulateTransaction(
   const auto signedTx = compiledTx.sign(keypair);
   const auto b64Tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
   // create request
-  const json params = {b64Tx, config.toJson()};
+  const json params = {b64Tx, config};
   const auto reqJson = jsonRequest("simulateTransaction", params);
   // send jsonRpc request
   return sendJsonRpcRequest(reqJson)["value"];

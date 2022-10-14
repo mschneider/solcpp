@@ -168,11 +168,12 @@ TEST_CASE("Test getLatestBlock") {
   CHECK_GT(blockHash.lastValidBlockHeight, 0);
 }
 TEST_CASE("MangoAccount is correctly created") {
-  const std::string& key = "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW";
+  const auto key = solana::PublicKey::fromBase58(
+      "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
   auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
   // Test prefetched account info
-  auto mangoAccountInfo =
-      connection.getAccountInfo<mango_v3::MangoAccountInfo>(key);
+  const auto mangoAccountInfo =
+      connection.getAccountInfo<mango_v3::MangoAccountInfo>(key).value.data;
   const auto& mangoAccount = mango_v3::MangoAccount(mangoAccountInfo);
   CHECK(!(mangoAccount.mangoAccountInfo.owner == solana::PublicKey::empty()));
   // Test fetching account info in construction

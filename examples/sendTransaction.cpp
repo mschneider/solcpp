@@ -6,6 +6,7 @@
 #include <chrono>
 #include <future>
 #include <nlohmann/json.hpp>
+#include <thread>
 
 #include "mango_v3.hpp"
 #include "solana.hpp"

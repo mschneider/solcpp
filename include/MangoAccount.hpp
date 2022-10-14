@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mango_v3.hpp"
+#include "solana.hpp"
 #include "utils.hpp"
 
 namespace mango_v3 {
@@ -12,9 +13,10 @@ struct MangoAccount {
     mangoAccountInfo = accountInfo_;
     // TODO: Call `loadOpenOrders()`
   }
-  explicit MangoAccount(const std::string& pubKey,
+  explicit MangoAccount(const solana::PublicKey& pubKey,
                         solana::rpc::Connection& connection) {
-    auto accountInfo_ = connection.getAccountInfo<MangoAccountInfo>(pubKey);
+    auto accountInfo_ =
+        connection.getAccountInfo<MangoAccountInfo>(pubKey).value.data;
     mangoAccountInfo = accountInfo_;
   }
   // Returns map(Address: OpenOrders) and sets this accounts

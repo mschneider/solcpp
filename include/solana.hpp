@@ -3,6 +3,7 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <cassert>
 #include <cstdint>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -143,6 +144,60 @@ struct RpcResponseAndContext {
 };
 
 /**
+ * Information describing an account
+ */
+template <typename T>
+struct AccountInfo {
+  /**
+   * boolean indicating if the account contains a program (and is strictly
+   * read-only)
+   */
+  bool executable;
+  /**
+   * base-58 encoded Pubkey of the program this account has been assigned to
+   */
+  PublicKey owner;
+  /**
+   * number of lamports assigned to this account
+   */
+  uint64_t lamports;
+  /**
+   * data associated with the account, either as encoded binary data or JSON
+   * format {<program>: <state>}, depending on encoding parameter
+   */
+  T data;
+  /**
+   * the epoch at which this account will next owe rent
+   * */
+  uint64_t rentEpoch;
+};
+
+/**
+ * AccountInfo from json
+ */
+template <typename T>
+void from_json(const json &j, AccountInfo<T> &info) {
+  info.executable = j["executable"];
+  info.owner = PublicKey::fromBase58(j["owner"]);
+  info.lamports = j["lamports"];
+  // check
+  assert(j["data"][1] == BASE64);
+  // b64 decode data for casting
+  const auto decoded_data = b64decode(j["data"][0]);
+  // decoded data should fit into T
+  if (decoded_data.size() != sizeof(T))
+    throw std::runtime_error("invalid response length " +
+                             std::to_string(decoded_data.size()) +
+                             " expected " + std::to_string(sizeof(T)));
+
+  // cast
+  info.data = T{};
+  memcpy(&info.data, decoded_data.c_str(), sizeof(T));
+
+  info.rentEpoch = j["rentEpoch"];
+}
+
+/**
  * An instruction to execute by a program
  */
 struct CompiledInstruction {
@@ -183,6 +238,8 @@ struct CompiledTransaction {
 };
 
 namespace rpc {
+const std::string JSON_PARSED = "jsonParsed";
+
 using json = nlohmann::json;
 
 json jsonRequest(const std::string &method, const json &params = nullptr);
@@ -201,7 +258,7 @@ static T fromFile(const std::string &path) {
   if (decoded.size() != sizeof(T))
     throw std::runtime_error("Invalid account data");
   T accountInfo{};
-  memcpy(&accountInfo, decoded.data(), sizeof(T));
+  memcpy(&accountInfo, decoded.c_str(), sizeof(T));
   return accountInfo;
 }
 
@@ -232,12 +289,12 @@ struct SendTransactionConfig {
    * set the minimum slot at which to perform preflight transaction checks.
    */
   const std::optional<uint8_t> minContextSlot = std::nullopt;
-
-  /**
-   * serialize to json
-   */
-  json toJson() const;
 };
+
+/**
+ * SendTransactionConfig to json
+ */
+void to_json(json &j, const SendTransactionConfig &config);
 
 ///
 /// Configuration object for simulateTransaction
@@ -264,12 +321,27 @@ struct SimulateTransactionConfig {
    * set the minimum slot that the request can be evaluated at.
    */
   const std::optional<uint8_t> minContextSlot = std::nullopt;
-
-  /**
-   * convert to json for RPC request param
-   */
-  json toJson() const;
 };
+
+/**
+ * convert SimulateTransactionConfig to json for RPC request param
+ */
+void to_json(json &j, const SimulateTransactionConfig &config);
+
+/**
+ * Configuration object for changing `getAccountInfo` query behavior
+ */
+struct GetAccountInfoConfig {
+  /** The level of commitment desired */
+  std::optional<std::string> commitment = std::nullopt;
+  /** The minimum slot that the request can be evaluated at */
+  std::optional<uint64_t> minContextSlot = std::nullopt;
+};
+
+/**
+ * convert GetAccountInfoConfig to json
+ */
+void to_json(json &j, const GetAccountInfoConfig &config);
 
 ///
 /// RPC HTTP Endpoints
@@ -377,36 +449,19 @@ class Connection {
       bool searchTransactionHistory = false) const;
 
   /**
-   * Fetch all the account info for the specified public key
+   * Fetch parsed account info for the specified public key
    */
   template <typename T>
-  inline T getAccountInfo(const std::string &account,
-                          const std::string &encoding = "base64",
-                          const size_t offset = 0,
-                          const size_t length = 0) const {
-    // create Params
-    json params = {account};
-    json options = {{"encoding", encoding}};
-    if (offset && length) {
-      json dataSlice = {"dataSlice", {{"offset", offset}, {"length", length}}};
-      options.emplace(dataSlice);
-    }
-    params.emplace_back(options);
+  RpcResponseAndContext<AccountInfo<T>> getAccountInfo(
+      const PublicKey &publicKey,
+      const GetAccountInfoConfig &config = GetAccountInfoConfig{}) const {
     // create request
-    const auto reqJson = jsonRequest("getAccountInfo", params);
+    const json params = {publicKey.toBase58(), config};
+    const json reqJson = jsonRequest("getAccountInfo", params);
     // send jsonRpc request
     const json res = sendJsonRpcRequest(reqJson);
-    // Account info from response
-    const std::string encoded = res["value"]["data"][0];
-    const std::string decoded = b64decode(encoded);
-    if (decoded.size() != sizeof(T))  // decoded should fit into T
-      throw std::runtime_error("invalid response length " +
-                               std::to_string(decoded.size()) + " expected " +
-                               std::to_string(sizeof(T)));
 
-    T result{};
-    memcpy(&result, decoded.data(), sizeof(T));
-    return result;
+    return {res["context"], res["value"]};
   }
 
   /**
