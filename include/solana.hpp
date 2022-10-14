@@ -258,7 +258,7 @@ static T fromFile(const std::string &path) {
   if (decoded.size() != sizeof(T))
     throw std::runtime_error("Invalid account data");
   T accountInfo{};
-  memcpy(&accountInfo, decoded.data(), sizeof(T));
+  memcpy(&accountInfo, decoded.c_str(), sizeof(T));
   return accountInfo;
 }
 
