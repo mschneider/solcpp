@@ -64,6 +64,7 @@ TEST_CASE("Request Airdrop") {
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
   uint64_t timeout=15;
   // check signature status
+  //this is a temporary fix. This will be changed to the confirmTransaction function call once it gets implemented
   while (timeout>=0) {
     const auto res = connection.getSignatureStatus(signature, true).value;
     if (res.has_value() && res.value().confirmationStatus == "finalized") {
