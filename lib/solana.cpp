@@ -322,6 +322,18 @@ void to_json(json &j, const SimulateTransactionConfig &config) {
 }
 
 ///
+/// GetAccountInfoConfig
+void to_json(json &j, const GetAccountInfoConfig &config) {
+  j["encoding"] = JSON_PARSED;
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
+  }
+}
+
+///
 /// Connection
 Connection::Connection(const std::string &rpc_url,
                        const std::string &commitment)

@@ -183,6 +183,8 @@ struct CompiledTransaction {
 };
 
 namespace rpc {
+const std::string JSON_PARSED = "jsonParsed";
+
 using json = nlohmann::json;
 
 json jsonRequest(const std::string &method, const json &params = nullptr);
@@ -270,6 +272,21 @@ struct SimulateTransactionConfig {
  * convert SimulateTransactionConfig to json for RPC request param
  */
 void to_json(json &j, const SimulateTransactionConfig &config);
+
+/**
+ * Configuration object for changing `getAccountInfo` query behavior
+ */
+struct GetAccountInfoConfig {
+  /** The level of commitment desired */
+  std::optional<std::string> commitment = std::nullopt;
+  /** The minimum slot that the request can be evaluated at */
+  std::optional<uint64_t> minContextSlot = std::nullopt;
+};
+
+/**
+ * convert GetAccountInfoConfig to json
+ */
+void to_json(json &j, const GetAccountInfoConfig &config);
 
 ///
 /// RPC HTTP Endpoints
@@ -406,6 +423,9 @@ class Connection {
     memcpy(&result, decoded.data(), sizeof(T));
     return result;
   }
+
+  void getAccountInfo_new(const PublicKey &publicKey,
+                          const GetAccountInfoConfig &config) const {}
 
   /**
    * Returns account information for a list of pubKeys
