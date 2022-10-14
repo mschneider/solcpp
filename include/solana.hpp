@@ -3,6 +3,7 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <cassert>
 #include <cstdint>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -141,6 +142,60 @@ struct RpcResponseAndContext {
   /** response value */
   T value;
 };
+
+/**
+ * Information describing an account
+ */
+template <typename T>
+struct AccountInfo {
+  /**
+   * boolean indicating if the account contains a program (and is strictly
+   * read-only)
+   */
+  bool executable;
+  /**
+   * base-58 encoded Pubkey of the program this account has been assigned to
+   */
+  PublicKey owner;
+  /**
+   * number of lamports assigned to this account
+   */
+  uint64_t lamports;
+  /**
+   * data associated with the account, either as encoded binary data or JSON
+   * format {<program>: <state>}, depending on encoding parameter
+   */
+  T data;
+  /**
+   * the epoch at which this account will next owe rent
+   * */
+  uint64_t rentEpoch;
+};
+
+/**
+ * AccountInfo from json
+ */
+template <typename T>
+void from_json(const json &j, AccountInfo<T> &info) {
+  info.executable = j["executable"];
+  info.owner = PublicKey::fromBase58(j["owner"]);
+  info.lamports = j["lamports"];
+  // check
+  assert(j["data"][1] == BASE64);
+  // b64 decode data for casting
+  const auto decoded_data = b64decode(j["data"][0]);
+  // decoded data should fit into T
+  if (decoded_data.size() != sizeof(T))
+    throw std::runtime_error("invalid response length " +
+                             std::to_string(decoded_data.size()) +
+                             " expected " + std::to_string(sizeof(T)));
+
+  // cast
+  info.data = T{};
+  memcpy(&info.data, decoded_data.c_str(), sizeof(T));
+
+  info.rentEpoch = j["rentEpoch"];
+}
 
 /**
  * An instruction to execute by a program
@@ -424,8 +479,21 @@ class Connection {
     return result;
   }
 
-  void getAccountInfo_new(const PublicKey &publicKey,
-                          const GetAccountInfoConfig &config) const {}
+  /**
+   * Fetch parsed account info for the specified public key
+   */
+  template <typename T>
+  RpcResponseAndContext<AccountInfo<T>> getAccountInfo_new(
+      const PublicKey &publicKey,
+      const GetAccountInfoConfig &config = GetAccountInfoConfig{}) const {
+    // create request
+    const json params = {publicKey.toBase58(), config};
+    const json reqJson = jsonRequest("getAccountInfo", params);
+    // send jsonRpc request
+    const json res = sendJsonRpcRequest(reqJson);
+
+    return {res["context"], res["value"]};
+  }
 
   /**
    * Returns account information for a list of pubKeys

@@ -324,7 +324,7 @@ void to_json(json &j, const SimulateTransactionConfig &config) {
 ///
 /// GetAccountInfoConfig
 void to_json(json &j, const GetAccountInfoConfig &config) {
-  j["encoding"] = JSON_PARSED;
+  j["encoding"] = BASE64;
   if (config.commitment.has_value()) {
     j["commitment"] = config.commitment.value();
   }
