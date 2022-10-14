@@ -70,7 +70,6 @@ bool AccountMeta::operator<(const AccountMeta &other) const {
 
 ///
 /// SimulatedTransactionResponse
-
 void to_json(json &j, const SimulatedTransactionResponse &res) {
   if (res.err.has_value()) {
     j["err"] = res.err.value();
@@ -103,7 +102,6 @@ void from_json(const json &j, SimulatedTransactionResponse &res) {
 
 ///
 /// SignatureStatus
-
 void to_json(json &j, const SignatureStatus &status) {
   j["slot"] = status.slot;
   if (status.confirmations.has_value()) {
