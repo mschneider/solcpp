@@ -232,12 +232,12 @@ struct SendTransactionConfig {
    * set the minimum slot at which to perform preflight transaction checks.
    */
   const std::optional<uint8_t> minContextSlot = std::nullopt;
-
-  /**
-   * serialize to json
-   */
-  json toJson() const;
 };
+
+/**
+ * SendTransactionConfig to json
+ */
+void to_json(json &j, const SendTransactionConfig &config);
 
 ///
 /// Configuration object for simulateTransaction
@@ -264,12 +264,12 @@ struct SimulateTransactionConfig {
    * set the minimum slot that the request can be evaluated at.
    */
   const std::optional<uint8_t> minContextSlot = std::nullopt;
-
-  /**
-   * convert to json for RPC request param
-   */
-  json toJson() const;
 };
+
+/**
+ * convert SimulateTransactionConfig to json for RPC request param
+ */
+void to_json(json &j, const SimulateTransactionConfig &config);
 
 ///
 /// RPC HTTP Endpoints

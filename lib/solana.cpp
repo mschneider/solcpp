@@ -282,44 +282,47 @@ json jsonRequest(const std::string &method, const json &params) {
   return req;
 }
 
-json SendTransactionConfig::toJson() const {
-  json value = {{"encoding", encoding}};
+///
+/// SendTransactionConfig
 
-  if (skipPreflight.has_value()) {
-    value["skipPreflight"] = skipPreflight.value();
-  }
-  if (preflightCommitment.has_value()) {
-    value["preflightCommitment"] = preflightCommitment.value();
-  }
-  if (maxRetries.has_value()) {
-    value["maxRetries"] = maxRetries.value();
-  }
-  if (minContextSlot.has_value()) {
-    value["minContextSlot"] = minContextSlot.value();
-  }
+void to_json(json &j, const SendTransactionConfig &config) {
+  j["encoding"] = config.encoding;
 
-  return value;
+  if (config.skipPreflight.has_value()) {
+    j["skipPreflight"] = config.skipPreflight.value();
+  }
+  if (config.preflightCommitment.has_value()) {
+    j["preflightCommitment"] = config.preflightCommitment.value();
+  }
+  if (config.maxRetries.has_value()) {
+    j["maxRetries"] = config.maxRetries.value();
+  }
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
+  }
 }
 
-json SimulateTransactionConfig::toJson() const {
-  json value = {{"encoding", BASE64}};
+///
+/// SimulateTransactionConfig
 
-  if (sigVerify.has_value()) {
-    value["sigVerify"] = sigVerify.value();
+void to_json(json &j, const SimulateTransactionConfig &config) {
+  j["encoding"] = BASE64;
+
+  if (config.sigVerify.has_value()) {
+    j["sigVerify"] = config.sigVerify.value();
   }
-  if (commitment.has_value()) {
-    value["commitment"] = commitment.value();
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
   }
-  if (replaceRecentBlockhash.has_value()) {
-    value["replaceRecentBlockhash"] = replaceRecentBlockhash.value();
+  if (config.replaceRecentBlockhash.has_value()) {
+    j["replaceRecentBlockhash"] = config.replaceRecentBlockhash.value();
   }
-  if (address.has_value()) {
-    value["accounts"] = {{"addresses", address.value()}};
+  if (config.address.has_value()) {
+    j["accounts"] = {{"addresses", config.address.value()}};
   }
-  if (minContextSlot.has_value()) {
-    value["minContextSlot"] = minContextSlot.value();
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
   }
-  return value;
 }
 
 ///
@@ -386,7 +389,7 @@ std::string Connection::sendRawTransaction(
 std::string Connection::sendEncodedTransaction(
     const std::string &b64Tx, const SendTransactionConfig &config) const {
   // create request
-  const json params = {b64Tx, config.toJson()};
+  const json params = {b64Tx, config};
   const json reqJson = jsonRequest("sendTransaction", params);
   // send jsonRpc request
   return sendJsonRpcRequest(reqJson);
@@ -399,7 +402,7 @@ SimulatedTransactionResponse Connection::simulateTransaction(
   const auto signedTx = compiledTx.sign(keypair);
   const auto b64Tx = b64encode(std::string(signedTx.begin(), signedTx.end()));
   // create request
-  const json params = {b64Tx, config.toJson()};
+  const json params = {b64Tx, config};
   const auto reqJson = jsonRequest("simulateTransaction", params);
   // send jsonRpc request
   return sendJsonRpcRequest(reqJson)["value"];
