@@ -498,7 +498,7 @@ Connection::getSignatureStatus(const std::string &signature,
 }
 
 bool Connection::confirmTransaction(std::string transactionSignature,
-                                    int timeout, 
+                                    uint64_t timeout, 
                                     std::string confirmLevel) const {
   while (timeout>0) {
     const auto res = getSignatureStatus(transactionSignature, true).value;
