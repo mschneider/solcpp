@@ -284,7 +284,6 @@ json jsonRequest(const std::string &method, const json &params) {
 
 ///
 /// SendTransactionConfig
-
 void to_json(json &j, const SendTransactionConfig &config) {
   j["encoding"] = config.encoding;
 
@@ -304,7 +303,6 @@ void to_json(json &j, const SendTransactionConfig &config) {
 
 ///
 /// SimulateTransactionConfig
-
 void to_json(json &j, const SimulateTransactionConfig &config) {
   j["encoding"] = BASE64;
 
@@ -336,9 +334,6 @@ Connection::Connection(const std::string &rpc_url,
                              std::to_string(sodium_result));
 }
 
-///
-/// 1. Build requests
-///
 json Connection::sendJsonRpcRequest(const json &body) const {
   cpr::Response res =
       cpr::Post(cpr::Url{rpc_url_}, cpr::Body{body.dump()},
@@ -357,9 +352,6 @@ json Connection::sendJsonRpcRequest(const json &body) const {
   return resJson["result"];
 }
 
-///
-/// 2. Invoke RPC endpoints
-///
 std::string Connection::signAndSendTransaction(
     const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight,
     const std::string &preflightCommitment) const {
