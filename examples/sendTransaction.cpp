@@ -51,7 +51,8 @@ int main() {
       return EXIT_FAILURE;
     }
     const auto res = connection.getSignatureStatus(b58Sig).value;
-    if (res.has_value() && res.value().confirmationStatus == "finalized") {
+    if (res.has_value() && !res.value().err.has_value() &&
+        res.value().confirmationStatus == "finalized") {
       break;
     }
     std::this_thread::sleep_for(std::chrono::seconds(1));
