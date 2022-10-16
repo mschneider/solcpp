@@ -361,13 +361,34 @@ struct SimulateTransactionConfig {
 void to_json(json &j, const SimulateTransactionConfig &config);
 
 /**
- * Configuration object for changing `getAccountInfo` query behavior
+ * Data slice argument to limit the returned account data
+ */
+struct DataSlice {
+  /** offset of data slice */
+  uint16_t offset;
+  /** length of data slice */
+  uint16_t number;
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DataSlice, offset, number);
+
+/**
+ * Configuration object for changing `getAccountInfo` and
+ * `getMultipleAccountsInfo` query behavior
  */
 struct GetAccountInfoConfig {
-  /** The level of commitment desired */
+  /**
+   * The level of commitment desired
+   */
   std::optional<std::string> commitment = std::nullopt;
-  /** The minimum slot that the request can be evaluated at */
+  /**
+   * The minimum slot that the request can be evaluated at
+   */
   std::optional<uint64_t> minContextSlot = std::nullopt;
+  /**
+   * Optional data slice to limit the returned account data
+   */
+  std::optional<DataSlice> dataSlice = std::nullopt;
 };
 
 /**

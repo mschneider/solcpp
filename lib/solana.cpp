@@ -327,6 +327,9 @@ void to_json(json &j, const GetAccountInfoConfig &config) {
   if (config.minContextSlot.has_value()) {
     j["minContextSlot"] = config.minContextSlot.value();
   }
+  if (config.dataSlice.has_value()) {
+    j["dataSlice"] = config.dataSlice.value();
+  }
 }
 
 ///
