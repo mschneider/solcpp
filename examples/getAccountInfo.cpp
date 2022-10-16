@@ -3,10 +3,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "solana.hpp"
-using json = nlohmann::json;
-
 #include "mango_v3.hpp"
+#include "solana.hpp"
 
 const std::string DEFAULT_PUBLICKEY = "11111111111111111111111111111111";
 
@@ -31,7 +29,7 @@ int main() {
     const auto &token = group->tokens[i];
     const auto mintPk = token.mint.toBase58();
 
-    if (mintPk == std::string(DEFAULT_PUBLICKEY)) continue;
+    if (mintPk == DEFAULT_PUBLICKEY) continue;
 
     const auto rootBankPk = token.rootBank.toBase58();
     if (i != mango_v3::QUOTE_INDEX) {
@@ -48,7 +46,7 @@ int main() {
     const auto &market = group->spotMarkets[i];
     const auto marketPk = market.spotMarket.toBase58();
 
-    if (marketPk == std::string(DEFAULT_PUBLICKEY)) continue;
+    if (marketPk == DEFAULT_PUBLICKEY) continue;
 
     spdlog::info("SPOT: {}", i);
     spdlog::info("  market: {}", marketPk);
@@ -63,7 +61,7 @@ int main() {
     const auto &market = group->perpMarkets[i];
     const auto marketPk = market.perpMarket.toBase58();
 
-    if (marketPk == std::string(DEFAULT_PUBLICKEY)) continue;
+    if (marketPk == DEFAULT_PUBLICKEY) continue;
 
     spdlog::info("PERP: {}", i);
     spdlog::info("  market: {}", marketPk);
@@ -81,7 +79,7 @@ int main() {
   for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
     const auto oraclePk = group->oracles[i].toBase58();
 
-    if (oraclePk == std::string(DEFAULT_PUBLICKEY)) continue;
+    if (oraclePk == DEFAULT_PUBLICKEY) continue;
 
     spdlog::info("ORACLE {}: {}", i, oraclePk);
   }
