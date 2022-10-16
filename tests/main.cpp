@@ -62,12 +62,15 @@ TEST_CASE("Request Airdrop") {
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
+  uint64_t timeout=15;
   // check signature status
-  while (true) {
+  //this is a temporary fix. This will be changed to the confirmTransaction function call once it gets implemented
+  while (timeout>=0) {
     const auto res = connection.getSignatureStatus(signature, true).value;
     if (res.has_value() && res.value().confirmationStatus == "finalized") {
       break;
     }
+    timeout--;
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
   // check if balance is updated after status is finalized
