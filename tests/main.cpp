@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstdint>
 #include <ostream>
 #include <string>
 #include <thread>
@@ -59,7 +60,7 @@ TEST_CASE("Request Airdrop") {
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
-  uint64_t timeout = 15;
+  uint8_t timeout = 15;
   // check signature status
   // this is a temporary fix. This will be changed to the confirmTransaction
   // function call once it gets implemented
