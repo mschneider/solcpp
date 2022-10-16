@@ -184,7 +184,7 @@ TEST_CASE("MangoAccount is correctly created") {
   const auto& account = mango_v3::MangoAccount(key, connection);
   CHECK(!(account.mangoAccountInfo.owner == solana::PublicKey::empty()));
 }
-TEST_CASE("Test getMultipleAccounts") {
+TEST_CASE("Test getMultipleAccountsInfo") {
   // Existing accounts
   std::vector<std::string> accounts{
       "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW",
@@ -192,7 +192,7 @@ TEST_CASE("Test getMultipleAccounts") {
   };
   auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
   auto accountInfoMap =
-      connection.getMultipleAccounts<mango_v3::MangoAccountInfo>(accounts);
+      connection.getMultipleAccountsInfo<mango_v3::MangoAccountInfo>(accounts);
   REQUIRE_EQ(accountInfoMap.size(), accounts.size());
   // Check results have the initial pubKeys
   auto it = accountInfoMap.find(accounts[0]);
@@ -207,7 +207,7 @@ TEST_CASE("Test getMultipleAccounts") {
   // Introduce an account that doesn't exist
   accounts.push_back("9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
   accountInfoMap =
-      connection.getMultipleAccounts<mango_v3::MangoAccountInfo>(accounts);
+      connection.getMultipleAccountsInfo<mango_v3::MangoAccountInfo>(accounts);
   REQUIRE_NE(accountInfoMap.size(), accounts.size());
   it = accountInfoMap.find("9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
   CHECK_EQ(it, accountInfoMap.end());
