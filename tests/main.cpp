@@ -1,5 +1,5 @@
 #include <chrono>
-#include <iostream>
+#include <ostream>
 #include <string>
 #include <thread>
 
@@ -30,14 +30,11 @@ TEST_CASE("Simulate & Send Transaction") {
   ///
   /// Test simulateTransaction
   ///
-
   const auto simulateRes = connection.simulateTransaction(keyPair, compiledTx);
   // consumed units should be greater than unity
   CHECK_GT(simulateRes.unitsConsumed.value(), 0);
-  CHECK_EQ(simulateRes.logs.value().empty(), false);
-
-  const solana::rpc::json to_json = simulateRes;
-  CHECK_EQ(simulateRes.unitsConsumed.value(), to_json["unitsConsumed"]);
+  CHECK_FALSE(simulateRes.logs.value().empty());
+  CHECK_FALSE(simulateRes.accounts.has_value());
 
   ///
   /// Test sendTransaction
@@ -62,10 +59,11 @@ TEST_CASE("Request Airdrop") {
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
-  uint64_t timeout=15;
+  uint64_t timeout = 15;
   // check signature status
-  //this is a temporary fix. This will be changed to the confirmTransaction function call once it gets implemented
-  while (timeout>=0) {
+  // this is a temporary fix. This will be changed to the confirmTransaction
+  // function call once it gets implemented
+  while (timeout >= 0) {
     const auto res = connection.getSignatureStatus(signature, true).value;
     if (res.has_value() && res.value().confirmationStatus == "finalized") {
       break;
