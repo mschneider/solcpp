@@ -8,6 +8,8 @@ using json = nlohmann::json;
 
 #include "mango_v3.hpp"
 
+const std::string DEFAULT_PUBLICKEY = "11111111111111111111111111111111";
+
 int main() {
   std::string rpc_url =
       "https://mango.rpcpool.com/946ef7337da3f5b8d3e4a34e7f88";
@@ -29,7 +31,7 @@ int main() {
     const auto &token = group->tokens[i];
     const auto mintPk = token.mint.toBase58();
 
-    if (mintPk == std::string("11111111111111111111111111111111")) continue;
+    if (mintPk == std::string(DEFAULT_PUBLICKEY)) continue;
 
     const auto rootBankPk = token.rootBank.toBase58();
     if (i != mango_v3::QUOTE_INDEX) {
@@ -46,7 +48,7 @@ int main() {
     const auto &market = group->spotMarkets[i];
     const auto marketPk = market.spotMarket.toBase58();
 
-    if (marketPk == std::string("11111111111111111111111111111111")) continue;
+    if (marketPk == std::string(DEFAULT_PUBLICKEY)) continue;
 
     spdlog::info("SPOT: {}", i);
     spdlog::info("  market: {}", marketPk);
@@ -61,7 +63,7 @@ int main() {
     const auto &market = group->perpMarkets[i];
     const auto marketPk = market.perpMarket.toBase58();
 
-    if (marketPk == std::string("11111111111111111111111111111111")) continue;
+    if (marketPk == std::string(DEFAULT_PUBLICKEY)) continue;
 
     spdlog::info("PERP: {}", i);
     spdlog::info("  market: {}", marketPk);
@@ -79,7 +81,7 @@ int main() {
   for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
     const auto oraclePk = group->oracles[i].toBase58();
 
-    if (oraclePk == std::string("11111111111111111111111111111111")) continue;
+    if (oraclePk == std::string(DEFAULT_PUBLICKEY)) continue;
 
     spdlog::info("ORACLE {}: {}", i, oraclePk);
   }
