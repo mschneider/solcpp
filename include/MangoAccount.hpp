@@ -29,7 +29,7 @@ struct MangoAccount {
       filteredOpenOrders.emplace_back(item.toBase58());
     }
     const auto accountsInfo =
-        connection.getMultipleAccounts<serum_v3::OpenOrders>(
+        connection.getMultipleAccountsInfo<serum_v3::OpenOrders>(
             filteredOpenOrders);
     spotOpenOrdersAccounts.clear();
     std::copy_if(

@@ -500,7 +500,7 @@ class Connection {
    * Accounts that don't exist return a `null` result and are skipped
    */
   template <typename T>
-  inline std::map<std::string, T> getMultipleAccounts(
+  inline std::map<std::string, T> getMultipleAccountsInfo(
       const std::vector<std::string> &accounts,
       const std::string &encoding = "base64", const size_t offset = 0,
       const size_t length = 0) const {
