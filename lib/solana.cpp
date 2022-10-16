@@ -90,10 +90,10 @@ void from_json(const json &j, SimulatedTransactionResponse &res) {
     res.err = std::optional{j["err"]};
   }
   if (!j["accounts"].is_null()) {
-    res.accounts = std::optional{j["accounts"]};
+    res.accounts = std::optional<std::vector<std::string>>{j["accounts"]};
   }
   if (!j["logs"].is_null()) {
-    res.logs = std::optional{j["logs"]};
+    res.logs = std::optional<std::vector<std::string>>{j["logs"]};
   }
   if (!j["unitsConsumed"].is_null()) {
     res.unitsConsumed = std::optional{j["unitsConsumed"]};
