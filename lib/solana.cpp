@@ -38,6 +38,12 @@ bool PublicKey::operator==(const PublicKey &other) const {
 
 std::string PublicKey::toBase58() const { return b58encode(data); }
 
+void to_json(json &j, const PublicKey &key) { j = key.toBase58(); }
+
+void from_json(const json &j, PublicKey &key) {
+  key = PublicKey::fromBase58(j);
+}
+
 ///
 /// PrivateKey
 std::vector<uint8_t> PrivateKey::signMessage(

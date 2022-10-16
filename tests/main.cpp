@@ -186,31 +186,30 @@ TEST_CASE("MangoAccount is correctly created") {
 }
 TEST_CASE("Test getMultipleAccountsInfo") {
   // Existing accounts
-  std::vector<std::string> accounts{
-      "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW",
-      "DRUZRfLQtki4ZYvRXhi5yGmyqCf6iMfTzxtBpxo6rbHu",
+  std::vector<solana::PublicKey> accounts{
+      solana::PublicKey::fromBase58(
+          "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW"),
+      solana::PublicKey::fromBase58(
+          "DRUZRfLQtki4ZYvRXhi5yGmyqCf6iMfTzxtBpxo6rbHu"),
   };
-  auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
-  auto accountInfoMap =
-      connection.getMultipleAccountsInfo<mango_v3::MangoAccountInfo>(accounts);
-  REQUIRE_EQ(accountInfoMap.size(), accounts.size());
-  // Check results have the initial pubKeys
-  auto it = accountInfoMap.find(accounts[0]);
-  CHECK_NE(it, accountInfoMap.end());
-  it = accountInfoMap.find(accounts[1]);
-  CHECK_NE(it, accountInfoMap.end());
+  const auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
+  auto accountInfos =
+      connection.getMultipleAccountsInfo<mango_v3::MangoAccountInfo>(accounts)
+          .value;
+  // query and result accounts should be same in number
+  CHECK_EQ(accountInfos.size(), accounts.size());
   // Check AccountInfo is non-empty
-  for (const auto& [pubKey, accountInfo] : accountInfoMap) {
-    auto owner = accountInfo.owner;
-    CHECK(!(owner == solana::PublicKey::empty()));
+  for (const auto& accountInfo : accountInfos) {
+    CHECK(!(accountInfo.value().owner  == solana::PublicKey::empty()));
   }
   // Introduce an account that doesn't exist
-  accounts.push_back("9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
-  accountInfoMap =
-      connection.getMultipleAccountsInfo<mango_v3::MangoAccountInfo>(accounts);
-  REQUIRE_NE(accountInfoMap.size(), accounts.size());
-  it = accountInfoMap.find("9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
-  CHECK_EQ(it, accountInfoMap.end());
+  accounts.push_back(solana::PublicKey::fromBase58(
+      "9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW"));
+  accountInfos =
+      connection.getMultipleAccountsInfo<mango_v3::MangoAccountInfo>(accounts)
+          .value;
+  CHECK_EQ(accountInfos.size(), accounts.size());
+  // TODO: check for null pub key
 }
 TEST_CASE("Empty MangoAccount") {
   std::string resources_dir = FIXTURES_DIR;

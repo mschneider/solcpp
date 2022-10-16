@@ -38,6 +38,16 @@ struct PublicKey {
   std::string toBase58() const;
 };
 
+/**
+ * PublicKey to json
+ */
+void to_json(json &j, const PublicKey &key);
+
+/**
+ * PublicKey from json
+ */
+void from_json(const json &j, PublicKey &key);
+
 struct PrivateKey {
   static const size_t SIZE = crypto_sign_SECRETKEYBYTES;
   typedef std::array<uint8_t, SIZE> array_t;
@@ -227,6 +237,18 @@ void from_json(const json &j, AccountInfo<T> &info) {
   memcpy(&info.data, decoded_data.c_str(), sizeof(T));
 
   info.rentEpoch = j["rentEpoch"];
+}
+
+/**
+ * AccountInfo from json
+ */
+template <typename T>
+void from_json(const json &j, std::optional<AccountInfo<T>> &info) {
+  if (j.is_null()) {
+    info = std::nullopt;
+  } else {
+    info = std::optional<AccountInfo<T>>{j};
+  }
 }
 
 /**
@@ -507,7 +529,7 @@ class Connection {
       const PublicKey &publicKey,
       const GetAccountInfoConfig &config = GetAccountInfoConfig{}) const {
     // create request
-    const json params = {publicKey.toBase58(), config};
+    const json params = {publicKey, config};
     const json reqJson = jsonRequest("getAccountInfo", params);
     // send jsonRpc request
     const json res = sendJsonRpcRequest(reqJson);
@@ -521,46 +543,17 @@ class Connection {
    * Accounts that don't exist return a `null` result and are skipped
    */
   template <typename T>
-  inline std::map<std::string, T> getMultipleAccountsInfo(
-      const std::vector<std::string> &accounts,
-      const std::string &encoding = "base64", const size_t offset = 0,
-      const size_t length = 0) const {
-    // create params
-    json pubKeys = json::array();
-    for (auto &account : accounts) {
-      pubKeys.emplace_back(account);
-    }
-    json params = {};
-    params.emplace_back(pubKeys);
-    json options = {{"encoding", encoding}};
-    if (offset && length) {
-      json dataSlice = {"dataSlice", {{"offset", offset}, {"length", length}}};
-      options.emplace(dataSlice);
-    }
-    params.emplace_back(options);
+  RpcResponseAndContext<std::vector<std::optional<AccountInfo<T>>>>
+  getMultipleAccountsInfo(
+      const std::vector<PublicKey> &publicKeys,
+      const GetAccountInfoConfig &config = GetAccountInfoConfig{}) const {
     // create request
+    const json params = {publicKeys, config};
     const json reqJson = jsonRequest("getMultipleAccounts", params);
     // send jsonRpc request
     const json res = sendJsonRpcRequest(reqJson);
-    const auto &account_info_vec = res["value"];
-    std::map<std::string, T> result;
-    int index = -1;
-    for (const auto &account_info : account_info_vec) {
-      ++index;
-      if (account_info.is_null()) continue;  // Account doesn't exist
-      const std::string encoded = account_info["data"][0];
-      const std::string decoded = b64decode(encoded);
-      if (decoded.size() != sizeof(T))
-        throw std::runtime_error("invalid response length " +
-                                 std::to_string(decoded.size()) + " expected " +
-                                 std::to_string(sizeof(T)));
-      T account{};
-      memcpy(&account, decoded.data(), sizeof(T));
-      result[reqJson["params"][0][index]] =
-          account;  // Retrieve the corresponding
-                    // pubKey from the request
-    }
-    return result;
+
+    return {res["context"], res["value"]};
   }
 
  private:
