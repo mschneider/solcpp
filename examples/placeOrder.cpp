@@ -10,7 +10,7 @@ int main() {
   const auto group = connection
                          .getAccountInfo<mango_v3::MangoGroup>(
                              solana::PublicKey::fromBase58(config.group))
-                         .value.data;
+                         .value.value().data;
 
   const auto symbolIt =
       std::find(config.symbols.begin(), config.symbols.end(), "BTC");
@@ -20,7 +20,7 @@ int main() {
   const auto perpMarketPk = group.perpMarkets[marketIndex].perpMarket;
 
   const auto market =
-      connection.getAccountInfo<mango_v3::PerpMarket>(perpMarketPk).value.data;
+      connection.getAccountInfo<mango_v3::PerpMarket>(perpMarketPk).value.value().data;
   assert(market.mangoGroup.toBase58() == config.group);
 
   const auto recentBlockhash = connection.getLatestBlockhash();

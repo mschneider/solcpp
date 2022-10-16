@@ -13,16 +13,19 @@ int main() {
       connection
           .getAccountInfo<mango_v3::MangoAccountInfo>(
               solana::PublicKey::fromBase58(accountPubkey))
-          .value.data;
+          .value.value()
+          .data;
   mango_v3::MangoAccount mangoAccount =
       mango_v3::MangoAccount(mangoAccountInfo);
   auto openOrders = mangoAccount.loadOpenOrders(connection);
   auto group = connection
                    .getAccountInfo<mango_v3::MangoGroup>(
                        solana::PublicKey::fromBase58(config.group))
-                   .value.data;
+                   .value.value()
+                   .data;
   auto cache = connection.getAccountInfo<mango_v3::MangoCache>(group.mangoCache)
-                   .value.data;
+                   .value.value()
+                   .data;
   auto maintHealth =
       mangoAccount.getHealth(group, cache, mango_v3::HealthType::Maint);
   auto initHealth =

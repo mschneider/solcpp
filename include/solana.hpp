@@ -525,7 +525,7 @@ class Connection {
    * Fetch parsed account info for the specified public key
    */
   template <typename T>
-  RpcResponseAndContext<AccountInfo<T>> getAccountInfo(
+  RpcResponseAndContext<std::optional<AccountInfo<T>>> getAccountInfo(
       const PublicKey &publicKey,
       const GetAccountInfoConfig &config = GetAccountInfoConfig{}) const {
     // create request
@@ -533,8 +533,12 @@ class Connection {
     const json reqJson = jsonRequest("getAccountInfo", params);
     // send jsonRpc request
     const json res = sendJsonRpcRequest(reqJson);
-
-    return {res["context"], res["value"]};
+    const json value = res["value"];
+    if (value.is_null()) {
+      return {res["context"], std::nullopt};
+    } else {
+      return {res["context"], std::optional<AccountInfo<T>>{value}};
+    }
   }
 
   /**

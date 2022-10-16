@@ -16,7 +16,7 @@ struct MangoAccount {
   explicit MangoAccount(const solana::PublicKey& pubKey,
                         solana::rpc::Connection& connection) {
     auto accountInfo_ =
-        connection.getAccountInfo<MangoAccountInfo>(pubKey).value.data;
+        connection.getAccountInfo<MangoAccountInfo>(pubKey).value.value().data;
     mangoAccountInfo = accountInfo_;
   }
   // Returns map(Address: OpenOrders) and sets this accounts
@@ -38,7 +38,8 @@ struct MangoAccount {
     std::vector<serum_v3::OpenOrders> accountsInfoData;
     auto index = 0;
     for (const auto& accountInfo : accountsInfo) {
-        spotOpenOrdersAccounts[filteredOpenOrders[index].toBase58()] = accountInfo.value().data;
+      spotOpenOrdersAccounts[filteredOpenOrders[index].toBase58()] =
+          accountInfo.value().data;
     }
     return spotOpenOrdersAccounts;
   }

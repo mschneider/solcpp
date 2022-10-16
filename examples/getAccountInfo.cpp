@@ -17,7 +17,7 @@ int main() {
       connection
           .getAccountInfo<mango_v3::MangoGroup>(
               solana::PublicKey::fromBase58(account))
-          .value.data;
+          .value.value().data;
   const auto group = &grp;
 
   spdlog::info("DEC:");

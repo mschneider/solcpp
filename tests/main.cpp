@@ -176,7 +176,9 @@ TEST_CASE("MangoAccount is correctly created") {
   auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
   // Test prefetched account info
   const auto mangoAccountInfo =
-      connection.getAccountInfo<mango_v3::MangoAccountInfo>(key).value.data;
+      connection.getAccountInfo<mango_v3::MangoAccountInfo>(key)
+          .value.value()
+          .data;
   const auto& mangoAccount = mango_v3::MangoAccount(mangoAccountInfo);
   CHECK(!(mangoAccount.mangoAccountInfo.owner == solana::PublicKey::empty()));
   // Test fetching account info in construction
@@ -200,7 +202,7 @@ TEST_CASE("Test getMultipleAccountsInfo") {
   CHECK_EQ(accountInfos.size(), accounts.size());
   // Check AccountInfo is non-empty
   for (const auto& accountInfo : accountInfos) {
-    CHECK(!(accountInfo.value().owner  == solana::PublicKey::empty()));
+    CHECK(!(accountInfo.value().owner == solana::PublicKey::empty()));
   }
   // Introduce an account that doesn't exist
   accounts.push_back(solana::PublicKey::fromBase58(
