@@ -1,11 +1,5 @@
-<<<<<<< HEAD
 
 #include <iostream>
-=======
-#include <chrono>
-#include <cstdint>
-#include <ostream>
->>>>>>> 11c6fd5209ca67b8e36127e2b150b156aa47dfc1
 #include <string>
 
 
