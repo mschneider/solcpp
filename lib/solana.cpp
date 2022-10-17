@@ -40,6 +40,12 @@ bool PublicKey::operator==(const PublicKey &other) const {
 
 std::string PublicKey::toBase58() const { return b58encode(data); }
 
+void to_json(json &j, const PublicKey &key) { j = key.toBase58(); }
+
+void from_json(const json &j, PublicKey &key) {
+  key = PublicKey::fromBase58(j);
+}
+
 ///
 /// PrivateKey
 std::vector<uint8_t> PrivateKey::signMessage(
@@ -71,34 +77,30 @@ bool AccountMeta::operator<(const AccountMeta &other) const {
 }
 
 ///
-/// SimulatedTransactionResponse
-void to_json(json &j, const SimulatedTransactionResponse &res) {
-  if (res.err.has_value()) {
-    j["err"] = res.err.value();
-  }
-  if (res.accounts.has_value()) {
-    j["accounts"] = res.accounts.value();
-  }
-  if (res.logs.has_value()) {
-    j["logs"] = res.logs.value();
-  }
-  if (res.unitsConsumed.has_value()) {
-    j["unitsConsumed"] = res.unitsConsumed.value();
-  }
+/// TransactionReturnData
+
+void from_json(const json &j, TransactionReturnData &data) {
+  data.programId = j["programId"];
+  data.data = j["data"][0];
 }
 
+///
+/// SimulatedTransactionResponse
 void from_json(const json &j, SimulatedTransactionResponse &res) {
   if (!j["err"].is_null()) {
     res.err = std::optional{j["err"]};
   }
   if (!j["accounts"].is_null()) {
-    res.accounts = std::optional{j["accounts"]};
+    res.accounts = std::optional<std::vector<std::string>>{j["accounts"]};
   }
   if (!j["logs"].is_null()) {
-    res.logs = std::optional{j["logs"]};
+    res.logs = std::optional<std::vector<std::string>>{j["logs"]};
   }
   if (!j["unitsConsumed"].is_null()) {
     res.unitsConsumed = std::optional{j["unitsConsumed"]};
+  }
+  if (j.contains("returnData") && !j["returnData"].is_null()) {
+    res.returnData = std::optional<TransactionReturnData>{j["returnData"]};
   }
 }
 
@@ -332,6 +334,9 @@ void to_json(json &j, const GetAccountInfoConfig &config) {
   }
   if (config.minContextSlot.has_value()) {
     j["minContextSlot"] = config.minContextSlot.value();
+  }
+  if (config.dataSlice.has_value()) {
+    j["dataSlice"] = config.dataSlice.value();
   }
 }
 

@@ -3,10 +3,11 @@
 
 #include <nlohmann/json.hpp>
 
-#include "solana.hpp"
-using json = nlohmann::json;
-
 #include "mango_v3.hpp"
+#include "solana.hpp"
+
+const solana::PublicKey DEFAULT_PUBLICKEY =
+    solana::PublicKey::fromBase58("11111111111111111111111111111111");
 
 int main() {
   std::string rpc_url =
@@ -17,7 +18,8 @@ int main() {
       connection
           .getAccountInfo<mango_v3::MangoGroup>(
               solana::PublicKey::fromBase58(account))
-          .value.data;
+          .value.value()
+          .data;
   const auto group = &grp;
 
   spdlog::info("DEC:");
@@ -27,29 +29,29 @@ int main() {
     if (i >= group->numOracles && i != mango_v3::QUOTE_INDEX) continue;
 
     const auto &token = group->tokens[i];
-    const auto mintPk = token.mint.toBase58();
+    const auto mintPk = token.mint;
 
-    if (mintPk == std::string("11111111111111111111111111111111")) continue;
+    if (mintPk == DEFAULT_PUBLICKEY) continue;
 
-    const auto rootBankPk = token.rootBank.toBase58();
+    const auto rootBankPk = token.rootBank;
     if (i != mango_v3::QUOTE_INDEX) {
       spdlog::info("TOK: {}", i);
     } else {
       spdlog::info("QUOTE: {}", i);
     }
-    spdlog::info("  mint: {}", mintPk);
-    spdlog::info("  rootBank: {}", rootBankPk);
+    spdlog::info("  mint: {}", mintPk.toBase58());
+    spdlog::info("  rootBank: {}", rootBankPk.toBase58());
     spdlog::info("  decimals: {}", static_cast<int>(token.decimals));
   }
 
   for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
     const auto &market = group->spotMarkets[i];
-    const auto marketPk = market.spotMarket.toBase58();
+    const auto marketPk = market.spotMarket;
 
-    if (marketPk == std::string("11111111111111111111111111111111")) continue;
+    if (marketPk == DEFAULT_PUBLICKEY) continue;
 
     spdlog::info("SPOT: {}", i);
-    spdlog::info("  market: {}", marketPk);
+    spdlog::info("  market: {}", marketPk.toBase58());
     spdlog::info("  maintAssetWeight: {}", market.maintAssetWeight.to_double());
     spdlog::info("  initAssetWeight: {}", market.initAssetWeight.to_double());
     spdlog::info("  maintLiabWeight: {}", market.maintLiabWeight.to_double());
@@ -59,12 +61,12 @@ int main() {
 
   for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
     const auto &market = group->perpMarkets[i];
-    const auto marketPk = market.perpMarket.toBase58();
+    const auto marketPk = market.perpMarket;
 
-    if (marketPk == std::string("11111111111111111111111111111111")) continue;
+    if (marketPk == DEFAULT_PUBLICKEY) continue;
 
     spdlog::info("PERP: {}", i);
-    spdlog::info("  market: {}", marketPk);
+    spdlog::info("  market: {}", marketPk.toBase58());
     spdlog::info("  maintAssetWeight: {}", market.maintAssetWeight.to_double());
     spdlog::info("  initAssetWeight: {}", market.initAssetWeight.to_double());
     spdlog::info("  maintLiabWeight: {}", market.maintLiabWeight.to_double());
@@ -77,11 +79,11 @@ int main() {
   }
 
   for (int i = 0; i < mango_v3::MAX_PAIRS; ++i) {
-    const auto oraclePk = group->oracles[i].toBase58();
+    const auto oraclePk = group->oracles[i];
 
-    if (oraclePk == std::string("11111111111111111111111111111111")) continue;
+    if (oraclePk == DEFAULT_PUBLICKEY) continue;
 
-    spdlog::info("ORACLE {}: {}", i, oraclePk);
+    spdlog::info("ORACLE {}: {}", i, oraclePk.toBase58());
   }
 
   spdlog::info("signerNonce: {}", group->signerNonce);

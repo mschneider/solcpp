@@ -1,11 +1,11 @@
 [requires]
-cpr/1.9.0
+cpr/1.7.2
 libsodium/1.0.18
 websocketpp/0.8.2
-nlohmann_json/3.11.2
-doctest/2.4.9
-openssl/3.0.5
-spdlog/1.10.0
+nlohmann_json/3.10.5
+doctest/2.4.8
+openssl/3.0.1
+spdlog/1.9.2
 
 [generators]
 cmake
