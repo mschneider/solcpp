@@ -234,7 +234,7 @@ void from_json(const json &j, AccountInfo<T> &info) {
 
   // cast
   info.data = T{};
-  memcpy(&info.data, decoded_data.c_str(), sizeof(T));
+  memcpy(&info.data, decoded_data.data(), sizeof(T));
 
   info.rentEpoch = j["rentEpoch"];
 }
@@ -312,7 +312,7 @@ static T fromFile(const std::string &path) {
   if (decoded.size() != sizeof(T))
     throw std::runtime_error("Invalid account data");
   T accountInfo{};
-  memcpy(&accountInfo, decoded.c_str(), sizeof(T));
+  memcpy(&accountInfo, decoded.data(), sizeof(T));
   return accountInfo;
 }
 
@@ -544,9 +544,8 @@ class Connection {
   }
 
   /**
-   * Returns account information for a list of pubKeys
-   * Returns a map of {pubKey : AccountInfo} for accounts that exist.
-   * Accounts that don't exist return a `null` result and are skipped
+   * Fetch all the account info for multiple accounts specified by an array of
+   * public keys
    */
   template <typename T>
   RpcResponseAndContext<std::vector<std::optional<AccountInfo<T>>>>

@@ -44,7 +44,8 @@ int main() {
   const auto timeoutBlockHeight =
       recentBlockHash.lastValidBlockHeight +
       mango_v3::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
-  while (true) {
+  uint8_t timeout = 15;  // add a 15 sec timeout
+  while (timeout > 0) {
     // Check if we are past validBlockHeight
     auto currentBlockHeight = connection.getBlockHeight("confirmed");
     if (timeoutBlockHeight <= currentBlockHeight) {
@@ -57,6 +58,7 @@ int main() {
         res.value().confirmationStatus == "finalized") {
       break;
     }
+    timeout--;
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 
