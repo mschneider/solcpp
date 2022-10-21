@@ -514,6 +514,9 @@ class Connection {
   getSignatureStatuses(const std::vector<std::string> &signatures,
                        bool searchTransactionHistory = false) const;
 
+  bool confirmTransaction(std::string transactionSignature,uint64_t timeout, std::string confirmLevel) const;
+
+
   /**
    * Fetch the current status of a signature
    */

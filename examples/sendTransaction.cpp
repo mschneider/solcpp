@@ -1,5 +1,7 @@
 #include <cpr/cpr.h>
 #include <spdlog/spdlog.h>
+#include <thread>
+#include <chrono>
 
 #include <chrono>
 #include <future>
