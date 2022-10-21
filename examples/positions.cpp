@@ -1,6 +1,7 @@
 #include <spdlog/spdlog.h>
 
 #include "MangoAccount.hpp"
+#include "solana.hpp"
 
 using json = nlohmann::json;
 
@@ -9,13 +10,22 @@ int main() {
   auto connection = solana::rpc::Connection(config.endpoint);
   const auto accountPubkey = "F3TTrgxjrkAHdS9zEidtwU5VXyvMgr5poii4HYatZheH";
   const auto& mangoAccountInfo =
-      connection.getAccountInfo<mango_v3::MangoAccountInfo>(accountPubkey);
+      connection
+          .getAccountInfo<mango_v3::MangoAccountInfo>(
+              solana::PublicKey::fromBase58(accountPubkey))
+          .value.value()
+          .data;
   mango_v3::MangoAccount mangoAccount =
       mango_v3::MangoAccount(mangoAccountInfo);
   auto openOrders = mangoAccount.loadOpenOrders(connection);
-  auto group = connection.getAccountInfo<mango_v3::MangoGroup>(config.group);
-  auto cache = connection.getAccountInfo<mango_v3::MangoCache>(
-      group.mangoCache.toBase58());
+  auto group = connection
+                   .getAccountInfo<mango_v3::MangoGroup>(
+                       solana::PublicKey::fromBase58(config.group))
+                   .value.value()
+                   .data;
+  auto cache = connection.getAccountInfo<mango_v3::MangoCache>(group.mangoCache)
+                   .value.value()
+                   .data;
   auto maintHealth =
       mangoAccount.getHealth(group, cache, mango_v3::HealthType::Maint);
   auto initHealth =

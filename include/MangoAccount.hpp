@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mango_v3.hpp"
+#include "solana.hpp"
 #include "utils.hpp"
 
 namespace mango_v3 {
@@ -12,36 +13,34 @@ struct MangoAccount {
     mangoAccountInfo = accountInfo_;
     // TODO: Call `loadOpenOrders()`
   }
-  explicit MangoAccount(const std::string& pubKey,
+  explicit MangoAccount(const solana::PublicKey& pubKey,
                         solana::rpc::Connection& connection) {
-    auto accountInfo_ = connection.getAccountInfo<MangoAccountInfo>(pubKey);
+    auto accountInfo_ =
+        connection.getAccountInfo<MangoAccountInfo>(pubKey).value.value().data;
     mangoAccountInfo = accountInfo_;
   }
   // Returns map(Address: OpenOrders) and sets this accounts
   // `spotOpenOrdersAccounts`
   auto loadOpenOrders(solana::rpc::Connection& connection) {
     // Filter only non-empty open orders
-    std::vector<std::string> filteredOpenOrders;
+    std::vector<solana::PublicKey> filteredOpenOrders;
     for (auto item : mangoAccountInfo.spotOpenOrders) {
       if (item == solana::PublicKey::empty()) continue;
-      filteredOpenOrders.emplace_back(item.toBase58());
+      filteredOpenOrders.emplace_back(item);
     }
     const auto accountsInfo =
-        connection.getMultipleAccounts<serum_v3::OpenOrders>(
-            filteredOpenOrders);
+        connection
+            .getMultipleAccountsInfo<serum_v3::OpenOrders>(filteredOpenOrders)
+            .value;
+    // clear spotOpenOrdersAccounts
     spotOpenOrdersAccounts.clear();
-    std::copy_if(
-        accountsInfo.begin(), accountsInfo.end(),
-        std::inserter(spotOpenOrdersAccounts, spotOpenOrdersAccounts.end()),
-        [](auto& accountInfo) {
-          auto isInitialiazed = (accountInfo.second.accountFlags &
-                                 serum_v3::AccountFlags::Initialized) ==
-                                serum_v3::AccountFlags::Initialized;
-          auto isOpenOrders = (accountInfo.second.accountFlags &
-                               serum_v3::AccountFlags::OpenOrders) ==
-                              serum_v3::AccountFlags::OpenOrders;
-          return (isInitialiazed && isOpenOrders);
-        });
+    // take out data from accountInfo
+    std::vector<serum_v3::OpenOrders> accountsInfoData;
+    auto index = 0;
+    for (const auto& accountInfo : accountsInfo) {
+      spotOpenOrdersAccounts[filteredOpenOrders[index].toBase58()] =
+          accountInfo.value().data;
+    }
     return spotOpenOrdersAccounts;
   }
 

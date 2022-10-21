@@ -1,5 +1,6 @@
 #include <chrono>
-#include <iostream>
+#include <cstdint>
+#include <ostream>
 #include <string>
 #include <thread>
 
@@ -30,17 +31,15 @@ TEST_CASE("Simulate & Send Transaction") {
   ///
   /// Test simulateTransaction
   ///
-
   const auto simulateRes = connection.simulateTransaction(keyPair, compiledTx);
   // consumed units should be greater than unity
-  CHECK_GT(simulateRes["unitsConsumed"], 0);
-  // logs should be an array
-  CHECK_EQ(simulateRes["logs"].is_array(), true);
+  CHECK_GT(simulateRes.unitsConsumed.value(), 0);
+  CHECK_FALSE(simulateRes.logs.value().empty());
+  CHECK_FALSE(simulateRes.accounts.has_value());
 
   ///
   /// Test sendTransaction
   ///
-
   const std::string transactionSignature =
       connection.sendTransaction(keyPair, compiledTx);
   // serialize transaction
@@ -57,14 +56,25 @@ TEST_CASE("Simulate & Send Transaction") {
 
 TEST_CASE("Request Airdrop") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
-  auto connection = solana::rpc::Connection(solana::DEVNET);
-
-  auto prev_sol = connection.getBalance(keyPair.publicKey);
-  auto result = connection.requestAirdrop(keyPair.publicKey, 1000000000);
-  std::this_thread::sleep_for(std::chrono::seconds(15));
-  auto new_sol = connection.getBalance(keyPair.publicKey);
-  // TODO: validate using confirmTransaction
-  CHECK_GT(new_sol["value"], prev_sol["value"]);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  // request Airdrop
+  const auto prev_sol = connection.getBalance(keyPair.publicKey);
+  const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
+  uint8_t timeout = 15;
+  // check signature status
+  // this is a temporary fix. This will be changed to the confirmTransaction
+  // function call once it gets implemented
+  while (timeout > 0) {
+    const auto res = connection.getSignatureStatus(signature, true).value;
+    if (res.has_value() && res.value().confirmationStatus == "finalized") {
+      break;
+    }
+    timeout--;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+  // check if balance is updated after status is finalized
+  const auto new_sol = connection.getBalance(keyPair.publicKey);
+  CHECK_GT(new_sol, prev_sol);
 }
 
 TEST_CASE("base58 decode & encode") {
@@ -162,11 +172,14 @@ TEST_CASE("Test getLatestBlock") {
   CHECK_GT(blockHash.lastValidBlockHeight, 0);
 }
 TEST_CASE("MangoAccount is correctly created") {
-  const std::string& key = "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW";
+  const auto key = solana::PublicKey::fromBase58(
+      "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
   auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
   // Test prefetched account info
-  auto mangoAccountInfo =
-      connection.getAccountInfo<mango_v3::MangoAccountInfo>(key);
+  const auto mangoAccountInfo =
+      connection.getAccountInfo<mango_v3::MangoAccountInfo>(key)
+          .value.value()
+          .data;
   const auto& mangoAccount = mango_v3::MangoAccount(mangoAccountInfo);
   CHECK(!(mangoAccount.mangoAccountInfo.owner == solana::PublicKey::empty()));
   // Test fetching account info in construction
@@ -174,33 +187,32 @@ TEST_CASE("MangoAccount is correctly created") {
   const auto& account = mango_v3::MangoAccount(key, connection);
   CHECK(!(account.mangoAccountInfo.owner == solana::PublicKey::empty()));
 }
-TEST_CASE("Test getMultipleAccounts") {
+TEST_CASE("Test getMultipleAccountsInfo") {
   // Existing accounts
-  std::vector<std::string> accounts{
-      "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW",
-      "DRUZRfLQtki4ZYvRXhi5yGmyqCf6iMfTzxtBpxo6rbHu",
+  std::vector<solana::PublicKey> accounts{
+      solana::PublicKey::fromBase58(
+          "9aWg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW"),
+      solana::PublicKey::fromBase58(
+          "DRUZRfLQtki4ZYvRXhi5yGmyqCf6iMfTzxtBpxo6rbHu"),
   };
-  auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
-  auto accountInfoMap =
-      connection.getMultipleAccounts<mango_v3::MangoAccountInfo>(accounts);
-  REQUIRE_EQ(accountInfoMap.size(), accounts.size());
-  // Check results have the initial pubKeys
-  auto it = accountInfoMap.find(accounts[0]);
-  CHECK_NE(it, accountInfoMap.end());
-  it = accountInfoMap.find(accounts[1]);
-  CHECK_NE(it, accountInfoMap.end());
+  const auto connection = solana::rpc::Connection(mango_v3::DEVNET.endpoint);
+  auto accountInfos =
+      connection.getMultipleAccountsInfo<mango_v3::MangoAccountInfo>(accounts)
+          .value;
+  // query and result accounts should be same in number
+  CHECK_EQ(accountInfos.size(), accounts.size());
   // Check AccountInfo is non-empty
-  for (const auto& [pubKey, accountInfo] : accountInfoMap) {
-    auto owner = accountInfo.owner;
-    CHECK(!(owner == solana::PublicKey::empty()));
+  for (const auto& accountInfo : accountInfos) {
+    CHECK(!(accountInfo.value().owner == solana::PublicKey::empty()));
   }
   // Introduce an account that doesn't exist
-  accounts.push_back("9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
-  accountInfoMap =
-      connection.getMultipleAccounts<mango_v3::MangoAccountInfo>(accounts);
-  REQUIRE_NE(accountInfoMap.size(), accounts.size());
-  it = accountInfoMap.find("9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW");
-  CHECK_EQ(it, accountInfoMap.end());
+  accounts.push_back(solana::PublicKey::fromBase58(
+      "9aZg1jhgRzGRmYWLbTrorCFE7BQbaz2dE5nYKmqeLGCW"));
+  accountInfos =
+      connection.getMultipleAccountsInfo<mango_v3::MangoAccountInfo>(accounts)
+          .value;
+  CHECK_EQ(accountInfos.size(), accounts.size());
+  // TODO: check for null pub key
 }
 TEST_CASE("Empty MangoAccount") {
   std::string resources_dir = FIXTURES_DIR;
