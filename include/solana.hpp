@@ -234,7 +234,7 @@ void from_json(const json &j, AccountInfo<T> &info) {
 
   // cast
   info.data = T{};
-  memcpy(&info.data, decoded_data.c_str(), sizeof(T));
+  memcpy(&info.data, decoded_data.data(), sizeof(T));
 
   info.rentEpoch = j["rentEpoch"];
 }
@@ -312,7 +312,7 @@ static T fromFile(const std::string &path) {
   if (decoded.size() != sizeof(T))
     throw std::runtime_error("Invalid account data");
   T accountInfo{};
-  memcpy(&accountInfo, decoded.c_str(), sizeof(T));
+  memcpy(&accountInfo, decoded.data(), sizeof(T));
   return accountInfo;
 }
 
