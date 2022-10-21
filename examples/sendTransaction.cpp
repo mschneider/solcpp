@@ -42,8 +42,8 @@ int main() {
   const auto timeoutBlockHeight =
       recentBlockHash.lastValidBlockHeight +
       mango_v3::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
-      uint8_t timeout=15;// add a 15 sec timeout
-  while (timeout>0) {
+  uint8_t timeout = 15;  // add a 15 sec timeout
+  while (timeout > 0) {
     // Check if we are past validBlockHeight
     auto currentBlockHeight = connection.getBlockHeight("confirmed");
     if (timeoutBlockHeight <= currentBlockHeight) {
