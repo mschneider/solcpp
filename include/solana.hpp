@@ -542,9 +542,8 @@ class Connection {
   }
 
   /**
-   * Returns account information for a list of pubKeys
-   * Returns a map of {pubKey : AccountInfo} for accounts that exist.
-   * Accounts that don't exist return a `null` result and are skipped
+   * Fetch all the account info for multiple accounts specified by an array of
+   * public keys
    */
   template <typename T>
   RpcResponseAndContext<std::vector<std::optional<AccountInfo<T>>>>
