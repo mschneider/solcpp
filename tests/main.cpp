@@ -1,11 +1,4 @@
-<<<<<<< HEAD
-
 #include <iostream>
-=======
-#include <chrono>
-#include <cstdint>
-#include <ostream>
->>>>>>> 5c8de2d (Organize Repo #43 (#48))
 #include <string>
 
 
@@ -65,12 +58,11 @@ TEST_CASE("Request Airdrop") {
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
-  
+
   bool confirmation=false;
   while(!confirmation){
     confirmation=connection.confirmTransaction(signature,15,"finalized");
   }
-  
   // check if balance is updated after status is finalized
   const auto new_sol = connection.getBalance(keyPair.publicKey);
   CHECK_GT(new_sol, prev_sol);
