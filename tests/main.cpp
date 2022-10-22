@@ -54,16 +54,14 @@ TEST_CASE("Simulate & Send Transaction") {
   CHECK_EQ(transactionSignature, b58Sig);
 }
 
-TEST_CASE("Request Airdrop") {
+TEST_CASE("Request Airdrop & Confirm Transaction") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
   uint8_t timeout = 15;
-  // check signature status
-  // this is a temporary fix. This will be changed to the confirmTransaction
-  // function call once it gets implemented
+  // using confirmTransaction to check if the airdrop went through
   bool confirmation = false;
   while (!confirmation) {
     confirmation = connection.confirmTransaction(signature, 15, "finalized");
