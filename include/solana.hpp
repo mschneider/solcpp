@@ -510,7 +510,7 @@ class Connection {
   /**
    * Returns of the current Transaction has been confirmed or not
    */
-  bool confirmTransaction(std::string transactionSignature, uint8_t timeout,
+  bool confirmTransaction(std::string transactionSignature,
                           std::string confirmLevel) const;
 
   /**
