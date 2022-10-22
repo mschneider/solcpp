@@ -63,7 +63,7 @@ TEST_CASE("Request Airdrop & Confirm Transaction") {
   uint8_t timeout = 15;
   // using confirmTransaction to check if the airdrop went through
   bool confirmed = false;
-  while (timeout>0 && !confirmed) {
+  while (timeout > 0 && !confirmed) {
     confirmed = connection.confirmTransaction(signature, "finalized");
     timeout--;
     std::this_thread::sleep_for(std::chrono::seconds(1));

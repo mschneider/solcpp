@@ -497,10 +497,9 @@ Connection::getSignatureStatus(const std::string &signature,
 
 bool Connection::confirmTransaction(std::string transactionSignature,
                                     std::string confirmLevel) const {
-  
-    const auto res = getSignatureStatus(transactionSignature, true).value;
-    if (res.has_value() && res.value().confirmationStatus == confirmLevel)
-      return true;
+  const auto res = getSignatureStatus(transactionSignature, true).value;
+  if (res.has_value() && res.value().confirmationStatus == confirmLevel)
+    return true;
   return false;
 }
 
