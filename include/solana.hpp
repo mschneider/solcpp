@@ -507,7 +507,7 @@ class Connection {
    */
   uint64_t getBlockHeight(const std::string &commitment = "finalized") const;
 
-  bool confirmTransaction(std::string transactionSignature, uint64_t timeout,
+  bool confirmTransaction(std::string transactionSignature, uint8_t timeout,
                           std::string confirmLevel) const;
 
   /**
