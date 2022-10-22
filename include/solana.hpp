@@ -507,7 +507,8 @@ class Connection {
    */
   uint64_t getBlockHeight(const std::string &commitment = "finalized") const;
 
-  bool confirmTransaction(std::string transactionSignature,uint64_t timeout, std::string confirmLevel) const;
+  bool confirmTransaction(std::string transactionSignature, uint64_t timeout,
+                          std::string confirmLevel) const;
 
   /**
    * Fetch the current statuses of a batch of signatures
@@ -560,8 +561,6 @@ class Connection {
 
     return {res["context"], res["value"]};
   }
-
-
 
  private:
   const std::string &rpc_url_;

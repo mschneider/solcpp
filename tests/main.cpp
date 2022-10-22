@@ -64,9 +64,9 @@ TEST_CASE("Request Airdrop") {
   // check signature status
   // this is a temporary fix. This will be changed to the confirmTransaction
   // function call once it gets implemented
-   bool confirmation=false;
-  while(!confirmation){
-    confirmation=connection.confirmTransaction(signature,15,"finalized");
+  bool confirmation = false;
+  while (!confirmation) {
+    confirmation = connection.confirmTransaction(signature, 15, "finalized");
   }
   // check if balance is updated after status is finalized
   const auto new_sol = connection.getBalance(keyPair.publicKey);
