@@ -69,6 +69,13 @@ Keypair Keypair::fromFile(const std::string &path) {
 }
 
 ///
+/// Version
+void from_json(const json &j, Version &version) {
+  version.feature_set = j["feature-set"];
+  version.solana_core = j["solana-core"];
+}
+
+///
 /// AccountMeta
 bool AccountMeta::operator<(const AccountMeta &other) const {
   return (isSigner > other.isSigner) || (isWritable > other.isWritable);
@@ -493,6 +500,22 @@ Connection::getSignatureStatus(const std::string &signature,
                                bool searchTransactionHistory) const {
   const auto res = getSignatureStatuses({signature}, searchTransactionHistory);
   return {res.context, res.value[0]};
+}
+
+Version Connection::getVersion() const {
+  // create request
+  json params = {};
+  const json reqJson = jsonRequest("getVersion", params);
+  // send jsonRpc request
+  return sendJsonRpcRequest(reqJson);
+}
+
+uint64_t Connection::getFirstAvailableBlock() const {
+  // create request
+  json params = {};
+  const json reqJson = jsonRequest("getFirstAvailableBlock", params);
+  // send jsonRpc request
+  return sendJsonRpcRequest(reqJson);
 }
 
 }  // namespace rpc

@@ -707,3 +707,19 @@ TEST_CASE("account9") {
   CHECK_EQ(leverage.to_double(), 3.919442838288937);
   CHECK_FALSE(mangoAccount.isLiquidatable(mangoGroup, mangoCache));
 }
+
+TEST_CASE("getVersion") {
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  // get Version
+  const auto version = connection.getVersion();
+  CHECK_GT(version.solana_core.length(), 0);
+}
+
+TEST_CASE("getFirstAvailableBlock") {
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  // get Version
+  const auto firstAvailableBlock = connection.getFirstAvailableBlock();
+  CHECK_GT(firstAvailableBlock, 0);
+}
