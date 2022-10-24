@@ -503,14 +503,18 @@ Connection::getSignatureStatus(const std::string &signature,
 }
 
 Version Connection::getVersion() const {
+  // create request
   json params = {};
   const json reqJson = jsonRequest("getVersion", params);
+  // send jsonRpc request
   return sendJsonRpcRequest(reqJson);
 }
 
 uint64_t Connection::getFirstAvailableBlock() {
+  // create request
   json params = {};
   const json reqJson = jsonRequest("getFirstAvailableBlock", params);
+  // send jsonRpc request
   return sendJsonRpcRequest(reqJson);
 }
 
