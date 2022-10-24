@@ -22,6 +22,8 @@ const std::string MEMO_PROGRAM_ID =
     "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
 const std::string MAINNET_BETA = "https://api.mainnet-beta.solana.com";
 const std::string DEVNET = "https://api.devnet.solana.com";
+const int MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION = 152;
+
 
 struct PublicKey {
   static const auto SIZE = crypto_sign_PUBLICKEYBYTES;

@@ -63,13 +63,9 @@ TEST_CASE("Request Airdrop & Confirm Transaction") {
   uint8_t timeout = 15;
   // using confirmTransaction to check if the airdrop went through
   bool confirmed = false;
-  while (timeout > 0 && !confirmed) {
-    confirmed = connection.confirmTransaction(signature, "finalized");
-    timeout--;
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
-  // check if balance is updated after status is finalized
+  confirmed = connection.confirmTransaction(signature, "finalized");
   const auto new_sol = connection.getBalance(keyPair.publicKey);
+  CHECK_EQ(confirmed, true);
   CHECK_GT(new_sol, prev_sol);
 }
 

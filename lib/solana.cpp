@@ -1,12 +1,14 @@
 #include <cpr/cpr.h>
 #include <sodium.h>
 
+#include <chrono>
 #include <cstdint>
 #include <iterator>
 #include <optional>
 #include <ostream>
 #include <solana.hpp>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "base64.hpp"
@@ -497,9 +499,19 @@ Connection::getSignatureStatus(const std::string &signature,
 
 bool Connection::confirmTransaction(std::string transactionSignature,
                                     std::string confirmLevel) const {
-  const auto res = getSignatureStatus(transactionSignature, true).value;
-  if (res.has_value() && res.value().confirmationStatus == confirmLevel)
-    return true;
+  const auto timeoutBlockheight =
+      getLatestBlockhash(confirmLevel).lastValidBlockHeight +
+      solana::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
+  auto currentBlockheight = getBlockHeight(confirmLevel);
+
+  while(timeoutBlockheight > currentBlockheight) {
+    const auto res = getSignatureStatus(transactionSignature, true);
+    if (res.value.has_value() && res.value.value().confirmationStatus==confirmLevel) {
+      return true;
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    currentBlockheight=getBlockHeight(confirmLevel);
+  }
   return false;
 }
 
