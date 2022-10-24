@@ -12,7 +12,7 @@ jobs:
       matrix:
         config:
           - { os: "ubuntu-18.04", profile: "linux" }
-          - { os: "macos-12", profile: "macos" }
+          - { os: "macos-11", profile: "macos" }
     steps:
       - uses: actions/checkout@v2
 
