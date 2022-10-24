@@ -72,7 +72,7 @@ Keypair Keypair::fromFile(const std::string &path) {
 /// Version
 void from_json(const json &j, Version &version) {
   version.feature_set = j["feature-set"];
-  version.solana_core = j["solana_core"];
+  version.solana_core = j["solana-core"];
 }
 
 ///
