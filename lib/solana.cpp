@@ -510,7 +510,7 @@ Version Connection::getVersion() const {
   return sendJsonRpcRequest(reqJson);
 }
 
-uint64_t Connection::getFirstAvailableBlock() {
+uint64_t Connection::getFirstAvailableBlock() const {
   // create request
   json params = {};
   const json reqJson = jsonRequest("getFirstAvailableBlock", params);

@@ -499,9 +499,9 @@ class Connection {
 
   /**
    * Returns the slot of the lowest confirmed block that has not been purged
-   *from the ledger
+   * from the ledger
    **/
-  uint64_t getFirstAvailableBlock();
+  uint64_t getFirstAvailableBlock() const;
 
   /**
    * Fetch the balance for the specified public key
