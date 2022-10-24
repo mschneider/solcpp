@@ -68,10 +68,12 @@ struct Version {
   uint64_t feature_set;
   std::string solana_core;
 };
-void from_json(const json &j, Version &version) {
-  version.feature_set = j["feature-set"];
-  version.solana_core = j["solana_core"];
-}
+
+/**
+ * Version from json
+ */
+void from_json(const json &j, Version &version);
+
 /**
  * Account metadata used to define instructions
  */
