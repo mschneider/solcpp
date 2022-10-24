@@ -4,8 +4,8 @@ os_build=Macos
 arch=x86_64
 arch_build=x86_64
 compiler=apple-clang
-compiler.version=14.0
-compiler.libcxx=libstdc++
+compiler.version=14
+compiler.libcxx=libc++
 compiler.cppstd=11
 build_type=Release
 [options]
