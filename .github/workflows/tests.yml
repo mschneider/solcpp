@@ -12,6 +12,7 @@ jobs:
       matrix:
         config:
           - { os: "ubuntu-latest", profile: "linux" }
+          - { os: "macos-latest", profile: "macos" }
     steps:
       - uses: actions/checkout@v2
 
@@ -19,7 +20,7 @@ jobs:
         uses: turtlebrowser/get-conan@v1.1
 
       - name: Create default profile
-        run: conan profile new default --detect --force && conan profile update settings.compiler.libcxx=libstdc++11 default
+        run: conan profile new default --detect --force
 
       - uses: actions/cache@v2
         with:
@@ -27,6 +28,11 @@ jobs:
           key: ${{ runner.os }}-conan-${{ hashFiles('**/conanfile.txt') }}
           restore-keys: |
             ${{ runner.os }}-conan-
+      - name: Override default profile
+        run:
+          rsync --checksum
+          ${{github.workspace}}/conan_profile.${{matrix.config.profile}}
+          ~/.conan/profiles/default
 
       - name: Install dependencies
         run:
