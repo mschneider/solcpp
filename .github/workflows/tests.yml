@@ -12,7 +12,6 @@ jobs:
       matrix:
         config:
           - { os: "ubuntu-latest", profile: "linux" }
-          - { os: "macos-latest", profile: "macos" }
     steps:
       - uses: actions/checkout@v2
 
