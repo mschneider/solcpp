@@ -1,5 +1,5 @@
 [requires]
-cpr/1.7.2
+cpr/1.9.0
 libsodium/1.0.18
 websocketpp/0.8.2
 nlohmann_json/3.10.5
