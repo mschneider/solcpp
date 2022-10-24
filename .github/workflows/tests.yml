@@ -20,7 +20,7 @@ jobs:
         uses: turtlebrowser/get-conan@v1.1
 
       - name: Create default profile
-        run: conan profile new default --detect --force && conan profile update settings.compiler.version=12 default
+        run: conan profile new default --detect --force && conan profile update settings.compiler.libcxx=libstdc++11 default
 
       - uses: actions/cache@v2
         with:
