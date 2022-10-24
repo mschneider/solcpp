@@ -64,6 +64,14 @@ struct Keypair {
   static Keypair fromFile(const std::string &path);
 };
 
+struct Version {
+  uint64_t feature_set;
+  std::string solana_core;
+};
+void from_json(const json &j, Version &version) {
+  version.feature_set = j["feature-set"];
+  version.solana_core = j["solana_core"];
+}
 /**
  * Account metadata used to define instructions
  */
@@ -481,6 +489,17 @@ class Connection {
    * Request an allocation of lamports to the specified address
    */
   std::string requestAirdrop(const PublicKey &pubkey, uint64_t lamports) const;
+
+  /**
+   * Returns the current solana versions running on the node
+   **/
+  Version getVersion() const;
+
+  /**
+   * Returns the slot of the lowest confirmed block that has not been purged
+   *from the ledger
+   **/
+  uint64_t getFirstAvailableBlock();
 
   /**
    * Fetch the balance for the specified public key

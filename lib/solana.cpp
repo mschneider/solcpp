@@ -495,6 +495,18 @@ Connection::getSignatureStatus(const std::string &signature,
   return {res.context, res.value[0]};
 }
 
+Version Connection::getVersion() const {
+  json params = {};
+  const json reqJson = jsonRequest("getVersion", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+uint64_t Connection::getFirstAvailableBlock() {
+  json params = {};
+  const json reqJson = jsonRequest("getFirstAvailableBlock", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
 }  // namespace rpc
 
 namespace subscription {}  // namespace subscription
