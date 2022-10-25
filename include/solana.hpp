@@ -113,6 +113,31 @@ struct TransactionReturnData {
  */
 void from_json(const json &j, TransactionReturnData &data);
 
+/**
+ * The level of commitment desired when querying state
+ */
+enum Commitment {
+  /**
+   * Query the most recent block which has reached 1 confirmation by the
+   * connected node
+   */
+  PROCESSED,
+  /**
+   * Query the most recent block which has reached 1 confirmation by the cluster
+   */
+  CONFIRMED,
+  /**
+   * Query the most recent block which has been finalized by the cluster
+   */
+  FINALIZED,
+};
+
+NLOHMANN_JSON_SERIALIZE_ENUM(Commitment, {
+                                             {PROCESSED, "processed"},
+                                             {CONFIRMED, "confirmed"},
+                                             {FINALIZED, "finalized"},
+                                         })
+
 struct SimulatedTransactionResponse {
   /**
    * Error if transaction failed, null if transaction succeeded.
@@ -329,7 +354,7 @@ struct SendTransactionConfig {
   /**
    * Commitment level to use for preflight (default: "finalized").
    */
-  const std::optional<std::string> preflightCommitment = std::nullopt;
+  const std::optional<Commitment> preflightCommitment = std::nullopt;
   /**
    * Encoding used for the transaction data. Either "base58" (slow, DEPRECATED),
    * or "base64". (default: "base64", rpc default: "base58").
@@ -363,7 +388,7 @@ struct SimulateTransactionConfig {
   /**
    * Commitment level to simulate the transaction at (default: "finalized").
    */
-  const std::optional<std::string> commitment = std::nullopt;
+  const std::optional<Commitment> commitment = std::nullopt;
   /**
    *if true the transaction recent blockhash will be replaced with the most
    *recent blockhash. (default: false, conflicts with sigVerify)
@@ -428,8 +453,7 @@ class Connection {
    * Initialize the rpc url and commitment levels to use.
    * Initialize sodium
    */
-  Connection(const std::string &rpc_url = MAINNET_BETA,
-             const std::string &commitment = "finalized");
+  Connection(const std::string &rpc_url = MAINNET_BETA);
   /*
    * send rpc request
    * @return result from response
@@ -444,7 +468,7 @@ class Connection {
   [[deprecated]] std::string signAndSendTransaction(
       const Keypair &keypair, const CompiledTransaction &tx,
       bool skipPreflight = false,
-      const std::string &preflightCommitment = "finalized") const;
+      const Commitment &preflightCommitment = Commitment::FINALIZED) const;
 
   /**
    * Sign and send a transaction
@@ -496,18 +520,19 @@ class Connection {
    * @return Blockhash
    */
   [[deprecated]] PublicKey getRecentBlockhash(
-      const std::string &commitment = "finalized") const;
+      const Commitment &commitment = Commitment::FINALIZED) const;
 
   /**
    * Fetch the latest blockhash from the cluster
    */
   Blockhash getLatestBlockhash(
-      const std::string &commitment = "finalized") const;
+      const Commitment &commitment = Commitment::FINALIZED) const;
 
   /**
    * Returns the current block height of the node
    */
-  uint64_t getBlockHeight(const std::string &commitment = "finalized") const;
+  uint64_t getBlockHeight(
+      const Commitment &commitment = Commitment::FINALIZED) const;
 
   /**
    * Returns of the current Transaction has been confirmed or not
@@ -569,7 +594,6 @@ class Connection {
 
  private:
   const std::string &rpc_url_;
-  const std::string &commitment_;
 };
 
 ///
