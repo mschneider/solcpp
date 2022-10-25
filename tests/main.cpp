@@ -714,7 +714,8 @@ TEST_CASE("getVersion") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto version = connection.getVersion();
   boost::regex expression{"\\d+.\\d+.\\d+"};
-  CHECK_EQ(boost::regex_match(version.solana_core, expression), true);
+  CHECK_EQ(boost::regex_match(version.solana_core, expression), true);   
+  CHECK_GT(version.feature_set, 0);                                      
 }
 
 TEST_CASE("getFirstAvailableBlock") {
