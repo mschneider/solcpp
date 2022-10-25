@@ -369,7 +369,7 @@ json Connection::sendJsonRpcRequest(const json &body) const {
 
 std::string Connection::signAndSendTransaction(
     const Keypair &keypair, const CompiledTransaction &tx, bool skipPreflight,
-    const std::string &preflightCommitment) const {
+    const Commitment &preflightCommitment) const {
   const SendTransactionConfig config{skipPreflight, preflightCommitment};
   return sendTransaction(keypair, tx, config);
 }
@@ -432,7 +432,7 @@ uint64_t Connection::getBalance(const PublicKey &pubkey) const {
   return sendJsonRpcRequest(reqJson)["value"];
 }
 
-PublicKey Connection::getRecentBlockhash(const std::string &commitment) const {
+PublicKey Connection::getRecentBlockhash(const Commitment &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getRecentBlockhash", params);
@@ -441,7 +441,7 @@ PublicKey Connection::getRecentBlockhash(const std::string &commitment) const {
       sendJsonRpcRequest(reqJson)["value"]["blockhash"]);
 }
 
-Blockhash Connection::getLatestBlockhash(const std::string &commitment) const {
+Blockhash Connection::getLatestBlockhash(const Commitment &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getLatestBlockhash", params);
@@ -455,7 +455,7 @@ Blockhash Connection::getLatestBlockhash(const std::string &commitment) const {
   return {blockhash, lastValidBlockHeight};
 }
 
-uint64_t Connection::getBlockHeight(const std::string &commitment) const {
+uint64_t Connection::getBlockHeight(const Commitment &commitment) const {
   // create request
   const json params = {{{"commitment", commitment}}};
   const json reqJson = jsonRequest("getBlockHeight", params);
