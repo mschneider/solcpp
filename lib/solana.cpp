@@ -340,9 +340,8 @@ void to_json(json &j, const GetAccountInfoConfig &config) {
 
 ///
 /// Connection
-Connection::Connection(const std::string &rpc_url,
-                       const std::string &commitment)
-    : rpc_url_(std::move(rpc_url)), commitment_(std::move(commitment)) {
+Connection::Connection(const std::string &rpc_url)
+    : rpc_url_(std::move(rpc_url)) {
   auto sodium_result = sodium_init();
   if (sodium_result < -1)
     throw std::runtime_error("Error initializing sodium: " +

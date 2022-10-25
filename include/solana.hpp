@@ -438,8 +438,7 @@ class Connection {
    * Initialize the rpc url and commitment levels to use.
    * Initialize sodium
    */
-  Connection(const std::string &rpc_url = MAINNET_BETA,
-             const std::string &commitment = "finalized");
+  Connection(const std::string &rpc_url = MAINNET_BETA);
   /*
    * send rpc request
    * @return result from response
@@ -574,7 +573,6 @@ class Connection {
 
  private:
   const std::string &rpc_url_;
-  const std::string &commitment_;
 };
 
 ///
