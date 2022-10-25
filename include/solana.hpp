@@ -180,7 +180,7 @@ struct SignatureStatus {
   std::optional<std::string> err = std::nullopt;
   /** cluster confirmation status, if data available. Possible responses:
    * `processed`, `confirmed`, `finalized` */
-  std::string confirmationStatus;
+  Commitment confirmationStatus;
 };
 
 /**
@@ -538,7 +538,7 @@ class Connection {
    * Returns of the current Transaction has been confirmed or not
    */
   bool confirmTransaction(std::string transactionSignature,
-                          std::string confirmLevel) const;
+                          Commitment confirmLevel) const;
 
   /**
    * Fetch the current statuses of a batch of signatures

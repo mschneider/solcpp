@@ -63,7 +63,8 @@ TEST_CASE("Request Airdrop & Confirm Transaction") {
   uint8_t timeout = 15;
   // using confirmTransaction to check if the airdrop went through
   bool confirmed = false;
-  confirmed = connection.confirmTransaction(signature, "finalized");
+  confirmed =
+      connection.confirmTransaction(signature, solana::Commitment::FINALIZED);
   const auto new_sol = connection.getBalance(keyPair.publicKey);
   CHECK_EQ(confirmed, true);
   CHECK_GT(new_sol, prev_sol);

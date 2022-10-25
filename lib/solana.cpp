@@ -497,15 +497,15 @@ Connection::getSignatureStatus(const std::string &signature,
 }
 
 bool Connection::confirmTransaction(std::string transactionSignature,
-                                    std::string confirmLevel) const {
+                                    Commitment confirmLevel) const {
   const auto timeoutBlockheight =
       getLatestBlockhash(confirmLevel).lastValidBlockHeight +
       solana::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
   auto currentBlockheight = getBlockHeight(confirmLevel);
 
   while(timeoutBlockheight > currentBlockheight) {
-    const auto res = getSignatureStatus(transactionSignature, true);
-    if (res.value.has_value() && res.value.value().confirmationStatus==confirmLevel) {
+    const auto res = getSignatureStatus(transactionSignature, true).value;
+    if (res.has_value() && res.value().confirmationStatus==confirmLevel) {
       return true;
     }
     std::this_thread::sleep_for(std::chrono::seconds(1));
