@@ -12,12 +12,12 @@ jobs:
       matrix:
         config:
           - { os: "ubuntu-18.04", profile: "linux" }
-          - { os: "macos-latest", profile: "macos" }
+          - { os: "macos-11", profile: "macos" }
     steps:
       - uses: actions/checkout@v2
 
       - name: Get Conan
-        uses: turtlebrowser/get-conan@v1.0
+        uses: turtlebrowser/get-conan@v1.1
 
       - name: Create default profile
         run: conan profile new default --detect --force
@@ -37,8 +37,7 @@ jobs:
       - name: Install dependencies
         run:
           conan install . -s build_type=Release
-          --install-folder=${{github.workspace}}/build --build=missing -o:h
-          boost:without_fiber=True -o:h boost:without_python=True
+          --install-folder=${{github.workspace}}/build --build=missing
 
       - name: Configure CMake
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
