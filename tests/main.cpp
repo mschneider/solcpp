@@ -1,3 +1,4 @@
+#include <boost/regex.hpp>
 #include <chrono>
 #include <cstdint>
 #include <ostream>
@@ -711,15 +712,14 @@ TEST_CASE("account9") {
 TEST_CASE("getVersion") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  // get Version
   const auto version = connection.getVersion();
-  CHECK_GT(version.solana_core.length(), 0);
+  boost::regex expression{"\\d+.\\d+.\\d+"};
+  CHECK_EQ(boost::regex_match(version.solana_core, expression), true);
 }
 
 TEST_CASE("getFirstAvailableBlock") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  // get Version
   const auto firstAvailableBlock = connection.getFirstAvailableBlock();
   CHECK_GT(firstAvailableBlock, 0);
 }
