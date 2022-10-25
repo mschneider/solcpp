@@ -113,20 +113,20 @@ void from_json(const json &j, TransactionReturnData &data);
 
 /**
  * The level of commitment desired when querying state
- * <pre>
- *  'processed': Query the most recent block which has reached 1 confirmation by
- * the connected node
- *
- *  'confirmed': Query the most recent block which has reached 1 confirmation by
- * the cluster
- *
- *  'finalized': Query the most recent block which has been finalized by the
- * cluster
- * </pre>
  */
 enum Commitment {
+  /**
+   * Query the most recent block which has reached 1 confirmation by the
+   * connected node
+   */
   PROCESSED,
+  /**
+   * Query the most recent block which has reached 1 confirmation by the cluster
+   */
   CONFIRMED,
+  /**
+   * Query the most recent block which has been finalized by the cluster
+   */
   FINALIZED,
 };
 
