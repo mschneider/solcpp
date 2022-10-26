@@ -24,7 +24,6 @@ const std::string MAINNET_BETA = "https://api.mainnet-beta.solana.com";
 const std::string DEVNET = "https://api.devnet.solana.com";
 const int MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION = 152;
 
-
 struct PublicKey {
   static const auto SIZE = crypto_sign_PUBLICKEYBYTES;
   typedef std::array<uint8_t, SIZE> array_t;
@@ -537,7 +536,7 @@ class Connection {
   /**
    * Returns of the current Transaction has been confirmed or not
    */
-  bool confirmTransaction(std::string transactionSignature,
+  bool confirmTransaction(std::string transactionSignature, uint8_t timeout,
                           Commitment confirmLevel) const;
 
   /**
