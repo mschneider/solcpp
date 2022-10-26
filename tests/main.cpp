@@ -60,7 +60,7 @@ TEST_CASE("Request Airdrop & Confirm Transaction") {
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
-  uint8_t timeout = 15;
+  uint8_t timeout = 140;
   // using confirmTransaction to check if the airdrop went through
   bool confirmed = false;
   confirmed =
