@@ -536,8 +536,8 @@ class Connection {
   /**
    * Returns of the current Transaction has been confirmed or not
    */
-  bool confirmTransaction(std::string transactionSignature, uint8_t timeout,
-                          Commitment confirmLevel) const;
+  bool confirmTransaction(std::string transactionSignature,
+                          Commitment confirmLevel, uint8_t timeout=200) const;
 
   /**
    * Fetch the current statuses of a batch of signatures

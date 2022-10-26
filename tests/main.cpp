@@ -64,7 +64,7 @@ TEST_CASE("Request Airdrop & Confirm Transaction") {
   // using confirmTransaction to check if the airdrop went through
   bool confirmed = false;
   confirmed =
-      connection.confirmTransaction(signature,15, solana::Commitment::FINALIZED);
+      connection.confirmTransaction(signature, solana::Commitment::FINALIZED);
   const auto new_sol = connection.getBalance(keyPair.publicKey);
   CHECK_EQ(confirmed, true);
   CHECK_GT(new_sol, prev_sol);
