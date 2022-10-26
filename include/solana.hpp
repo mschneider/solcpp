@@ -64,6 +64,16 @@ struct Keypair {
   static Keypair fromFile(const std::string &path);
 };
 
+struct Version {
+  uint64_t feature_set;
+  std::string solana_core;
+};
+
+/**
+ * Version from json
+ */
+void from_json(const json &j, Version &version);
+
 /**
  * Account metadata used to define instructions
  */
@@ -538,6 +548,17 @@ class Connection {
   RpcResponseAndContext<std::vector<std::optional<SignatureStatus>>>
   getSignatureStatuses(const std::vector<std::string> &signatures,
                        bool searchTransactionHistory = false) const;
+
+  /**
+   * Returns the current solana versions running on the node
+   **/
+  Version getVersion() const;
+
+  /**
+   * Returns the slot of the lowest confirmed block that has not been purged
+   * from the ledger
+   **/
+  uint64_t getFirstAvailableBlock() const;
 
   /**
    * Fetch the current status of a signature
