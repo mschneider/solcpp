@@ -44,7 +44,7 @@ int main() {
       mango_v3::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
   bool confirmed = false;
   confirmed =
-      connection.confirmTransaction(b58Sig,140, solana::Commitment::FINALIZED);
+      connection.confirmTransaction(b58Sig, solana::Commitment::FINALIZED,140);
   if (confirmed) return EXIT_SUCCESS;
 
   return EXIT_FAILURE;
