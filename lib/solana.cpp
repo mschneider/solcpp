@@ -505,7 +505,7 @@ Connection::getSignatureStatus(const std::string &signature,
 
 bool Connection::confirmTransaction(std::string transactionSignature,
                                     Commitment confirmLevel,
-                                    uint8_t timeout) const {
+                                    uint16_t timeout) const {
   const auto timeoutBlockheight =
       getLatestBlockhash(confirmLevel).lastValidBlockHeight +
       solana::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
