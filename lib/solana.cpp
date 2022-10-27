@@ -503,14 +503,14 @@ Connection::getSignatureStatus(const std::string &signature,
   return {res.context, res.value[0]};
 }
 
-
-bool Connection::confirmTransaction(std::string transactionSignature, Commitment confirmLevel,
+bool Connection::confirmTransaction(std::string transactionSignature,
+                                    Commitment confirmLevel,
                                     uint8_t timeout) const {
   const auto timeoutBlockheight =
       getLatestBlockhash(confirmLevel).lastValidBlockHeight +
       solana::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
   auto currentBlockheight = getBlockHeight(confirmLevel);
-  timeout = timeout * 2;//since we are checking every 500ms
+  timeout = timeout * 2;  // since we are checking every 500ms
   while (timeout > 0) {
     const auto res = getSignatureStatus(transactionSignature, true).value;
     if (timeoutBlockheight <= currentBlockheight)
@@ -523,6 +523,7 @@ bool Connection::confirmTransaction(std::string transactionSignature, Commitment
     timeout--;
   }
   return false;
+}
 
 Version Connection::getVersion() const {
   // create request
@@ -538,7 +539,6 @@ uint64_t Connection::getFirstAvailableBlock() const {
   const json reqJson = jsonRequest("getFirstAvailableBlock", params);
   // send jsonRpc request
   return sendJsonRpcRequest(reqJson);
-
 }
 
 }  // namespace rpc
