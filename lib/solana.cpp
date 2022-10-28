@@ -509,8 +509,8 @@ bool Connection::confirmTransaction(std::string transactionSignature,
   const auto timeoutBlockheight =
       getLatestBlockhash(confirmLevel).lastValidBlockHeight +
       solana::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
-  auto currentBlockheight = getBlockHeight(confirmLevel);
   while (retries > 0) {
+    auto currentBlockheight = getBlockHeight(confirmLevel);
     const auto res = getSignatureStatus(transactionSignature, true).value;
     if (timeoutBlockheight <= currentBlockheight)
       throw std::runtime_error("Transaction timeout");
@@ -518,7 +518,7 @@ bool Connection::confirmTransaction(std::string transactionSignature,
       return true;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    currentBlockheight = getBlockHeight(confirmLevel);
+    
     retries--;
   }
   return false;
