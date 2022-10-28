@@ -40,6 +40,15 @@ std::string PublicKey::toBase58() const { return b58encode(data); }
 
 void to_json(json &j, const PublicKey &key) { j = key.toBase58(); }
 
+void to_json(json &j, const GetSlotConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
+  }
+}
+
 void from_json(const json &j, PublicKey &key) {
   key = PublicKey::fromBase58(j);
 }
@@ -73,6 +82,14 @@ Keypair Keypair::fromFile(const std::string &path) {
 void from_json(const json &j, Version &version) {
   version.feature_set = j["feature-set"];
   version.solana_core = j["solana-core"];
+}
+// EpochSchedule
+void from_json(const json &j, EpochSchedule &epochschedule) {
+  epochschedule.firstNormalEpoch = j["firstNormalEpoch"];
+  epochschedule.firstNormalSlot = j["firstNormalSlot"];
+  epochschedule.leaderScheduleSlotOffset = j["leaderScheduleSlotOffset"];
+  epochschedule.slotsPerEpoch = j["slotsPerEpoch"];
+  epochschedule.warmup = j["warmup"];
 }
 
 ///
@@ -510,9 +527,44 @@ Version Connection::getVersion() const {
 }
 
 uint64_t Connection::getFirstAvailableBlock() const {
-  // create request
   json params = {};
   const json reqJson = jsonRequest("getFirstAvailableBlock", params);
+
+  return sendJsonRpcRequest(reqJson);
+}
+
+uint64_t Connection::getSlot(const GetSlotConfig &config) const {
+  const json params = {config};
+  const json reqJson = jsonRequest("getSlot", params);
+
+  return sendJsonRpcRequest(reqJson);
+}
+
+uint64_t Connection::getminimumLedgerSlot() const {
+  const json params = {};
+
+  const json reqJson = jsonRequest("minimumLedgerSlot", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+std::string Connection::getGenesisHash() const {
+  const json params = {};
+
+  const json reqJson = jsonRequest("getGenesisHash", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+std::string Connection::getSlotLeader(const GetSlotConfig &config) const {
+  const json params = {config};
+
+  const json reqJson = jsonRequest("getSlotLeader", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+EpochSchedule Connection::getEpochSchedule() const {
+  // create request
+  json params = {};
+  const json reqJson = jsonRequest("getEpochSchedule", params);
   // send jsonRpc request
   return sendJsonRpcRequest(reqJson);
 }

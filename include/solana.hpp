@@ -74,6 +74,19 @@ struct Version {
  */
 void from_json(const json &j, Version &version);
 
+struct EpochSchedule {
+  uint64_t firstNormalEpoch;
+  uint64_t firstNormalSlot;
+  uint64_t leaderScheduleSlotOffset;
+  uint64_t slotsPerEpoch;
+  bool warmup;
+};
+
+/**
+ * EpochSchedule from json
+ */
+void from_json(const json &j, EpochSchedule &epochschedule);
+
 /**
  * Account metadata used to define instructions
  */
@@ -177,6 +190,18 @@ struct SimulatedTransactionResponse {
  * SimulatedTransactionResponse from json
  */
 void from_json(const json &j, SimulatedTransactionResponse &res);
+
+struct GetSlotConfig {
+  /** The level of commitment desired */
+  std::optional<Commitment> commitment = std::nullopt;
+  /** The minimum slot that the request can be evaluated at */
+  std::optional<uint64_t> minContextSlot = std::nullopt;
+};
+
+/**
+ * convert GetSlotConfig to json
+ */
+void to_json(json &j, const GetSlotConfig &config);
 
 struct SignatureStatus {
   /** when the transaction was processed */
@@ -553,6 +578,23 @@ class Connection {
    * Returns the current solana versions running on the node
    **/
   Version getVersion() const;
+
+  uint64_t getminimumLedgerSlot() const;
+  // Returns the lowest slot that the node has information about in its ledger.
+
+  std::string getGenesisHash() const;
+  // Returns the genesis hash
+
+  EpochSchedule getEpochSchedule() const;
+  // Returns epoch schedule information from this cluster's genesis config
+
+  uint64_t getSlot(const GetSlotConfig &config = GetSlotConfig{}) const;
+  // Returns the slot that has reached the given or default commitment level
+
+  std::string getSlotLeader(
+      const GetSlotConfig &config = GetSlotConfig{}) const;
+
+  // Returns the current slot leader
 
   /**
    * Returns the slot of the lowest confirmed block that has not been purged
