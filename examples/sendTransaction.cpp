@@ -42,24 +42,10 @@ int main() {
   const auto timeoutBlockHeight =
       recentBlockHash.lastValidBlockHeight +
       mango_v3::MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION;
-  uint8_t timeout = 15;  // add a 15 sec timeout
-  while (timeout > 0) {
-    // Check if we are past validBlockHeight
-    auto currentBlockHeight =
-        connection.getBlockHeight(solana::Commitment::CONFIRMED);
-    if (timeoutBlockHeight <= currentBlockHeight) {
-      spdlog::error("Timed out for txid: {}, current BlockHeight: {}", b58Sig,
-                    currentBlockHeight);
-      return EXIT_FAILURE;
-    }
-    const auto res = connection.getSignatureStatus(b58Sig).value;
-    if (res.has_value() && !res.value().err.has_value() &&
-        res.value().confirmationStatus == "finalized") {
-      break;
-    }
-    timeout--;
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
+  bool confirmed = false;
+  confirmed =
+      connection.confirmTransaction(b58Sig, solana::Commitment::FINALIZED, 140);
+  if (confirmed) return EXIT_SUCCESS;
 
-  return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }

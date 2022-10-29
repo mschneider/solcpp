@@ -22,6 +22,7 @@ const std::string MEMO_PROGRAM_ID =
     "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
 const std::string MAINNET_BETA = "https://api.mainnet-beta.solana.com";
 const std::string DEVNET = "https://api.devnet.solana.com";
+const int MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION = 152;
 
 struct PublicKey {
   static const auto SIZE = crypto_sign_PUBLICKEYBYTES;
@@ -213,7 +214,7 @@ struct SignatureStatus {
   std::optional<std::string> err = std::nullopt;
   /** cluster confirmation status, if data available. Possible responses:
    * `processed`, `confirmed`, `finalized` */
-  std::string confirmationStatus;
+  Commitment confirmationStatus;
 };
 
 /**
@@ -566,6 +567,13 @@ class Connection {
    */
   uint64_t getBlockHeight(
       const Commitment &commitment = Commitment::FINALIZED) const;
+
+  /**
+   * Returns of the current Transaction has been confirmed or not
+   */
+  bool confirmTransaction(std::string transactionSignature,
+                          Commitment confirmLevel,
+                          uint16_t timeout = 200) const;
 
   /**
    * Fetch the current statuses of a batch of signatures

@@ -55,26 +55,19 @@ TEST_CASE("Simulate & Send Transaction") {
   CHECK_EQ(transactionSignature, b58Sig);
 }
 
-TEST_CASE("Request Airdrop") {
+TEST_CASE("Request Airdrop & Confirm Transaction") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   // request Airdrop
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 50001);
-  uint8_t timeout = 15;
-  // check signature status
-  // this is a temporary fix. This will be changed to the confirmTransaction
-  // function call once it gets implemented
-  while (timeout > 0) {
-    const auto res = connection.getSignatureStatus(signature, true).value;
-    if (res.has_value() && res.value().confirmationStatus == "finalized") {
-      break;
-    }
-    timeout--;
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
-  // check if balance is updated after status is finalized
+  uint8_t retries = 140;
+  // using confirmTransaction to check if the airdrop went through
+  bool confirmed = false;
+  confirmed = connection.confirmTransaction(
+      signature, solana::Commitment::FINALIZED, retries);
   const auto new_sol = connection.getBalance(keyPair.publicKey);
+  CHECK_EQ(confirmed, true);
   CHECK_GT(new_sol, prev_sol);
 }
 
