@@ -703,7 +703,6 @@ TEST_CASE("account9") {
 }
 
 TEST_CASE("getVersion") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto version = connection.getVersion();
   boost::regex expression{"\\d+\\.\\d+\\.\\d+"};
@@ -712,14 +711,12 @@ TEST_CASE("getVersion") {
 }
 
 TEST_CASE("getFirstAvailableBlock") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto firstAvailableBlock = connection.getFirstAvailableBlock();
   CHECK_GT(firstAvailableBlock, 0);
 }
 
 TEST_CASE("getSlot") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto slot = connection.getSlot();
   CHECK_GT(slot, 0);
@@ -729,32 +726,25 @@ TEST_CASE("getSlot") {
 }
 
 TEST_CASE("getSlotLeader") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto slotLeader = connection.getSlotLeader();
-  boost::regex expression{
-      "^(?!.*[0OlI_])\\w*$"};  //  regex for base-58 encoded string
+  boost::regex expression{"^(?!.*[0OlI_])\\w*$"};
   CHECK_EQ(boost::regex_match(slotLeader, expression), true);
 }
 
 TEST_CASE("minimumLedgerSlot") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto slot = connection.getminimumLedgerSlot();
   CHECK_GT(slot, 0);
 }
 
 TEST_CASE("getGenesisHash") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto hash = connection.getGenesisHash();
-  boost::regex expression{
-      "^(?!.*[0OlI_])\\w*$"};  //  regex for base-58 encoded string
-  CHECK_EQ(boost::regex_match(hash, expression), true);
+  CHECK_GT(hash.length(), 0);
 }
 
 TEST_CASE("getEpochSchedule") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto epochschedule = connection.getEpochSchedule();
   CHECK_GE(epochschedule.firstNormalEpoch, 0);

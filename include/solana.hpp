@@ -587,26 +587,35 @@ class Connection {
    **/
   Version getVersion() const;
 
+  /**
+   *  Returns the lowest slot that the node has information about in its ledger.
+   **/
   uint64_t getminimumLedgerSlot() const;
-  // Returns the lowest slot that the node has information about in its ledger.
 
+  /**
+   *  Returns the genesis hash
+   **/
   std::string getGenesisHash() const;
-  // Returns the genesis hash
 
+  /**
+   * Returns epoch schedule information from this cluster's genesis config
+   **/
   EpochSchedule getEpochSchedule() const;
-  // Returns epoch schedule information from this cluster's genesis config
 
+  /**
+   * Returns the slot that has reached the given or default commitment level
+   **/
   uint64_t getSlot(const GetSlotConfig &config = GetSlotConfig{}) const;
-  // Returns the slot that has reached the given or default commitment level
 
+  /**
+   * Returns the current slot leader
+   **/
   std::string getSlotLeader(
       const GetSlotConfig &config = GetSlotConfig{}) const;
 
-  // Returns the current slot leader
-
   /**
    * Returns the slot of the lowest confirmed block that has not been purged
-   * from the ledger
+   *from the ledger
    **/
   uint64_t getFirstAvailableBlock() const;
 
