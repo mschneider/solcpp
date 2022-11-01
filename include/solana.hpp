@@ -78,8 +78,8 @@ struct Version {
  */
 void from_json(const json &j, Version &version);
 
-uint64_t trailingZeros(int n);
-uint64_t nextPowerOfTwo(long long int n);
+uint64_t trailingZeros(uint64_t n);
+uint64_t nextPowerOfTwo(uint64_t n);
 
 struct EpochSchedule {
   uint64_t firstNormalEpoch;
@@ -88,11 +88,11 @@ struct EpochSchedule {
   uint64_t slotsPerEpoch;
   bool warmup;
 
-  uint64_t getEpoch(uint64_t slot) {
+  uint64_t getEpoch(uint64_t slot) const {
     return this->getEpochAndSlotIndex(slot)[0];
   }
 
-  std::vector<uint64_t> getEpochAndSlotIndex(uint64_t slot) {
+  std::vector<uint64_t> getEpochAndSlotIndex(uint64_t slot) const {
     std::vector<uint64_t> info;
 
     if (slot < this->firstNormalSlot) {
@@ -116,19 +116,20 @@ struct EpochSchedule {
     }
   }
 
-  uint64_t getFirstSlotInEpoch(uint64_t epoch) {
+  uint64_t getFirstSlotInEpoch(uint64_t epoch) const {
     if (epoch <= this->firstNormalEpoch) {
       return (pow(2, epoch) - 1) * MINIMUM_SLOT_PER_EPOCH;
     } else {
-      return ((epoch - this->firstNormalEpoch) * this->slotsPerEpoch + this->firstNormalSlot);
+      return ((epoch - this->firstNormalEpoch) * this->slotsPerEpoch +
+              this->firstNormalSlot);
     }
   }
 
-  uint64_t getLastSlotInEpoch(uint64_t epoch) {
+  uint64_t getLastSlotInEpoch(uint64_t epoch) const {
     return this->getFirstSlotInEpoch(epoch) + this->getSlotsInEpoch(epoch) - 1;
   }
 
-  uint64_t getSlotsInEpoch(uint64_t epoch) {
+  uint64_t getSlotsInEpoch(uint64_t epoch) const {
     if (epoch < this->firstNormalEpoch) {
       return pow(2, epoch + trailingZeros(MINIMUM_SLOT_PER_EPOCH));
     } else {
@@ -664,7 +665,8 @@ class Connection {
   /**
    * Returns the current slot leader
    **/
-  std::string getSlotLeader(const GetSlotConfig &config = GetSlotConfig{}) const;
+  std::string getSlotLeader(
+      const GetSlotConfig &config = GetSlotConfig{}) const;
 
   /**
    * Returns the slot of the lowest confirmed block that has not been purged

@@ -753,4 +753,25 @@ TEST_CASE("getEpochSchedule") {
   CHECK_GE(epochschedule.firstNormalSlot, 0);
   CHECK_GE(epochschedule.leaderScheduleSlotOffset, 0);
   CHECK_GE(epochschedule.slotsPerEpoch, 0);
+
+  struct solana::EpochSchedule epochschedule2;
+  epochschedule2.firstNormalEpoch = 14;
+  epochschedule2.firstNormalSlot = 524256;
+  epochschedule2.leaderScheduleSlotOffset = 432000;
+  epochschedule2.slotsPerEpoch = 432000;
+  epochschedule2.warmup = true;
+
+  CHECK_EQ(epochschedule2.getEpoch(35), 1);
+
+  CHECK((epochschedule2.getEpochAndSlotIndex(35)[0] == 1 && epochschedule2.getEpochAndSlotIndex(35)[1] == 3));
+
+  CHECK_EQ(epochschedule2.getEpoch(epochschedule2.firstNormalSlot +  3 * epochschedule2.slotsPerEpoch + 12345),17);
+  CHECK((epochschedule2.getEpochAndSlotIndex(epochschedule2.firstNormalSlot +  3 * epochschedule2.slotsPerEpoch + 12345)[0] == 17 &&
+         epochschedule2.getEpochAndSlotIndex(epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch +  12345)[1] == 12345));
+
+  CHECK_EQ(epochschedule2.getSlotsInEpoch(4), 512);
+  CHECK_EQ(epochschedule2.getFirstSlotInEpoch(2), 96);
+  CHECK_EQ(epochschedule2.getLastSlotInEpoch(2), 223);
+  CHECK_EQ(epochschedule2.getFirstSlotInEpoch(16), epochschedule2.firstNormalSlot + 2 * epochschedule2.slotsPerEpoch);
+  CHECK_EQ(epochschedule2.getLastSlotInEpoch(16),epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch - 1);
 }
