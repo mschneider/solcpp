@@ -574,27 +574,23 @@ Version Connection::getVersion() const {
 uint64_t Connection::getFirstAvailableBlock() const {
   json params = {};
   const json reqJson = jsonRequest("getFirstAvailableBlock", params);
-
   return sendJsonRpcRequest(reqJson);
 }
 
 uint64_t Connection::getSlot(const GetSlotConfig &config) const {
   const json params = {config};
   const json reqJson = jsonRequest("getSlot", params);
-
   return sendJsonRpcRequest(reqJson);
 }
 
 uint64_t Connection::minimumLedgerSlot() const {
   const json params = {};
-
   const json reqJson = jsonRequest("minimumLedgerSlot", params);
   return sendJsonRpcRequest(reqJson);
 }
 
 std::string Connection::getGenesisHash() const {
   const json params = {};
-
   const json reqJson = jsonRequest("getGenesisHash", params);
   return sendJsonRpcRequest(reqJson);
 }
@@ -606,10 +602,8 @@ std::string Connection::getSlotLeader(const GetSlotConfig &config) const {
 }
 
 EpochSchedule Connection::getEpochSchedule() const {
-  // create request
   json params = {};
   const json reqJson = jsonRequest("getEpochSchedule", params);
-  // send jsonRpc request
   return sendJsonRpcRequest(reqJson);
 }
 

@@ -665,8 +665,7 @@ class Connection {
   /**
    * Returns the current slot leader
    **/
-  std::string getSlotLeader(
-      const GetSlotConfig &config = GetSlotConfig{}) const;
+  std::string getSlotLeader(const GetSlotConfig &config = GetSlotConfig{}) const;
 
   /**
    * Returns the slot of the lowest confirmed block that has not been purged
