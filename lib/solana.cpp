@@ -79,6 +79,28 @@ Keypair Keypair::fromFile(const std::string &path) {
   return result;
 }
 
+uint64_t trailingZeros(uint64_t n) {
+  int trailingsZeros = 0;
+  while (n > 1) {
+    n /= 2;
+    trailingsZeros++;
+  }
+  return trailingsZeros;
+}
+
+uint64_t nextPowerOfTwo(uint64_t n) {
+  if (n == 0) {
+    return 1;
+  }
+  n--;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  n |= n >> 32;
+  return n + 1;
+}
 ///
 /// Version
 void from_json(const json &j, Version &version) {
@@ -563,7 +585,7 @@ uint64_t Connection::getSlot(const GetSlotConfig &config) const {
   return sendJsonRpcRequest(reqJson);
 }
 
-uint64_t Connection::getminimumLedgerSlot() const {
+uint64_t Connection::minimumLedgerSlot() const {
   const json params = {};
 
   const json reqJson = jsonRequest("minimumLedgerSlot", params);
@@ -579,7 +601,6 @@ std::string Connection::getGenesisHash() const {
 
 std::string Connection::getSlotLeader(const GetSlotConfig &config) const {
   const json params = {config};
-
   const json reqJson = jsonRequest("getSlotLeader", params);
   return sendJsonRpcRequest(reqJson);
 }

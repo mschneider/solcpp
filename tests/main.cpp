@@ -12,6 +12,8 @@
 #include "MangoAccount.hpp"
 
 const std::string KEY_PAIR_FILE = "../tests/fixtures/solana/id.json";
+const std::string DEVNET_GENESIS_HASH =
+    "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
 
 TEST_CASE("Simulate & Send Transaction") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
@@ -718,11 +720,15 @@ TEST_CASE("getFirstAvailableBlock") {
 
 TEST_CASE("getSlot") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto slot = connection.getSlot();
-  CHECK_GT(slot, 0);
-  sleep(2);  // sleep for 2 seconds
-  const auto slot2 = connection.getSlot();
-  CHECK_GE(slot2, slot);
+
+  const auto slot1 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::FINALIZED});
+
+  const auto slot2 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::CONFIRMED});
+
+  const auto slot3 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::PROCESSED});
+
+  CHECK_LT(slot1, slot2);
+  CHECK_LT(slot2, slot3);
 }
 
 TEST_CASE("getSlotLeader") {
@@ -734,14 +740,14 @@ TEST_CASE("getSlotLeader") {
 
 TEST_CASE("minimumLedgerSlot") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto slot = connection.getminimumLedgerSlot();
+  const auto slot = connection.minimumLedgerSlot();
   CHECK_GT(slot, 0);
 }
 
 TEST_CASE("getGenesisHash") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto hash = connection.getGenesisHash();
-  CHECK_GT(hash.length(), 0);
+  CHECK_EQ(hash, DEVNET_GENESIS_HASH);
 }
 
 TEST_CASE("getEpochSchedule") {
@@ -751,5 +757,4 @@ TEST_CASE("getEpochSchedule") {
   CHECK_GE(epochschedule.firstNormalSlot, 0);
   CHECK_GE(epochschedule.leaderScheduleSlotOffset, 0);
   CHECK_GE(epochschedule.slotsPerEpoch, 0);
-  CHECK((epochschedule.warmup == true || epochschedule.warmup == false));
 }

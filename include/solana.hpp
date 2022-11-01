@@ -4,6 +4,7 @@
 #include <sodium.h>
 
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -23,6 +24,8 @@ const std::string MEMO_PROGRAM_ID =
 const std::string MAINNET_BETA = "https://api.mainnet-beta.solana.com";
 const std::string DEVNET = "https://api.devnet.solana.com";
 const int MAXIMUM_NUMBER_OF_BLOCKS_FOR_TRANSACTION = 152;
+
+const int MINIMUM_SLOT_PER_EPOCH = 32;
 
 struct PublicKey {
   static const auto SIZE = crypto_sign_PUBLICKEYBYTES;
@@ -75,12 +78,63 @@ struct Version {
  */
 void from_json(const json &j, Version &version);
 
+uint64_t trailingZeros(int n);
+uint64_t nextPowerOfTwo(long long int n);
+
 struct EpochSchedule {
   uint64_t firstNormalEpoch;
   uint64_t firstNormalSlot;
   uint64_t leaderScheduleSlotOffset;
   uint64_t slotsPerEpoch;
   bool warmup;
+
+  uint64_t getEpoch(uint64_t slot) {
+    return this->getEpochAndSlotIndex(slot)[0];
+  }
+
+  std::vector<uint64_t> getEpochAndSlotIndex(uint64_t slot) {
+    std::vector<uint64_t> info;
+
+    if (slot < this->firstNormalSlot) {
+      const auto epoch = trailingZeros(nextPowerOfTwo(slot + MINIMUM_SLOT_PER_EPOCH + 1)) - trailingZeros(MINIMUM_SLOT_PER_EPOCH) - 1;
+      const auto epochLen = this->getSlotsInEpoch(epoch);
+      const auto slotIndex = slot - (epochLen - MINIMUM_SLOT_PER_EPOCH);
+      info.push_back(epoch);
+      info.push_back(slotIndex);
+
+      return info;
+
+    } else {
+      const auto normalSlotIndex = slot - this->firstNormalSlot;
+      const auto normalEpochIndex = floor(normalSlotIndex / this->slotsPerEpoch);
+      const auto epoch = this->firstNormalEpoch + normalEpochIndex;
+      const auto slotIndex = normalSlotIndex % this->slotsPerEpoch;
+      info.push_back(epoch);
+      info.push_back(slotIndex);
+
+      return info;
+    }
+  }
+
+  uint64_t getFirstSlotInEpoch(uint64_t epoch) {
+    if (epoch <= this->firstNormalEpoch) {
+      return (pow(2, epoch) - 1) * MINIMUM_SLOT_PER_EPOCH;
+    } else {
+      return ((epoch - this->firstNormalEpoch) * this->slotsPerEpoch + this->firstNormalSlot);
+    }
+  }
+
+  uint64_t getLastSlotInEpoch(uint64_t epoch) {
+    return this->getFirstSlotInEpoch(epoch) + this->getSlotsInEpoch(epoch) - 1;
+  }
+
+  uint64_t getSlotsInEpoch(uint64_t epoch) {
+    if (epoch < this->firstNormalEpoch) {
+      return pow(2, epoch + trailingZeros(MINIMUM_SLOT_PER_EPOCH));
+    } else {
+      return this->slotsPerEpoch;
+    }
+  }
 };
 
 /**
@@ -590,7 +644,7 @@ class Connection {
   /**
    *  Returns the lowest slot that the node has information about in its ledger.
    **/
-  uint64_t getminimumLedgerSlot() const;
+  uint64_t minimumLedgerSlot() const;
 
   /**
    *  Returns the genesis hash
@@ -610,8 +664,7 @@ class Connection {
   /**
    * Returns the current slot leader
    **/
-  std::string getSlotLeader(
-      const GetSlotConfig &config = GetSlotConfig{}) const;
+  std::string getSlotLeader(const GetSlotConfig &config = GetSlotConfig{}) const;
 
   /**
    * Returns the slot of the lowest confirmed block that has not been purged
