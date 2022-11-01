@@ -720,13 +720,9 @@ TEST_CASE("getFirstAvailableBlock") {
 
 TEST_CASE("getSlot") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-
   const auto slot1 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::FINALIZED});
-
   const auto slot2 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::CONFIRMED});
-
   const auto slot3 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::PROCESSED});
-
   CHECK_LT(slot1, slot2);
   CHECK_LT(slot2, slot3);
 }
