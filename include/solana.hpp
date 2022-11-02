@@ -118,7 +118,7 @@ struct EpochSchedule {
 
   uint64_t getFirstSlotInEpoch(uint64_t epoch) const {
     if (epoch <= this->firstNormalEpoch) {
-      return (pow(2, epoch) - 1) * MINIMUM_SLOT_PER_EPOCH;
+      return ((1 << epoch ) - 1) * MINIMUM_SLOT_PER_EPOCH;
     } else {
       return ((epoch - this->firstNormalEpoch) * this->slotsPerEpoch +
               this->firstNormalSlot);
@@ -131,7 +131,7 @@ struct EpochSchedule {
 
   uint64_t getSlotsInEpoch(uint64_t epoch) const {
     if (epoch < this->firstNormalEpoch) {
-      return pow(2, epoch + trailingZeros(MINIMUM_SLOT_PER_EPOCH));
+      return  1 << (epoch + trailingZeros(MINIMUM_SLOT_PER_EPOCH));
     } else {
       return this->slotsPerEpoch;
     }
