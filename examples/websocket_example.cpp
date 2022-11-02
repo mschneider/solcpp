@@ -124,7 +124,7 @@ int main()
     // stop execution here and call solana airdrop 1 from terminal
     sleep(10);
     std::cout << "Subscribe Called Value " << subscribe_called << std::endl;
-    sub.removeAccountChangeListener(0);
+    sub.removeAccountChangeListener(sub_id);
     // call solana airdrop 1
     sleep(10);
     std::cout << "Subscribe Called Value " << subscribe_called << std::endl;
