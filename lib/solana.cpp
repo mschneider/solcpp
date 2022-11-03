@@ -150,15 +150,13 @@ void from_json(const json &j, SimulatedTransactionResponse &res) {
   }
 }
 
-
-void from_json(const json &j, EpochInfo &epochinfo){
+void from_json(const json &j, EpochInfo &epochinfo) {
   epochinfo.absoluteSlot = j["absoluteSlot"];
   epochinfo.blockHeight = j["blockHeight"];
   epochinfo.epoch = j["epoch"];
   epochinfo.slotIndex = j["slotIndex"];
   epochinfo.slotsInEpoch = j["slotsInEpoch"];
-  epochinfo.transactionCount =  j["transactionCount"];
-
+  epochinfo.transactionCount = j["transactionCount"];
 }
 
 void to_json(json &j, const GetStakeActivationConfig &config) {
@@ -173,8 +171,8 @@ void to_json(json &j, const GetStakeActivationConfig &config) {
   }
 }
 
-void to_json(json &j, const commitmentconfig &config){
-   if (config.commitment.has_value()) {
+void to_json(json &j, const commitmentconfig &config) {
+  if (config.commitment.has_value()) {
     j["commitment"] = config.commitment.value();
   }
 }
@@ -651,13 +649,14 @@ EpochSchedule Connection::getEpochSchedule() const {
 }
 
 StakeActivation Connection::getStakeActivation(
-  const PublicKey &pubkey, const GetStakeActivationConfig &config) const {
+    const PublicKey &pubkey, const GetStakeActivationConfig &config) const {
   const json params = {pubkey, config};
   const json reqJson = jsonRequest("getStakeActivation", params);
   return sendJsonRpcRequest(reqJson);
 }
 
-InflationGovernor Connection::getInflationGovernor(const commitmentconfig &config) const {
+InflationGovernor Connection::getInflationGovernor(
+    const commitmentconfig &config) const {
   const json params = {};
   const json reqJson = jsonRequest("getInflationGovernor", params);
   return sendJsonRpcRequest(reqJson);
@@ -675,8 +674,9 @@ EpochInfo Connection::getEpochInfo(const GetSlotConfig &config) const {
   return sendJsonRpcRequest(reqJson);
 }
 
-uint64_t Connection::getMinimumBalanceForRentExemption(const std::size_t dataLength , const commitmentconfig &config) const {
-  const json params = {dataLength,config};
+uint64_t Connection::getMinimumBalanceForRentExemption(
+    const std::size_t dataLength, const commitmentconfig &config) const {
+  const json params = {dataLength, config};
   const json reqJson = jsonRequest("getMinimumBalanceForRentExemption", params);
   return sendJsonRpcRequest(reqJson);
 }

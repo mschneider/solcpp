@@ -720,9 +720,12 @@ TEST_CASE("getFirstAvailableBlock") {
 
 TEST_CASE("getSlot") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto slot1 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::FINALIZED});
-  const auto slot2 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::CONFIRMED});
-  const auto slot3 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::PROCESSED});
+  const auto slot1 =
+      connection.getSlot(solana::GetSlotConfig{solana::Commitment::FINALIZED});
+  const auto slot2 =
+      connection.getSlot(solana::GetSlotConfig{solana::Commitment::CONFIRMED});
+  const auto slot3 =
+      connection.getSlot(solana::GetSlotConfig{solana::Commitment::PROCESSED});
   CHECK_LT(slot1, slot2);
   CHECK_LT(slot2, slot3);
 }
@@ -763,61 +766,66 @@ TEST_CASE("getEpochSchedule") {
 
   CHECK_EQ(epochschedule2.getEpoch(35), 1);
 
-  CHECK((epochschedule2.getEpochAndSlotIndex(35)[0] == 1 && epochschedule2.getEpochAndSlotIndex(35)[1] == 3));
+  CHECK((epochschedule2.getEpochAndSlotIndex(35)[0] == 1 &&
+         epochschedule2.getEpochAndSlotIndex(35)[1] == 3));
 
-  CHECK_EQ(epochschedule2.getEpoch(epochschedule2.firstNormalSlot +  3 * epochschedule2.slotsPerEpoch + 12345),17);
-  CHECK((epochschedule2.getEpochAndSlotIndex(epochschedule2.firstNormalSlot +  3 * epochschedule2.slotsPerEpoch + 12345)[0] == 17 &&
-         epochschedule2.getEpochAndSlotIndex(epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch +  12345)[1] == 12345));
+  CHECK_EQ(epochschedule2.getEpoch(epochschedule2.firstNormalSlot +
+                                   3 * epochschedule2.slotsPerEpoch + 12345),
+           17);
+  CHECK((epochschedule2.getEpochAndSlotIndex(epochschedule2.firstNormalSlot +
+                                             3 * epochschedule2.slotsPerEpoch +
+                                             12345)[0] == 17 &&
+         epochschedule2.getEpochAndSlotIndex(epochschedule2.firstNormalSlot +
+                                             3 * epochschedule2.slotsPerEpoch +
+                                             12345)[1] == 12345));
 
   CHECK_EQ(epochschedule2.getSlotsInEpoch(4), 512);
   CHECK_EQ(epochschedule2.getFirstSlotInEpoch(2), 96);
   CHECK_EQ(epochschedule2.getLastSlotInEpoch(2), 223);
-  CHECK_EQ(epochschedule2.getFirstSlotInEpoch(16), epochschedule2.firstNormalSlot + 2 * epochschedule2.slotsPerEpoch);
-  CHECK_EQ(epochschedule2.getLastSlotInEpoch(16),epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch - 1);
+  CHECK_EQ(epochschedule2.getFirstSlotInEpoch(16),
+           epochschedule2.firstNormalSlot + 2 * epochschedule2.slotsPerEpoch);
+  CHECK_EQ(
+      epochschedule2.getLastSlotInEpoch(16),
+      epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch - 1);
 }
 
-
-  
 TEST_CASE("stakeactivation") {
-
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto stakeactivation =
-      connection.getStakeActivation(solana::PublicKey::fromBase58(
-          "CYRJWqiSjLitBAcRxPvWpgX3s5TvmN2SuRY3eEYypFvT"),solana::GetStakeActivationConfig{solana::Commitment::FINALIZED});
+  const auto stakeactivation = connection.getStakeActivation(
+      solana::PublicKey::fromBase58(
+          "CYRJWqiSjLitBAcRxPvWpgX3s5TvmN2SuRY3eEYypFvT"),
+      solana::GetStakeActivationConfig{solana::Commitment::FINALIZED});
   CHECK_GE(stakeactivation.active, 0);
   CHECK_GE(stakeactivation.inactive, 0);
-  CHECK((stakeactivation.state == "active" || stakeactivation.state == "inactive" ||
+  CHECK((stakeactivation.state == "active" ||
+         stakeactivation.state == "inactive" ||
          stakeactivation.state == "activating" ||
          stakeactivation.state == "deactivating"));
 }
 
 TEST_CASE("getInflationGovernor") {
-  
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto inflationgovernor = connection.getInflationGovernor(solana::commitmentconfig{solana::Commitment::FINALIZED});
+  const auto inflationgovernor = connection.getInflationGovernor(
+      solana::commitmentconfig{solana::Commitment::FINALIZED});
   CHECK_GE(inflationgovernor.foundation, 0);
   CHECK_GE(inflationgovernor.foundationTerm, 0);
   CHECK_GE(inflationgovernor.initial, 0);
   CHECK_GE(inflationgovernor.taper, 0);
   CHECK_GE(inflationgovernor.terminal, 0);
-
 }
 
 TEST_CASE("getTransactionCount") {
-  
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto TransactionCount = connection.getTransactionCount(
       solana::GetSlotConfig{solana::Commitment::FINALIZED});
   CHECK_GT(TransactionCount, 0);
-  sleep(2);  
+  sleep(2);
   const auto TransactionCount2 = connection.getTransactionCount(
       solana::GetSlotConfig{solana::Commitment::FINALIZED});
   CHECK_GE(TransactionCount2, TransactionCount);
 }
 
-
 TEST_CASE("getEpochInfo") {
- 
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto epochInfo = connection.getEpochInfo();
   CHECK_GE(epochInfo.absoluteSlot, 0);
@@ -829,9 +837,8 @@ TEST_CASE("getEpochInfo") {
 }
 
 TEST_CASE("getMinimumBalanceForRentExemption") {
-
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto minimumBalance = connection.getMinimumBalanceForRentExemption(512,solana::commitmentconfig{solana::Commitment::FINALIZED});
-  CHECK_GE( minimumBalance, 0);
- 
+  const auto minimumBalance = connection.getMinimumBalanceForRentExemption(
+      512, solana::commitmentconfig{solana::Commitment::FINALIZED});
+  CHECK_GE(minimumBalance, 0);
 }

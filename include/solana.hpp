@@ -96,7 +96,9 @@ struct EpochSchedule {
     std::vector<uint64_t> info;
 
     if (slot < this->firstNormalSlot) {
-      const auto epoch = trailingZeros(nextPowerOfTwo(slot + MINIMUM_SLOT_PER_EPOCH + 1)) - trailingZeros(MINIMUM_SLOT_PER_EPOCH) - 1;
+      const auto epoch =
+          trailingZeros(nextPowerOfTwo(slot + MINIMUM_SLOT_PER_EPOCH + 1)) -
+          trailingZeros(MINIMUM_SLOT_PER_EPOCH) - 1;
       const auto epochLen = this->getSlotsInEpoch(epoch);
       const auto slotIndex = slot - (epochLen - MINIMUM_SLOT_PER_EPOCH);
       info.push_back(epoch);
@@ -106,7 +108,8 @@ struct EpochSchedule {
 
     } else {
       const auto normalSlotIndex = slot - this->firstNormalSlot;
-      const auto normalEpochIndex = floor(normalSlotIndex / this->slotsPerEpoch);
+      const auto normalEpochIndex =
+          floor(normalSlotIndex / this->slotsPerEpoch);
       const auto epoch = this->firstNormalEpoch + normalEpochIndex;
       const auto slotIndex = normalSlotIndex % this->slotsPerEpoch;
       info.push_back(epoch);
@@ -118,7 +121,7 @@ struct EpochSchedule {
 
   uint64_t getFirstSlotInEpoch(uint64_t epoch) const {
     if (epoch <= this->firstNormalEpoch) {
-      return ((1 << epoch ) - 1) * MINIMUM_SLOT_PER_EPOCH;
+      return ((1 << epoch) - 1) * MINIMUM_SLOT_PER_EPOCH;
     } else {
       return ((epoch - this->firstNormalEpoch) * this->slotsPerEpoch +
               this->firstNormalSlot);
@@ -131,7 +134,7 @@ struct EpochSchedule {
 
   uint64_t getSlotsInEpoch(uint64_t epoch) const {
     if (epoch < this->firstNormalEpoch) {
-      return  1 << (epoch + trailingZeros(MINIMUM_SLOT_PER_EPOCH));
+      return 1 << (epoch + trailingZeros(MINIMUM_SLOT_PER_EPOCH));
     } else {
       return this->slotsPerEpoch;
     }
@@ -215,7 +218,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(Commitment, {
                                              {FINALIZED, "finalized"},
                                          })
 
-
 struct GetStakeActivationConfig {
   /** The level of commitment desired */
   std::optional<Commitment> commitment = std::nullopt;
@@ -231,11 +233,11 @@ struct commitmentconfig {
   std::optional<Commitment> commitment = std::nullopt;
 };
 
-void to_json(json &j, const commitmentconfig  &config);
+void to_json(json &j, const commitmentconfig &config);
 
-struct GetBlocksConfig{
-    std::optional<uint64_t> end_slot  = std::nullopt;
-    std::optional<Commitment> commitment = std::nullopt;
+struct GetBlocksConfig {
+  std::optional<uint64_t> end_slot = std::nullopt;
+  std::optional<Commitment> commitment = std::nullopt;
 };
 
 void to_json(json &j, const GetBlocksConfig &config);
@@ -258,13 +260,13 @@ struct InflationGovernor {
 
 void from_json(const json &j, InflationGovernor &inflationgovernor);
 
-struct EpochInfo{
-   uint64_t absoluteSlot;
-   uint64_t blockHeight;
-   uint64_t epoch;
-   uint64_t slotIndex;
-   uint64_t slotsInEpoch;
-   uint64_t transactionCount;
+struct EpochInfo {
+  uint64_t absoluteSlot;
+  uint64_t blockHeight;
+  uint64_t epoch;
+  uint64_t slotIndex;
+  uint64_t slotsInEpoch;
+  uint64_t transactionCount;
 };
 
 void from_json(const json &j, EpochInfo &epochinfo);
@@ -719,7 +721,8 @@ class Connection {
   /**
    * Returns the current slot leader
    **/
-  std::string getSlotLeader(const GetSlotConfig &config = GetSlotConfig{}) const;
+  std::string getSlotLeader(
+      const GetSlotConfig &config = GetSlotConfig{}) const;
 
   /**
    * Returns the slot of the lowest confirmed block that has not been purged
@@ -733,27 +736,31 @@ class Connection {
   StakeActivation getStakeActivation(const PublicKey &pubkey,
                                      const GetStakeActivationConfig &config =
                                          GetStakeActivationConfig{}) const;
-  
+
   /**
    * Returns the current inflation governor
    **/
-  InflationGovernor getInflationGovernor(const commitmentconfig &config = commitmentconfig{}) const;
-  
+  InflationGovernor getInflationGovernor(
+      const commitmentconfig &config = commitmentconfig{}) const;
+
   /**
    * Returns the current Transaction count from the ledger
    **/
-  uint64_t getTransactionCount(const GetSlotConfig &config = GetSlotConfig{}) const;
+  uint64_t getTransactionCount(
+      const GetSlotConfig &config = GetSlotConfig{}) const;
 
   /**
    * Returns information about the current epoch
    **/
-  EpochInfo getEpochInfo(const GetSlotConfig &config = GetSlotConfig{}) const ;
-  
+  EpochInfo getEpochInfo(const GetSlotConfig &config = GetSlotConfig{}) const;
+
   /**
    * Returns minimum balance required to make account rent exempt
    **/
-  uint64_t getMinimumBalanceForRentExemption(const std::size_t dataLength , const commitmentconfig &config = commitmentconfig{}) const ;
-   
+  uint64_t getMinimumBalanceForRentExemption(
+      const std::size_t dataLength,
+      const commitmentconfig &config = commitmentconfig{}) const;
+
   /**
    * Fetch the current status of a signature
    */
