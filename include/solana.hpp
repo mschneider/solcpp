@@ -96,7 +96,9 @@ struct EpochSchedule {
     std::vector<uint64_t> info;
 
     if (slot < this->firstNormalSlot) {
-      const auto epoch = trailingZeros(nextPowerOfTwo(slot + MINIMUM_SLOT_PER_EPOCH + 1)) - trailingZeros(MINIMUM_SLOT_PER_EPOCH) - 1;
+      const auto epoch =
+          trailingZeros(nextPowerOfTwo(slot + MINIMUM_SLOT_PER_EPOCH + 1)) -
+          trailingZeros(MINIMUM_SLOT_PER_EPOCH) - 1;
       const auto epochLen = this->getSlotsInEpoch(epoch);
       const auto slotIndex = slot - (epochLen - MINIMUM_SLOT_PER_EPOCH);
       info.push_back(epoch);
@@ -106,7 +108,8 @@ struct EpochSchedule {
 
     } else {
       const auto normalSlotIndex = slot - this->firstNormalSlot;
-      const auto normalEpochIndex = floor(normalSlotIndex / this->slotsPerEpoch);
+      const auto normalEpochIndex =
+          floor(normalSlotIndex / this->slotsPerEpoch);
       const auto epoch = this->firstNormalEpoch + normalEpochIndex;
       const auto slotIndex = normalSlotIndex % this->slotsPerEpoch;
       info.push_back(epoch);
@@ -118,7 +121,7 @@ struct EpochSchedule {
 
   uint64_t getFirstSlotInEpoch(uint64_t epoch) const {
     if (epoch <= this->firstNormalEpoch) {
-      return ((1 << epoch ) - 1) * MINIMUM_SLOT_PER_EPOCH;
+      return ((1 << epoch) - 1) * MINIMUM_SLOT_PER_EPOCH;
     } else {
       return ((epoch - this->firstNormalEpoch) * this->slotsPerEpoch +
               this->firstNormalSlot);
@@ -131,7 +134,7 @@ struct EpochSchedule {
 
   uint64_t getSlotsInEpoch(uint64_t epoch) const {
     if (epoch < this->firstNormalEpoch) {
-      return  1 << (epoch + trailingZeros(MINIMUM_SLOT_PER_EPOCH));
+      return 1 << (epoch + trailingZeros(MINIMUM_SLOT_PER_EPOCH));
     } else {
       return this->slotsPerEpoch;
     }
@@ -665,7 +668,8 @@ class Connection {
   /**
    * Returns the current slot leader
    **/
-  std::string getSlotLeader(const GetSlotConfig &config = GetSlotConfig{}) const;
+  std::string getSlotLeader(
+      const GetSlotConfig &config = GetSlotConfig{}) const;
 
   /**
    * Returns the slot of the lowest confirmed block that has not been purged
