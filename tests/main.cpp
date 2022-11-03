@@ -12,6 +12,8 @@
 #include "MangoAccount.hpp"
 
 const std::string KEY_PAIR_FILE = "../tests/fixtures/solana/id.json";
+const std::string DEVNET_GENESIS_HASH =
+    "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
 
 TEST_CASE("Simulate & Send Transaction") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
@@ -703,7 +705,6 @@ TEST_CASE("account9") {
 }
 
 TEST_CASE("getVersion") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto version = connection.getVersion();
   boost::regex expression{"\\d+\\.\\d+\\.\\d+"};
@@ -712,8 +713,65 @@ TEST_CASE("getVersion") {
 }
 
 TEST_CASE("getFirstAvailableBlock") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto firstAvailableBlock = connection.getFirstAvailableBlock();
   CHECK_GT(firstAvailableBlock, 0);
+}
+
+TEST_CASE("getSlot") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto slot1 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::FINALIZED});
+  const auto slot2 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::CONFIRMED});
+  const auto slot3 = connection.getSlot(solana::GetSlotConfig{solana::Commitment::PROCESSED});
+  CHECK_LT(slot1, slot2);
+  CHECK_LT(slot2, slot3);
+}
+
+TEST_CASE("getSlotLeader") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto slotLeader = connection.getSlotLeader();
+  boost::regex expression{"^(?!.*[0OlI_])\\w*$"};
+  CHECK_EQ(boost::regex_match(slotLeader, expression), true);
+}
+
+TEST_CASE("minimumLedgerSlot") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto slot = connection.minimumLedgerSlot();
+  CHECK_GT(slot, 0);
+}
+
+TEST_CASE("getGenesisHash") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto hash = connection.getGenesisHash();
+  CHECK_EQ(hash, DEVNET_GENESIS_HASH);
+}
+
+TEST_CASE("getEpochSchedule") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto epochschedule = connection.getEpochSchedule();
+  CHECK_GE(epochschedule.firstNormalEpoch, 0);
+  CHECK_GE(epochschedule.firstNormalSlot, 0);
+  CHECK_GE(epochschedule.leaderScheduleSlotOffset, 0);
+  CHECK_GE(epochschedule.slotsPerEpoch, 0);
+
+  struct solana::EpochSchedule epochschedule2;
+  epochschedule2.firstNormalEpoch = 14;
+  epochschedule2.firstNormalSlot = 524256;
+  epochschedule2.leaderScheduleSlotOffset = 432000;
+  epochschedule2.slotsPerEpoch = 432000;
+  epochschedule2.warmup = true;
+
+  CHECK_EQ(epochschedule2.getEpoch(35), 1);
+
+  CHECK((epochschedule2.getEpochAndSlotIndex(35)[0] == 1 && epochschedule2.getEpochAndSlotIndex(35)[1] == 3));
+
+  CHECK_EQ(epochschedule2.getEpoch(epochschedule2.firstNormalSlot +  3 * epochschedule2.slotsPerEpoch + 12345),17);
+  CHECK((epochschedule2.getEpochAndSlotIndex(epochschedule2.firstNormalSlot +  3 * epochschedule2.slotsPerEpoch + 12345)[0] == 17 &&
+         epochschedule2.getEpochAndSlotIndex(epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch +  12345)[1] == 12345));
+
+  CHECK_EQ(epochschedule2.getSlotsInEpoch(4), 512);
+  CHECK_EQ(epochschedule2.getFirstSlotInEpoch(2), 96);
+  CHECK_EQ(epochschedule2.getLastSlotInEpoch(2), 223);
+  CHECK_EQ(epochschedule2.getFirstSlotInEpoch(16), epochschedule2.firstNormalSlot + 2 * epochschedule2.slotsPerEpoch);
+  CHECK_EQ(epochschedule2.getLastSlotInEpoch(16),epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch - 1);
 }
