@@ -788,3 +788,30 @@ TEST_CASE("getEpochSchedule") {
       epochschedule2.getLastSlotInEpoch(16),
       epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch - 1);
 }
+
+bool subscribe_called = false;
+void call_on_subscribe(json& data) { subscribe_called = !subscribe_called; }
+
+TEST_CASE("account subscribe and unsubscribe") {
+  solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  solana::rpc::subscription::WebSocketSubscriber sub;
+  // solana::rpc::subscription::WebSocketSubscriber
+  // subscribe for account change
+  int sub_id =
+      sub.onAccountChange(keyPair.publicKey.toBase58(), call_on_subscribe);
+  // change account data
+  connection.requestAirdrop(keyPair.publicKey, 50);
+  // wait for 20 seconds for transaction to process
+  sleep(60);
+  // assure that callback has been called
+  CHECK(subscribe_called);
+  // stop listening to websocket
+  sub.removeAccountChangeListener(sub_id);
+  // change account data
+  connection.requestAirdrop(keyPair.publicKey, 50);
+  // wait for 20 seconds for transaction to process
+  sleep(60);
+  // ensure that callback wasn't called
+  CHECK(subscribe_called);
+}

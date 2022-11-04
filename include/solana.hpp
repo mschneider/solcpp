@@ -2,18 +2,25 @@
 
 #include <cpr/cpr.h>
 #include <sodium.h>
+#include <unistd.h>
 
+#include <boost/asio.hpp>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "base58.hpp"
 #include "base64.hpp"
+#include "websocket.hpp"
+
+namespace net = boost::asio;  // from <boost/asio.hpp>
 
 namespace solana {
 using json = nlohmann::json;
@@ -742,6 +749,37 @@ inline json accountSubscribeRequest(const std::string &account,
 
   return rpc::jsonRequest("accountSubscribe", params);
 }
+
+class WebSocketSubscriber {
+ public:
+  net::io_context context;
+  std::shared_ptr<session> sess;
+  std::thread read_thread;
+  std::thread write_thread;
+  int curr_id = 0;
+  std::vector<std::string> available_commitment;
+
+  /// @brief Constructor
+  /// @param host host to connect to
+  /// @param port port to connect through
+  WebSocketSubscriber(std::string host = "api.devnet.solana.com",
+                      std::string port = "80");
+
+  /// @brief destructor
+  ~WebSocketSubscriber();
+
+  /// @brief callback to call when data in account changes
+  /// @param pub_key public key for the account
+  /// @param account_change_callback callback to call when the data changes
+  /// @param commitment commitment
+  /// @return subsccription id (actually the current id)
+  int onAccountChange(std::string pub_key, Callback account_change_callback,
+                      const Commitment &commitment = Commitment::FINALIZED);
+
+  /// @brief remove the account change listener for the given id
+  /// @param sub_id the id for which removing subscription is needed
+  void removeAccountChangeListener(int sub_id);
+};
 
 }  // namespace subscription
 }  // namespace rpc
