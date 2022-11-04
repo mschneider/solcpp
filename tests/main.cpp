@@ -788,3 +788,54 @@ TEST_CASE("getEpochSchedule") {
       epochschedule2.getLastSlotInEpoch(16),
       epochschedule2.firstNormalSlot + 3 * epochschedule2.slotsPerEpoch - 1);
 }
+
+TEST_CASE("stakeactivation") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto stakeactivation =
+      connection.getStakeActivation(solana::PublicKey::fromBase58(
+          "CYRJWqiSjLitBAcRxPvWpgX3s5TvmN2SuRY3eEYypFvT"));
+  CHECK_GE(stakeactivation.active, 0);
+  CHECK_GE(stakeactivation.inactive, 0);
+  CHECK((stakeactivation.state == "active" || stakeactivation.state == "inactive" ||
+         stakeactivation.state == "activating" ||
+         stakeactivation.state == "deactivating"));
+}
+
+TEST_CASE("getInflationGovernor") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto inflationgovernor = connection.getInflationGovernor(solana::commitmentconfig{solana::Commitment::FINALIZED});
+  CHECK_GE(inflationgovernor.foundation, 0);
+  CHECK_GE(inflationgovernor.foundationTerm, 0);
+  CHECK_GE(inflationgovernor.initial, 0);
+  CHECK_GE(inflationgovernor.taper, 0);
+  CHECK_GE(inflationgovernor.terminal, 0);
+}
+
+TEST_CASE("getTransactionCount") {
+
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto TransactionCount = connection.getTransactionCount(
+      solana::GetSlotConfig{solana::Commitment::FINALIZED});
+  CHECK_GT(TransactionCount, 0);
+  sleep(2);  
+  const auto TransactionCount2 = connection.getTransactionCount(
+      solana::GetSlotConfig{solana::Commitment::FINALIZED});
+  CHECK_GE(TransactionCount2, TransactionCount);
+}
+
+TEST_CASE("getEpochInfo") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto epochInfo = connection.getEpochInfo();
+  CHECK_GE(epochInfo.absoluteSlot, 0);
+  CHECK_GE(epochInfo.blockHeight, 0);
+  CHECK_GE(epochInfo.epoch, 0);
+  CHECK_GE(epochInfo.slotIndex, 0);
+  CHECK_GE(epochInfo.slotsInEpoch, 0);
+  CHECK_GE(epochInfo.transactionCount, 0);
+}
+
+TEST_CASE("getMinimumBalanceForRentExemption") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto minimumBalance = connection.getMinimumBalanceForRentExemption(512,solana::commitmentconfig{solana::Commitment::FINALIZED});
+  CHECK_GE( minimumBalance, 0);
+}
