@@ -80,7 +80,7 @@ Keypair Keypair::fromFile(const std::string &path) {
 }
 
 uint64_t trailingZeros(uint64_t n) {
- uint64_t trailingsZeros = 0;
+  uint64_t trailingsZeros = 0;
   while (n > 1) {
     n /= 2;
     trailingsZeros++;
