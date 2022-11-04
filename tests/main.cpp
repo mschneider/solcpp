@@ -796,14 +796,16 @@ TEST_CASE("stakeactivation") {
           "CYRJWqiSjLitBAcRxPvWpgX3s5TvmN2SuRY3eEYypFvT"));
   CHECK_GE(stakeactivation.active, 0);
   CHECK_GE(stakeactivation.inactive, 0);
-  CHECK((stakeactivation.state == "active" || stakeactivation.state == "inactive" ||
+  CHECK((stakeactivation.state == "active" ||
+         stakeactivation.state == "inactive" ||
          stakeactivation.state == "activating" ||
          stakeactivation.state == "deactivating"));
 }
 
 TEST_CASE("getInflationGovernor") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto inflationgovernor = connection.getInflationGovernor(solana::commitmentconfig{solana::Commitment::FINALIZED});
+  const auto inflationgovernor = connection.getInflationGovernor(
+      solana::commitmentconfig{solana::Commitment::FINALIZED});
   CHECK_GE(inflationgovernor.foundation, 0);
   CHECK_GE(inflationgovernor.foundationTerm, 0);
   CHECK_GE(inflationgovernor.initial, 0);
@@ -812,12 +814,11 @@ TEST_CASE("getInflationGovernor") {
 }
 
 TEST_CASE("getTransactionCount") {
-
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto TransactionCount = connection.getTransactionCount(
       solana::GetSlotConfig{solana::Commitment::FINALIZED});
   CHECK_GT(TransactionCount, 0);
-  sleep(2);  
+  sleep(2);
   const auto TransactionCount2 = connection.getTransactionCount(
       solana::GetSlotConfig{solana::Commitment::FINALIZED});
   CHECK_GE(TransactionCount2, TransactionCount);
@@ -836,6 +837,7 @@ TEST_CASE("getEpochInfo") {
 
 TEST_CASE("getMinimumBalanceForRentExemption") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto minimumBalance = connection.getMinimumBalanceForRentExemption(512,solana::commitmentconfig{solana::Commitment::FINALIZED});
-  CHECK_GE( minimumBalance, 0);
+  const auto minimumBalance = connection.getMinimumBalanceForRentExemption(
+      512, solana::commitmentconfig{solana::Commitment::FINALIZED});
+  CHECK_GE(minimumBalance, 0);
 }

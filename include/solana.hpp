@@ -245,17 +245,15 @@ struct GetStakeActivationConfig {
 
 void to_json(json &j, const GetStakeActivationConfig &config);
 
-
 struct commitmentconfig {
   /** The level of commitment desired */
   std::optional<Commitment> commitment = std::nullopt;
 };
-void to_json(json &j, const commitmentconfig  &config);
+void to_json(json &j, const commitmentconfig &config);
 
-
-struct GetBlocksConfig{
-    std::optional<uint64_t> end_slot  = std::nullopt;
-    std::optional<Commitment> commitment = std::nullopt;
+struct GetBlocksConfig {
+  std::optional<uint64_t> end_slot = std::nullopt;
+  std::optional<Commitment> commitment = std::nullopt;
 };
 void to_json(json &j, const GetBlocksConfig &config);
 
@@ -316,13 +314,13 @@ struct SignatureStatus {
   Commitment confirmationStatus;
 };
 
-struct EpochInfo{
-   uint64_t absoluteSlot;
-   uint64_t blockHeight;
-   uint64_t epoch;
-   uint64_t slotIndex;
-   uint64_t slotsInEpoch;
-   uint64_t transactionCount;
+struct EpochInfo {
+  uint64_t absoluteSlot;
+  uint64_t blockHeight;
+  uint64_t epoch;
+  uint64_t slotIndex;
+  uint64_t slotsInEpoch;
+  uint64_t transactionCount;
 };
 
 void from_json(const json &j, EpochInfo &epochinfo);
@@ -728,7 +726,7 @@ class Connection {
    **/
   uint64_t getFirstAvailableBlock() const;
 
-   /**
+  /**
    * Returns epoch activation information for a stake account
    **/
   StakeActivation getStakeActivation(const PublicKey &pubkey,
