@@ -809,30 +809,47 @@ TEST_CASE("getInflationGovernor") {
   CHECK_GE(inflationgovernor.foundation, 0);
   CHECK_GE(inflationgovernor.foundationTerm, 0);
   CHECK_GE(inflationgovernor.initial, 0);
-  CHECK_GE(inflationgovernor.taper, 0);
-  CHECK_GE(inflationgovernor.terminal, 0);
+  CHECK_EQ(inflationgovernor.taper, 0.15);
+  CHECK_EQ(inflationgovernor.terminal, 0.015);
 }
 
 TEST_CASE("getTransactionCount") {
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto TransactionCount = connection.getTransactionCount(
-      solana::GetSlotConfig{solana::Commitment::FINALIZED});
+      solana::GetSlotConfig{solana::Commitment::CONFIRMED});
   CHECK_GT(TransactionCount, 0);
-  sleep(2);
+  
+  // create a compiled transaction
+  auto recentBlockHash = connection.getLatestBlockhash();
+  const solana::PublicKey memoProgram =
+      solana::PublicKey::fromBase58(solana::MEMO_PROGRAM_ID);
+  const std::string memo = "Hello";
+  const solana::CompiledInstruction ix = {
+      1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
+
+  const solana::CompiledTransaction compiledTx = {
+      recentBlockHash, {keyPair.publicKey, memoProgram}, {ix}, 1, 0, 1};
+    
+  const std::string transactionSignature = connection.sendTransaction(keyPair, compiledTx);
+  uint8_t retries = 140;
+  bool confirmed = false;
+  confirmed = connection.confirmTransaction(
+      transactionSignature, solana::Commitment::CONFIRMED, retries);
   const auto TransactionCount2 = connection.getTransactionCount(
-      solana::GetSlotConfig{solana::Commitment::FINALIZED});
-  CHECK_GE(TransactionCount2, TransactionCount);
+      solana::GetSlotConfig{solana::Commitment::CONFIRMED});
+  CHECK_GT(TransactionCount2, TransactionCount);
 }
 
 TEST_CASE("getEpochInfo") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto epochInfo = connection.getEpochInfo();
-  CHECK_GE(epochInfo.absoluteSlot, 0);
-  CHECK_GE(epochInfo.blockHeight, 0);
-  CHECK_GE(epochInfo.epoch, 0);
-  CHECK_GE(epochInfo.slotIndex, 0);
-  CHECK_GE(epochInfo.slotsInEpoch, 0);
-  CHECK_GE(epochInfo.transactionCount, 0);
+  CHECK_GT(epochInfo.absoluteSlot, 0);
+  CHECK_GT(epochInfo.blockHeight, 0);
+  CHECK_GT(epochInfo.epoch, 0);
+  CHECK_GT(epochInfo.slotIndex, 0);
+  CHECK_EQ(epochInfo.slotsInEpoch, 432000);
+  CHECK_GT(epochInfo.transactionCount, 0);
 }
 
 TEST_CASE("getMinimumBalanceForRentExemption") {
