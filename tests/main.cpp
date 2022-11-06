@@ -819,7 +819,7 @@ TEST_CASE("getTransactionCount") {
   const auto TransactionCount = connection.getTransactionCount(
       solana::GetSlotConfig{solana::Commitment::CONFIRMED});
   CHECK_GT(TransactionCount, 0);
-  
+
   // create a compiled transaction
   auto recentBlockHash = connection.getLatestBlockhash();
   const solana::PublicKey memoProgram =
@@ -830,8 +830,9 @@ TEST_CASE("getTransactionCount") {
 
   const solana::CompiledTransaction compiledTx = {
       recentBlockHash, {keyPair.publicKey, memoProgram}, {ix}, 1, 0, 1};
-    
-  const std::string transactionSignature = connection.sendTransaction(keyPair, compiledTx);
+
+  const std::string transactionSignature =
+      connection.sendTransaction(keyPair, compiledTx);
   uint8_t retries = 140;
   bool confirmed = false;
   confirmed = connection.confirmTransaction(
