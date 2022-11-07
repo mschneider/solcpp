@@ -141,6 +141,23 @@ struct EpochSchedule {
   }
 };
 
+struct StakeActivation {
+  uint64_t active;
+  uint64_t inactive;
+  std::string state;
+};
+
+void from_json(const json &j, StakeActivation &stakeactivation);
+
+struct InflationGovernor {
+  double foundation;
+  double foundationTerm;
+  double initial;
+  double taper;
+  double terminal;
+};
+
+void from_json(const json &j, InflationGovernor &inflationgovernor);
 /**
  * EpochSchedule from json
  */
@@ -218,6 +235,28 @@ NLOHMANN_JSON_SERIALIZE_ENUM(Commitment, {
                                              {FINALIZED, "finalized"},
                                          })
 
+struct GetStakeActivationConfig {
+  /** The level of commitment desired */
+  std::optional<Commitment> commitment = std::nullopt;
+  std::optional<uint64_t> epoch = std::nullopt;
+  /** The minimum slot that the request can be evaluated at */
+  std::optional<uint64_t> minContextSlot = std::nullopt;
+};
+
+void to_json(json &j, const GetStakeActivationConfig &config);
+
+struct commitmentconfig {
+  /** The level of commitment desired */
+  std::optional<Commitment> commitment = std::nullopt;
+};
+void to_json(json &j, const commitmentconfig &config);
+
+struct GetBlocksConfig {
+  std::optional<uint64_t> end_slot = std::nullopt;
+  std::optional<Commitment> commitment = std::nullopt;
+};
+void to_json(json &j, const GetBlocksConfig &config);
+
 struct SimulatedTransactionResponse {
   /**
    * Error if transaction failed, null if transaction succeeded.
@@ -275,6 +314,16 @@ struct SignatureStatus {
   Commitment confirmationStatus;
 };
 
+struct EpochInfo {
+  uint64_t absoluteSlot;
+  uint64_t blockHeight;
+  uint64_t epoch;
+  uint64_t slotIndex;
+  uint64_t slotsInEpoch;
+  uint64_t transactionCount;
+};
+
+void from_json(const json &j, EpochInfo &epochinfo);
 /**
  * SignatureStatus to json
  */
@@ -677,6 +726,36 @@ class Connection {
    **/
   uint64_t getFirstAvailableBlock() const;
 
+  /**
+   * Returns epoch activation information for a stake account
+   **/
+  StakeActivation getStakeActivation(const PublicKey &pubkey,
+                                     const GetStakeActivationConfig &config =
+                                         GetStakeActivationConfig{}) const;
+
+  /**
+   * Returns the current inflation governor
+   **/
+  InflationGovernor getInflationGovernor(
+      const commitmentconfig &config = commitmentconfig{}) const;
+
+  /**
+   * Returns the current Transaction count from the ledger
+   **/
+  uint64_t getTransactionCount(
+      const GetSlotConfig &config = GetSlotConfig{}) const;
+
+  /**
+   * Returns information about the current epoch
+   **/
+  EpochInfo getEpochInfo(const GetSlotConfig &config = GetSlotConfig{}) const;
+
+  /**
+   * Returns minimum balance required to make account rent exempt
+   **/
+  uint64_t getMinimumBalanceForRentExemption(
+      const std::size_t dataLength,
+      const commitmentconfig &config = commitmentconfig{}) const;
   /**
    * Fetch the current status of a signature
    */

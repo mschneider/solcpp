@@ -116,6 +116,14 @@ void from_json(const json &j, EpochSchedule &epochschedule) {
   epochschedule.warmup = j["warmup"];
 }
 
+void from_json(const json &j, EpochInfo &epochinfo) {
+  epochinfo.absoluteSlot = j["absoluteSlot"];
+  epochinfo.blockHeight = j["blockHeight"];
+  epochinfo.epoch = j["epoch"];
+  epochinfo.slotIndex = j["slotIndex"];
+  epochinfo.slotsInEpoch = j["slotsInEpoch"];
+  epochinfo.transactionCount = j["transactionCount"];
+}
 ///
 /// AccountMeta
 bool AccountMeta::operator<(const AccountMeta &other) const {
@@ -150,6 +158,23 @@ void from_json(const json &j, SimulatedTransactionResponse &res) {
   }
 }
 
+void to_json(json &j, const GetStakeActivationConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.epoch.has_value()) {
+    j["epoch"] = config.epoch.value();
+  }
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
+  }
+}
+
+void to_json(json &j, const commitmentconfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+}
 ///
 /// SignatureStatus
 void to_json(json &j, const SignatureStatus &status) {
@@ -174,6 +199,19 @@ void from_json(const json &j, SignatureStatus &res) {
   res.confirmationStatus = j["confirmationStatus"];
 }
 
+void from_json(const json &j, StakeActivation &stakeactivation) {
+  stakeactivation.active = j["active"];
+  stakeactivation.inactive = j["inactive"];
+  stakeactivation.state = j["state"];
+}
+
+void from_json(const json &j, InflationGovernor &inflationgovernor) {
+  inflationgovernor.foundation = j["foundation"];
+  inflationgovernor.foundationTerm = j["foundationTerm"];
+  inflationgovernor.initial = j["initial"];
+  inflationgovernor.taper = j["taper"];
+  inflationgovernor.terminal = j["terminal"];
+}
 ///
 /// CompactU16
 namespace CompactU16 {
@@ -604,6 +642,39 @@ std::string Connection::getSlotLeader(const GetSlotConfig &config) const {
 EpochSchedule Connection::getEpochSchedule() const {
   json params = {};
   const json reqJson = jsonRequest("getEpochSchedule", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+StakeActivation Connection::getStakeActivation(
+    const PublicKey &pubkey, const GetStakeActivationConfig &config) const {
+  const json params = {pubkey, config};
+  const json reqJson = jsonRequest("getStakeActivation", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+InflationGovernor Connection::getInflationGovernor(
+    const commitmentconfig &config) const {
+  const json params = {};
+  const json reqJson = jsonRequest("getInflationGovernor", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+uint64_t Connection::getTransactionCount(const GetSlotConfig &config) const {
+  const json params = {config};
+  const json reqJson = jsonRequest("getTransactionCount", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+EpochInfo Connection::getEpochInfo(const GetSlotConfig &config) const {
+  const json params = {config};
+  const json reqJson = jsonRequest("getEpochInfo", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+uint64_t Connection::getMinimumBalanceForRentExemption(
+    const std::size_t dataLength, const commitmentconfig &config) const {
+  const json params = {dataLength, config};
+  const json reqJson = jsonRequest("getMinimumBalanceForRentExemption", params);
   return sendJsonRpcRequest(reqJson);
 }
 
