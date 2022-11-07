@@ -324,6 +324,40 @@ struct EpochInfo {
 };
 
 void from_json(const json &j, EpochInfo &epochinfo);
+
+struct Nodes {
+  std::optional<uint64_t> featureSet = std::nullopt;
+  std::optional<std::string> gossip = std::nullopt;
+  std::optional<std::string> pubkey = std::nullopt;
+  std::optional<std::string> rpc = std::nullopt;
+  std::optional<uint64_t> shredVersion = std::nullopt;
+  std::optional<std::string> tpu = std::nullopt;
+  std::optional<std::string> version = std::nullopt;
+};
+
+void from_json(const json &j, Nodes &nodes);
+
+struct LargestAccounts {
+  uint64_t lamports;
+  std::string address;
+};
+
+void from_json(const json &j, LargestAccounts &largestaccounts);
+
+struct RecentPerformanceSamples {
+  uint64_t numSlots;
+  uint64_t numTransactions;
+  uint64_t samplePeriodSecs;
+  uint64_t slot;
+};
+void from_json(const json &j,
+               RecentPerformanceSamples &recentperformancesamples);
+
+struct getFeeForMessageRes {
+  std::optional<uint64_t> value = std::nullopt;
+};
+void from_json(const json &j, getFeeForMessageRes &res);
+
 /**
  * SignatureStatus to json
  */
@@ -756,6 +790,36 @@ class Connection {
   uint64_t getMinimumBalanceForRentExemption(
       const std::size_t dataLength,
       const commitmentconfig &config = commitmentconfig{}) const;
+
+  /**
+   * Returns the estimated production time of a block.
+   */
+  uint64_t getBlockTime(const uint64_t slot) const;
+
+  /**
+   *Returns information about all the nodes participating in the cluster
+   */
+  std::vector<Nodes> getClusterNodes() const;
+
+  /**
+   *Get the fee the network will charge for a particular Message
+   */
+  getFeeForMessageRes getFeeForMessage(
+      const std::string message,
+      const GetSlotConfig &config = GetSlotConfig{}) const;
+
+  /**
+   *Returns a list of recent performance samples, in reverse slot order.
+   */
+  std::vector<RecentPerformanceSamples> getRecentPerformanceSamples(
+      std::size_t limit) const;
+
+  /**
+   *Returns the 20 largest accounts, by lamport balance
+   */
+  RpcResponseAndContext<std::vector<LargestAccounts>> getLargestAccounts()
+      const;
+
   /**
    * Fetch the current status of a signature
    */

@@ -859,3 +859,46 @@ TEST_CASE("getMinimumBalanceForRentExemption") {
       512, solana::commitmentconfig{solana::Commitment::FINALIZED});
   CHECK_GE(minimumBalance, 0);
 }
+
+TEST_CASE("getMinimumBalanceForRentExemption") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto minimumBalance = connection.getMinimumBalanceForRentExemption(
+      512, solana::commitmentconfig{solana::Commitment::FINALIZED});
+  CHECK_GE(minimumBalance, 0);
+}
+
+TEST_CASE("getBlockTime") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto slot = connection.getFirstAvailableBlock();
+  const auto BlockTime = connection.getBlockTime(slot);
+  CHECK_GT(BlockTime, 0);
+}
+
+TEST_CASE("getClusterNodes") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto clusterNodes = connection.getClusterNodes();
+  CHECK_GT(clusterNodes.size(), 0);
+}
+
+TEST_CASE("getFeeForMessage") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto FeeForMessage = connection.getFeeForMessage(
+      "AQABAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAA"
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAQAA");
+  if (FeeForMessage.value.has_value()) {
+    CHECK_GT(FeeForMessage.value.value(), 0);
+  }
+}
+
+TEST_CASE("getLargestAccount") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto LargestAccount = connection.getLargestAccounts();
+  CHECK_EQ(LargestAccount.value.size(), 20);
+}
+
+TEST_CASE("getRecentPerformanceSamples") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto RecentPerformanceSamples =
+      connection.getRecentPerformanceSamples(4);
+  CHECK_EQ(RecentPerformanceSamples[0].samplePeriodSecs, 60);
+}
