@@ -860,13 +860,6 @@ TEST_CASE("getMinimumBalanceForRentExemption") {
   CHECK_GE(minimumBalance, 0);
 }
 
-TEST_CASE("getMinimumBalanceForRentExemption") {
-  const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const auto minimumBalance = connection.getMinimumBalanceForRentExemption(
-      512, solana::commitmentconfig{solana::Commitment::FINALIZED});
-  CHECK_GE(minimumBalance, 0);
-}
-
 TEST_CASE("getBlockTime") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto slot = connection.getFirstAvailableBlock();
