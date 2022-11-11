@@ -902,3 +902,11 @@ TEST_CASE("getRecentPerformanceSamples") {
       connection.getRecentPerformanceSamples(4);
   CHECK_EQ(RecentPerformanceSamples[0].samplePeriodSecs, 60);
 }
+
+TEST_CASE("getTokenSupply") {
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const solana::PublicKey pubkey = solana::PublicKey::fromBase58(
+      "3wyAj7Rt1TWVPZVteFJPLa26JmLvdb1CAKEFZm3NY75E");
+  connection.getTokenSupply(keyPair.publicKey);
+}

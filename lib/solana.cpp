@@ -15,6 +15,7 @@
 #include "cpr/api.h"
 #include "cpr/body.h"
 #include "cpr/cprtypes.h"
+#include "iostream"
 
 namespace solana {
 
@@ -211,6 +212,12 @@ void from_json(const json &j, InflationGovernor &inflationgovernor) {
   inflationgovernor.initial = j["initial"];
   inflationgovernor.taper = j["taper"];
   inflationgovernor.terminal = j["terminal"];
+}
+
+void from_json(const json &j, TokenSupply &tokensupply) {
+  tokensupply.amount = j["amount"];
+  tokensupply.decimals = j["decimals"];
+  tokensupply.uiAmountString = j["uiAmountString"];
 }
 
 void from_json(const json &j, Nodes &nodes) {
@@ -622,6 +629,13 @@ Connection::getSignatureStatus(const std::string &signature,
                                bool searchTransactionHistory) const {
   const auto res = getSignatureStatuses({signature}, searchTransactionHistory);
   return {res.context, res.value[0]};
+}
+
+TokenSupply Connection::getTokenSupply(const PublicKey &pubKey) const {
+  const json params = {pubKey.toBase58()};
+  const auto res = jsonRequest("getTokenSupply", params);
+
+  return sendJsonRpcRequest(res);
 }
 
 bool Connection::confirmTransaction(std::string transactionSignature,
