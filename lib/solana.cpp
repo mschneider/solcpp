@@ -15,7 +15,6 @@
 #include "cpr/api.h"
 #include "cpr/body.h"
 #include "cpr/cprtypes.h"
-#include "iostream"
 
 namespace solana {
 
@@ -218,6 +217,12 @@ void from_json(const json &j, TokenSupply &tokensupply) {
   tokensupply.amount = j["amount"];
   tokensupply.decimals = j["decimals"];
   tokensupply.uiAmountString = j["uiAmountString"];
+}
+
+void from_json(const json &j, BlockProduction &blockproduction) {
+  blockproduction.firstSlot = j["range"]["firstSlot"];
+  blockproduction.lastSlot = j["range"]["lastSlot"];
+  blockproduction.byIdentity = j["byIdentity"];
 }
 
 void from_json(const json &j, Nodes &nodes) {
@@ -636,6 +641,18 @@ TokenSupply Connection::getTokenSupply(const PublicKey &pubKey) const {
   const auto res = jsonRequest("getTokenSupply", params);
 
   return sendJsonRpcRequest(res);
+}
+
+BlockProduction Connection::getBlockProduction() const {
+  const json params = {};
+  const auto res = jsonRequest("getBlockProduction", params);
+  return sendJsonRpcRequest(res)["value"];
+}
+
+TokenSupply Connection::getTokenSupply() const {
+  const json params = {};
+  const auto res = jsonRequest("getTokenSupply", params);
+  return sendJsonRpcRequest(res)["result"];
 }
 
 bool Connection::confirmTransaction(std::string transactionSignature,

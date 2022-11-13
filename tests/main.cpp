@@ -903,3 +903,13 @@ TEST_CASE("getTokenSupply") {
       "3wyAj7Rt1TWVPZVteFJPLa26JmLvdb1CAKEFZm3NY75E");
   connection.getTokenSupply(keyPair.publicKey);
 }
+
+TEST_CASE("getBlockProduction") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  auto x = connection.getBlockProduction();
+}
+
+TEST_CASE("getLeaderSchedule") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  auto x = connection.getTokenSupply();
+}

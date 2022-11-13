@@ -172,6 +172,19 @@ struct TokenSupply {
 
 void from_json(const json &j, TokenSupply &tokensupply);
 
+struct BlockProduction {
+  uint64_t firstSlot;
+  uint64_t lastSlot;
+  json byIdentity;
+};
+
+void from_json(const json &j, BlockProduction &blockproduction);
+
+struct LeaderSchedule {
+  json validator_identities;
+};
+
+void from_json(const json &j, LeaderSchedule &leaderschedule);
 /**
  * Account metadata used to define instructions
  */
@@ -815,6 +828,19 @@ class Connection {
    */
 
   TokenSupply getTokenSupply(const PublicKey &pubKey) const;
+
+  /**
+   * Returns recent block production information from the current or previous
+   * epoch.
+   */
+
+  BlockProduction getBlockProduction() const;
+
+  /**
+   * Returns the leader schedule for an epoch
+   */
+
+  TokenSupply getTokenSupply() const;
 
   /**
    *Get the fee the network will charge for a particular Message
