@@ -176,7 +176,7 @@ void to_json(json &j, const commitmentconfig &config) {
   }
 }
 
-void to_json(json &j, const largestAccountsConfig &config) {
+void to_json(json &j, const LargestAccountsConfig &config) {
   if (config.commitment.has_value()) {
     j["commitment"] = config.commitment.value();
   }
@@ -751,7 +751,7 @@ getFeeForMessageRes Connection::getFeeForMessage(
 }
 
 RpcResponseAndContext<std::vector<LargestAccounts>>
-Connection::getLargestAccounts(const largestAccountsConfig &config) const {
+Connection::getLargestAccounts(const LargestAccountsConfig &config) const {
   const json params = {config};
   const auto reqJson = jsonRequest("getLargestAccounts", params);
   const json res = sendJsonRpcRequest(reqJson);
