@@ -175,6 +175,15 @@ void to_json(json &j, const commitmentconfig &config) {
     j["commitment"] = config.commitment.value();
   }
 }
+
+void to_json(json &j, const LargestAccountsConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.filter.has_value()) {
+    j["filter"] = config.filter.value();
+  }
+}
 ///
 /// SignatureStatus
 void to_json(json &j, const SignatureStatus &status) {
@@ -773,16 +782,14 @@ getFeeForMessageRes Connection::getFeeForMessage(
 }
 
 RpcResponseAndContext<std::vector<LargestAccounts>>
-Connection::getLargestAccounts() const {
-  const json params = {};
+Connection::getLargestAccounts(const LargestAccountsConfig &config) const {
+  const json params = {config};
   const auto reqJson = jsonRequest("getLargestAccounts", params);
   const json res = sendJsonRpcRequest(reqJson);
   const std::vector<json> value = res["value"];
   std::vector<LargestAccounts> accounts_list;
   accounts_list.reserve(value.size());
-  for (const json &account : value) {
-    accounts_list.push_back(account);
-  }
+  std::copy(value.begin(), value.end(), std::back_inserter(accounts_list));
   return {res["context"], accounts_list};
 }
 
@@ -794,9 +801,7 @@ std::vector<RecentPerformanceSamples> Connection::getRecentPerformanceSamples(
   const std::vector<json> value = res;
   std::vector<RecentPerformanceSamples> samples_list;
   samples_list.reserve(value.size());
-  for (const json &sample : value) {
-    samples_list.push_back(sample);
-  }
+  std::copy(value.begin(), value.end(), std::back_inserter(samples_list));
   return samples_list;
 }
 

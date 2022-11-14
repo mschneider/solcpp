@@ -323,6 +323,12 @@ struct GetSlotConfig {
  */
 void to_json(json &j, const GetSlotConfig &config);
 
+struct LargestAccountsConfig {
+  std::optional<Commitment> commitment = std::nullopt;
+  std::optional<std::string> filter = std::nullopt;
+};
+void to_json(json &j, const LargestAccountsConfig &config);
+
 struct SignatureStatus {
   /** when the transaction was processed */
   uint64_t slot;
@@ -858,8 +864,8 @@ class Connection {
   /**
    *Returns the 20 largest accounts, by lamport balance
    */
-  RpcResponseAndContext<std::vector<LargestAccounts>> getLargestAccounts()
-      const;
+  RpcResponseAndContext<std::vector<LargestAccounts>> getLargestAccounts(
+      const LargestAccountsConfig &config = LargestAccountsConfig{}) const;
 
   /**
    * Fetch the current status of a signature
