@@ -175,6 +175,15 @@ void to_json(json &j, const commitmentconfig &config) {
     j["commitment"] = config.commitment.value();
   }
 }
+
+void to_json(json &j, const LargestAccountsConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.filter.has_value()) {
+    j["filter"] = config.filter.value();
+  }
+}
 ///
 /// SignatureStatus
 void to_json(json &j, const SignatureStatus &status) {
@@ -212,6 +221,50 @@ void from_json(const json &j, InflationGovernor &inflationgovernor) {
   inflationgovernor.taper = j["taper"];
   inflationgovernor.terminal = j["terminal"];
 }
+
+void from_json(const json &j, Nodes &nodes) {
+  if (!j["featureSet"].is_null()) {
+    nodes.featureSet = std::optional{j["featureSet"]};
+  }
+  if (!j["gossip"].is_null()) {
+    nodes.gossip = std::optional{j["gossip"]};
+  }
+  if (!j["pubkey"].is_null()) {
+    nodes.pubkey = std::optional{j["pubkey"]};
+  }
+  if (!j["rpc"].is_null()) {
+    nodes.rpc = std::optional{j["rpc"]};
+  }
+  if (!j["shredVersion"].is_null()) {
+    nodes.shredVersion = std::optional{j["shredVersion"]};
+  }
+  if (!j["tpu"].is_null()) {
+    nodes.tpu = std::optional{j["tpu"]};
+  }
+  if (!j["version"].is_null()) {
+    nodes.version = std::optional{j["version"]};
+  }
+}
+
+void from_json(const json &j, getFeeForMessageRes &res) {
+  if (!j.is_null()) {
+    res.value = j;
+  }
+}
+
+void from_json(const json &j, LargestAccounts &largestaccounts) {
+  largestaccounts.address = j["address"];
+  largestaccounts.lamports = j["lamports"];
+}
+
+void from_json(const json &j,
+               RecentPerformanceSamples &recentperformancesamples) {
+  recentperformancesamples.numSlots = j["numSlots"];
+  recentperformancesamples.numTransactions = j["numTransactions"];
+  recentperformancesamples.samplePeriodSecs = j["samplePeriodSecs"];
+  recentperformancesamples.slot = j["slot"];
+}
+
 ///
 /// CompactU16
 namespace CompactU16 {
@@ -676,6 +729,49 @@ uint64_t Connection::getMinimumBalanceForRentExemption(
   const json params = {dataLength, config};
   const json reqJson = jsonRequest("getMinimumBalanceForRentExemption", params);
   return sendJsonRpcRequest(reqJson);
+}
+
+uint64_t Connection::getBlockTime(const uint64_t slot) const {
+  const json params = {slot};
+  const json reqJson = jsonRequest("getBlockTime", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+std::vector<Nodes> Connection::getClusterNodes() const {
+  const json params = {};
+  const json reqJson = jsonRequest("getClusterNodes", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+getFeeForMessageRes Connection::getFeeForMessage(
+    const std::string message, const GetSlotConfig &config) const {
+  const json params = {message, config};
+  const json reqJson = jsonRequest("getFeeForMessage", params);
+  return sendJsonRpcRequest(reqJson)["value"];
+}
+
+RpcResponseAndContext<std::vector<LargestAccounts>>
+Connection::getLargestAccounts(const LargestAccountsConfig &config) const {
+  const json params = {config};
+  const auto reqJson = jsonRequest("getLargestAccounts", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const std::vector<json> value = res["value"];
+  std::vector<LargestAccounts> accounts_list;
+  accounts_list.reserve(value.size());
+  std::copy(value.begin(), value.end(), std::back_inserter(accounts_list));
+  return {res["context"], accounts_list};
+}
+
+std::vector<RecentPerformanceSamples> Connection::getRecentPerformanceSamples(
+    std::size_t limit) const {
+  const json params = {limit};
+  const auto reqJson = jsonRequest("getRecentPerformanceSamples", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const std::vector<json> value = res;
+  std::vector<RecentPerformanceSamples> samples_list;
+  samples_list.reserve(value.size());
+  std::copy(value.begin(), value.end(), std::back_inserter(samples_list));
+  return samples_list;
 }
 
 }  // namespace rpc
