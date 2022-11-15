@@ -17,7 +17,7 @@ namespace websocket = beast::websocket;  // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;             // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;        // from <boost/asio/ip/tcp.hpp>
 using json = nlohmann::json;             // from <nlohmann/json.hpp>
-using Callback = std::function<void(json &)>;  // callback function which takes
+using Callback = std::function<void(const json &)>;  // callback function which takes
                                                // the json and returns nothing
 
 /// @brief Class to store the request and function given by user
