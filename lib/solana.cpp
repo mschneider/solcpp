@@ -1,9 +1,13 @@
+#include "solana.hpp"
+
 #include <cpr/cpr.h>
 #include <sodium.h>
+#include <unistd.h>
 
 #include <chrono>
 #include <cstdint>
 #include <iterator>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <ostream>
 #include <solana.hpp>
@@ -678,8 +682,68 @@ uint64_t Connection::getMinimumBalanceForRentExemption(
   return sendJsonRpcRequest(reqJson);
 }
 
+
+namespace subscription {
+WebSocketSubscriber::WebSocketSubscriber(std::string host, std::string port,
+                                         int timeout) {
+  // create a new session
+  sess = std::make_shared<session>(ioc, timeout);
+  // function to read
+  auto read_fn = [=]() {
+    sess->run(host, port);
+    ioc.run();
+  };
+
+  // writing using one thread and read using another
+  read_thread = std::thread(read_fn);
+
+  // wait for connection to be established
+  while (true) {
+    if (timeout <= 0) {
+      std::cout << "Could not connect" << std::endl;
+    }
+    if (sess->connection_established()) break;
+    timeout--;
+  }
+}
+WebSocketSubscriber::~WebSocketSubscriber() {
+  // disconnect the session and wait for the threads to complete
+  sess->disconnect();
+  if (read_thread.joinable()) read_thread.join();
+}
+
+/// @brief callback to call when data in account changes
+/// @param pub_key public key for the account
+/// @param account_change_callback callback to call when the data changes
+/// @param commitment commitment
+/// @return subsccription id (actually the current id)
+int WebSocketSubscriber::onAccountChange(std::string pub_key,
+                                         Callback account_change_callback,
+                                         const Commitment &commitment) {
+
+  // create parameters using the user provided input
+  json param = {pub_key, {{"encoding", "base64"}, {"commitment", commitment}}};
+
+  // create a new request content
+  std::shared_ptr<RequestContent> req(
+      new RequestContent(curr_id, "accountSubscribe", "accountUnsubscribe",
+                         account_change_callback, param));
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req->id;
+}
+
+/// @brief remove the account change listener for the given id
+/// @param sub_id the id for which removing subscription is needed
+void WebSocketSubscriber::removeAccountChangeListener(int sub_id) {
+  sess->unsubscribe(sub_id);
+}
+}  // namespace subscription
+
 }  // namespace rpc
-
-namespace subscription {}  // namespace subscription
-
 }  // namespace solana
