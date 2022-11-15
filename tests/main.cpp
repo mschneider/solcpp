@@ -873,16 +873,16 @@ TEST_CASE("account subscribe and unsubscribe") {
       sub.onAccountChange(keyPair.publicKey.toBase58(), call_on_subscribe);
   // change account data
   connection.requestAirdrop(keyPair.publicKey, 50);
-  // wait for 20 seconds for transaction to process
-  sleep(60);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
   // assure that callback has been called
   CHECK(subscribe_called);
   // stop listening to websocket
   sub.removeAccountChangeListener(sub_id);
   // change account data
   connection.requestAirdrop(keyPair.publicKey, 50);
-  // wait for 20 seconds for transaction to process
-  sleep(60);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
   // ensure that callback wasn't called
   CHECK(subscribe_called);
 }
