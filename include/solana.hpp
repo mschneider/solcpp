@@ -308,6 +308,12 @@ struct GetSlotConfig {
  */
 void to_json(json &j, const GetSlotConfig &config);
 
+struct LargestAccountsConfig {
+  std::optional<Commitment> commitment = std::nullopt;
+  std::optional<std::string> filter = std::nullopt;
+};
+void to_json(json &j, const LargestAccountsConfig &config);
+
 struct SignatureStatus {
   /** when the transaction was processed */
   uint64_t slot;
@@ -331,6 +337,40 @@ struct EpochInfo {
 };
 
 void from_json(const json &j, EpochInfo &epochinfo);
+
+struct Nodes {
+  std::optional<uint64_t> featureSet = std::nullopt;
+  std::optional<std::string> gossip = std::nullopt;
+  std::optional<std::string> pubkey = std::nullopt;
+  std::optional<std::string> rpc = std::nullopt;
+  std::optional<uint64_t> shredVersion = std::nullopt;
+  std::optional<std::string> tpu = std::nullopt;
+  std::optional<std::string> version = std::nullopt;
+};
+
+void from_json(const json &j, Nodes &nodes);
+
+struct LargestAccounts {
+  uint64_t lamports;
+  std::string address;
+};
+
+void from_json(const json &j, LargestAccounts &largestaccounts);
+
+struct RecentPerformanceSamples {
+  uint64_t numSlots;
+  uint64_t numTransactions;
+  uint64_t samplePeriodSecs;
+  uint64_t slot;
+};
+void from_json(const json &j,
+               RecentPerformanceSamples &recentperformancesamples);
+
+struct getFeeForMessageRes {
+  std::optional<uint64_t> value = std::nullopt;
+};
+void from_json(const json &j, getFeeForMessageRes &res);
+
 /**
  * SignatureStatus to json
  */
@@ -340,6 +380,84 @@ void to_json(json &j, const SignatureStatus &status);
  * SignatureStatus from json
  */
 void from_json(const json &j, SignatureStatus &status);
+
+struct GetSupplyConfig {
+  /** The level of commitment desired */
+  std::optional<Commitment> commitment = std::nullopt;
+  /** The minimum slot that the request can be evaluated at */
+  std::optional<bool> excludeNonCirculatingAccountsList = std::nullopt;
+};
+
+struct GetVoteAccountsConfig {
+  std::optional<Commitment> commitment = std::nullopt;
+  std::optional<std::string> votePubkey = std::nullopt;
+  std::optional<bool> keepUnstakedDelinquents = std::nullopt;
+  std::optional<uint64_t> delinquentSlotDistance = std::nullopt;
+};
+
+struct GetSignatureAddressConfig {
+  std::optional<uint64_t> limit = std::nullopt;
+  std::optional<std::string> before = std::nullopt;
+  std::optional<std::string> until = std::nullopt;
+  std::optional<Commitment> commitment = std::nullopt;
+  std::optional<uint64_t> minContextSlot = std::nullopt;
+};
+
+struct Supply {
+  uint64_t circulating;
+  uint64_t nonCirculating;
+  std::optional<std::vector<std::string>> nonCirculatingAccounts = std::nullopt;
+  uint64_t total;
+};
+
+void from_json(const json &j, Supply &supply);
+
+struct TokenAccountBalance {
+  std::string amount;
+  uint64_t decimals;
+  double uiAmount;
+  std::string uiAmountString;
+};
+
+void from_json(const json &j, TokenAccountBalance &tokenaccountbalance);
+
+struct Current {
+  uint64_t commission;
+  bool epochVoteAccount;
+  std::vector<std::vector<uint64_t>> epochCredits;
+  std::string nodePubkey;
+  uint64_t lastVote;
+  uint64_t activatedStake;
+  std::string votePubkey;
+};
+
+struct Delinquent {
+  uint64_t commission;
+  bool epochVoteAccount;
+  std::vector<std::vector<uint64_t>> epochCredits;
+  std::string nodePubkey;
+  uint64_t lastVote;
+  uint64_t activatedStake;
+  std::string votePubkey;
+};
+
+struct VoteAccounts {
+  std::vector<Current> current;
+  std::vector<Delinquent> delinquent;
+};
+
+struct SignaturesAddress {
+  std::optional<uint64_t> blockTime = std::nullopt;
+  std::optional<Commitment> confirmationStatus = std::nullopt;
+  std::optional<std::string> err = std::nullopt;
+  std::optional<std::string> memo = std::nullopt;
+  std::string signature;
+  uint64_t slot;
+};
+
+void from_json(const json &j, SignaturesAddress &signaturesaddress);
+void to_json(json &j, const GetSupplyConfig &config);
+void to_json(json &j, const GetVoteAccountsConfig &config);
 
 /**
  * Extra contextual information for RPC responses
@@ -763,12 +881,76 @@ class Connection {
   uint64_t getMinimumBalanceForRentExemption(
       const std::size_t dataLength,
       const commitmentconfig &config = commitmentconfig{}) const;
+
+  /**
+   * Returns the estimated production time of a block.
+   */
+  uint64_t getBlockTime(const uint64_t slot) const;
+
+  /**
+   *Returns information about all the nodes participating in the cluster
+   */
+  std::vector<Nodes> getClusterNodes() const;
+
+  /**
+   *Get the fee the network will charge for a particular Message
+   */
+  getFeeForMessageRes getFeeForMessage(
+      const std::string message,
+      const GetSlotConfig &config = GetSlotConfig{}) const;
+
+  /**
+   *Returns a list of recent performance samples, in reverse slot order.
+   */
+  std::vector<RecentPerformanceSamples> getRecentPerformanceSamples(
+      std::size_t limit) const;
+
+  /**
+   *Returns the 20 largest accounts, by lamport balance
+   */
+  RpcResponseAndContext<std::vector<LargestAccounts>> getLargestAccounts(
+      const LargestAccountsConfig &config = LargestAccountsConfig{}) const;
+
   /**
    * Fetch the current status of a signature
    */
   RpcResponseAndContext<std::optional<SignatureStatus>> getSignatureStatus(
       const std::string &signature,
       bool searchTransactionHistory = false) const;
+
+  /**
+   * Returns the slot leaders for a given slot range
+   */
+  std::vector<std::string> getSlotLeaders(uint64_t startSlot,
+                                          uint64_t limit) const;
+
+  /**
+   * Returns information about the current supply.
+   */
+  RpcResponseAndContext<Supply> getSupply(
+      const GetSupplyConfig &config = GetSupplyConfig{}) const;
+
+  /**
+   * Returns the token balance of an SPL Token account.
+   */
+  RpcResponseAndContext<TokenAccountBalance> getTokenAccountBalance(
+      const std::string pubkey,
+      const commitmentconfig &config = commitmentconfig{}) const;
+
+  /**
+   * Returns the account info and associated stake for all the voting accounts
+   * in the current bank.
+   */
+  VoteAccounts getVoteAccounts(
+      const GetVoteAccountsConfig &config = GetVoteAccountsConfig{}) const;
+
+  /**
+   * Returns signatures for confirmed transactions that include the given
+   * address in their accountKeys list.
+   */
+  std::vector<SignaturesAddress> getSignaturesForAddress(
+      std::string pubkey, const GetSignatureAddressConfig &config =
+                              GetSignatureAddressConfig{}) const;
 
   /**
    * Fetch parsed account info for the specified public key

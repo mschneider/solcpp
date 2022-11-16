@@ -179,6 +179,73 @@ void to_json(json &j, const commitmentconfig &config) {
     j["commitment"] = config.commitment.value();
   }
 }
+
+void to_json(json &j, const LargestAccountsConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.filter.has_value()) {
+    j["filter"] = config.filter.value();
+  }
+}
+
+void from_json(const json &j, Supply &supply) {
+  supply.circulating = j["circulating"];
+  supply.nonCirculating = j["nonCirculating"];
+  supply.nonCirculatingAccounts =
+      std::optional<std::vector<std::string>>{j["nonCirculatingAccounts"]};
+  supply.total = j["total"];
+}
+void from_json(const json &j, TokenAccountBalance &tokenaccountbalance) {
+  tokenaccountbalance.amount = j["amount"];
+  tokenaccountbalance.decimals = j["decimals"];
+  tokenaccountbalance.uiAmount = j["uiAmount"];
+  tokenaccountbalance.uiAmountString = j["uiAmountString"];
+}
+
+void from_json(const json &j, Current &current) {
+  current.activatedStake = j["activatedStake"];
+  current.commission = j["commission"];
+  current.epochCredits = j["epochCredits"];
+  current.epochVoteAccount = j["epochVoteAccount"];
+  current.lastVote = j["lastVote"];
+  current.nodePubkey = j["nodePubkey"];
+  current.votePubkey = j["votePubkey"];
+}
+
+void from_json(const json &j, Delinquent &delinquent) {
+  delinquent.activatedStake = j["activatedStake"];
+  delinquent.commission = j["commission"];
+  delinquent.epochCredits = j["epochCredits"];
+  delinquent.epochVoteAccount = j["epochVoteAccount"];
+  delinquent.lastVote = j["lastVote"];
+  delinquent.nodePubkey = j["nodePubkey"];
+  delinquent.votePubkey = j["votePubkey"];
+}
+
+void from_json(const json &j, VoteAccounts &voteaccounts) {
+  voteaccounts.current = j["current"];
+  voteaccounts.delinquent = j["delinquent"];
+}
+
+void from_json(const json &j, SignaturesAddress &signaturesaddress) {
+  if (!j["blockTime"].is_null()) {
+    signaturesaddress.blockTime = std::optional{j["blockTime"]};
+  }
+  if (!j["err"].is_null()) {
+    signaturesaddress.err = std::optional{j["err"]};
+  }
+  if (!j["confirmationStatus"].is_null()) {
+    signaturesaddress.confirmationStatus =
+        std::optional{j["confirmationStatus"]};
+  }
+  if (!j["memo"].is_null()) {
+    signaturesaddress.memo = std::optional{j["memo"]};
+  }
+  signaturesaddress.signature = j["signature"];
+  signaturesaddress.slot = j["slot"];
+};
+
 ///
 /// SignatureStatus
 void to_json(json &j, const SignatureStatus &status) {
@@ -216,6 +283,93 @@ void from_json(const json &j, InflationGovernor &inflationgovernor) {
   inflationgovernor.taper = j["taper"];
   inflationgovernor.terminal = j["terminal"];
 }
+
+void from_json(const json &j, Nodes &nodes) {
+  if (!j["featureSet"].is_null()) {
+    nodes.featureSet = std::optional{j["featureSet"]};
+  }
+  if (!j["gossip"].is_null()) {
+    nodes.gossip = std::optional{j["gossip"]};
+  }
+  if (!j["pubkey"].is_null()) {
+    nodes.pubkey = std::optional{j["pubkey"]};
+  }
+  if (!j["rpc"].is_null()) {
+    nodes.rpc = std::optional{j["rpc"]};
+  }
+  if (!j["shredVersion"].is_null()) {
+    nodes.shredVersion = std::optional{j["shredVersion"]};
+  }
+  if (!j["tpu"].is_null()) {
+    nodes.tpu = std::optional{j["tpu"]};
+  }
+  if (!j["version"].is_null()) {
+    nodes.version = std::optional{j["version"]};
+  }
+}
+
+void from_json(const json &j, getFeeForMessageRes &res) {
+  if (!j.is_null()) {
+    res.value = j;
+  }
+}
+
+void from_json(const json &j, LargestAccounts &largestaccounts) {
+  largestaccounts.address = j["address"];
+  largestaccounts.lamports = j["lamports"];
+}
+
+void from_json(const json &j,
+               RecentPerformanceSamples &recentperformancesamples) {
+  recentperformancesamples.numSlots = j["numSlots"];
+  recentperformancesamples.numTransactions = j["numTransactions"];
+  recentperformancesamples.samplePeriodSecs = j["samplePeriodSecs"];
+  recentperformancesamples.slot = j["slot"];
+}
+
+void to_json(json &j, const GetSupplyConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.excludeNonCirculatingAccountsList.has_value()) {
+    j["excludeNonCirculatingAccountsList"] =
+        config.excludeNonCirculatingAccountsList.value();
+  }
+}
+
+void to_json(json &j, const GetVoteAccountsConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.votePubkey.has_value()) {
+    j["votePubkey"] = config.votePubkey.value();
+  }
+  if (config.keepUnstakedDelinquents.has_value()) {
+    j["keepUnstakedDelinquents"] = config.keepUnstakedDelinquents.value();
+  }
+  if (config.delinquentSlotDistance.has_value()) {
+    j["keepUnstakedDelinquents"] = config.keepUnstakedDelinquents.value();
+  }
+}
+
+void to_json(json &j, const GetSignatureAddressConfig &signatureaddressconfig) {
+  if (signatureaddressconfig.limit.has_value()) {
+    j["limit"] = signatureaddressconfig.limit.value();
+  }
+  if (signatureaddressconfig.before.has_value()) {
+    j["before"] = signatureaddressconfig.before.value();
+  }
+  if (signatureaddressconfig.until.has_value()) {
+    j["until"] = signatureaddressconfig.until.value();
+  }
+  if (signatureaddressconfig.commitment.has_value()) {
+    j["commitment"] = signatureaddressconfig.commitment.value();
+  }
+  if (signatureaddressconfig.minContextSlot.has_value()) {
+    j["minContextSlot"] = signatureaddressconfig.minContextSlot.value();
+  }
+}
+
 ///
 /// CompactU16
 namespace CompactU16 {
@@ -682,6 +836,95 @@ uint64_t Connection::getMinimumBalanceForRentExemption(
   return sendJsonRpcRequest(reqJson);
 }
 
+uint64_t Connection::getBlockTime(const uint64_t slot) const {
+  const json params = {slot};
+  const json reqJson = jsonRequest("getBlockTime", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+std::vector<Nodes> Connection::getClusterNodes() const {
+  const json params = {};
+  const json reqJson = jsonRequest("getClusterNodes", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+getFeeForMessageRes Connection::getFeeForMessage(
+    const std::string message, const GetSlotConfig &config) const {
+  const json params = {message, config};
+  const json reqJson = jsonRequest("getFeeForMessage", params);
+  return sendJsonRpcRequest(reqJson)["value"];
+}
+
+RpcResponseAndContext<std::vector<LargestAccounts>>
+Connection::getLargestAccounts(const LargestAccountsConfig &config) const {
+  const json params = {config};
+  const auto reqJson = jsonRequest("getLargestAccounts", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const std::vector<json> value = res["value"];
+  std::vector<LargestAccounts> accounts_list;
+  accounts_list.reserve(value.size());
+  std::copy(value.begin(), value.end(), std::back_inserter(accounts_list));
+  return {res["context"], accounts_list};
+}
+
+std::vector<RecentPerformanceSamples> Connection::getRecentPerformanceSamples(
+    std::size_t limit) const {
+  const json params = {limit};
+  const auto reqJson = jsonRequest("getRecentPerformanceSamples", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const std::vector<json> value = res;
+  std::vector<RecentPerformanceSamples> samples_list;
+  samples_list.reserve(value.size());
+  std::copy(value.begin(), value.end(), std::back_inserter(samples_list));
+  return samples_list;
+}
+
+std::vector<std::string> Connection::getSlotLeaders(uint64_t startSlot,
+                                                    uint64_t limit) const {
+  const json params = {startSlot, limit};
+  const json reqJson = jsonRequest("getSlotLeaders", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+RpcResponseAndContext<Supply> Connection::getSupply(
+    const GetSupplyConfig &config) const {
+  const json params = {config};
+  const auto reqJson = jsonRequest("getSupply", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  Supply accounts_list = res["value"];
+  return {res["context"], accounts_list};
+}
+
+RpcResponseAndContext<TokenAccountBalance> Connection::getTokenAccountBalance(
+    const std::string pubkey, const commitmentconfig &config) const {
+  const json params = {pubkey, config};
+  const auto reqJson = jsonRequest("getTokenAccountBalance", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  TokenAccountBalance accounts_list = res["value"];
+  return {res["context"], accounts_list};
+}
+
+VoteAccounts Connection::getVoteAccounts(
+    const GetVoteAccountsConfig &config) const {
+  const json params = {config};
+  const auto reqJson = jsonRequest("getVoteAccounts", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+std::vector<SignaturesAddress> Connection::getSignaturesForAddress(
+    std::string pubkey,
+    const GetSignatureAddressConfig &signatureaddressconfig) const {
+  const json params = {pubkey, signatureaddressconfig};
+  const auto reqJson = jsonRequest("getSignaturesForAddress", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const std::vector<json> value = res;
+  std::vector<SignaturesAddress> samples_list;
+  samples_list.reserve(value.size());
+  std::copy(value.begin(), value.end(), std::back_inserter(samples_list));
+  return samples_list;
+}
+
+}  // namespace rpc
 
 namespace subscription {
 WebSocketSubscriber::WebSocketSubscriber(std::string host, std::string port,
