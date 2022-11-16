@@ -895,3 +895,43 @@ TEST_CASE("getRecentPerformanceSamples") {
       connection.getRecentPerformanceSamples(4);
   CHECK_EQ(RecentPerformanceSamples[0].samplePeriodSecs, 60);
 }
+
+TEST_CASE("getSlotLeaders") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto slot = connection.getSlot();
+  const auto slotLeaders = connection.getSlotLeaders(slot, 10);
+  CHECK_GT(slotLeaders.size(), 0);
+}
+
+TEST_CASE("getSupply") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto supply = connection.getSupply();
+  CHECK_GT(supply.value.circulating, 0);
+  CHECK_GT(supply.value.nonCirculating, 0);
+  CHECK_GT(supply.value.nonCirculatingAccounts.value().size(), 0);
+  CHECK_GT(supply.value.total, 0);
+}
+
+TEST_CASE("getVoteAccounts") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto VoteAccounts = connection.getVoteAccounts();
+  CHECK_GT(VoteAccounts.current.size() + VoteAccounts.delinquent.size(), 0);
+}
+
+TEST_CASE("getTokenAccountBalance") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  const auto accountBalance = connection.getTokenAccountBalance(
+      "DhzDoryP2a4rMK2bcWwJxrE2uW6ir81ES8ZwJJPPpxDN");
+  CHECK_GT(accountBalance.value.amount.size(), 0);
+  CHECK_GE(accountBalance.value.decimals, 0);
+  CHECK_GT(accountBalance.value.uiAmount, 0);
+  CHECK_GT(accountBalance.value.uiAmountString.size(), 0);
+}
+
+TEST_CASE("getSignaturesForAddress") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto SignaturesForAddress = connection.getSignaturesForAddress(
+      "Vote111111111111111111111111111111111111111",
+      solana::GetSignatureAddressConfig{2});
+  CHECK_EQ(SignaturesForAddress.size(), 2);
+}
