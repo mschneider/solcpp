@@ -860,13 +860,16 @@ TEST_CASE("getMinimumBalanceForRentExemption") {
   CHECK_GE(minimumBalance, 0);
 }
 
-bool subscribe_called = false;
-void call_on_subscribe(json& data) { subscribe_called = !subscribe_called; }
-
 TEST_CASE("account subscribe and unsubscribe") {
   solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  solana::rpc::subscription::WebSocketSubscriber sub;
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  bool subscribe_called = false;
+  auto call_on_subscribe = [&subscribe_called](const json& data) {
+    subscribe_called = true;
+  };
+
   // solana::rpc::subscription::WebSocketSubscriber
   // subscribe for account change
   int sub_id =

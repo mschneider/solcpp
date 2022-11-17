@@ -220,7 +220,7 @@ void from_json(const json &j, TransactionReturnData &data);
 /**
  * The level of commitment desired when querying state
  */
-enum Commitment {
+enum class Commitment : short {
   /**
    * Query the most recent block which has reached 1 confirmation by the
    * connected node
@@ -236,11 +236,12 @@ enum Commitment {
   FINALIZED,
 };
 
-NLOHMANN_JSON_SERIALIZE_ENUM(Commitment, {
-                                             {PROCESSED, "processed"},
-                                             {CONFIRMED, "confirmed"},
-                                             {FINALIZED, "finalized"},
-                                         })
+NLOHMANN_JSON_SERIALIZE_ENUM(Commitment,
+                             {
+                                 {Commitment::PROCESSED, "processed"},
+                                 {Commitment::CONFIRMED, "confirmed"},
+                                 {Commitment::FINALIZED, "finalized"},
+                             })
 
 struct GetStakeActivationConfig {
   /** The level of commitment desired */
@@ -998,6 +999,15 @@ class Connection {
 /// Websocket requests
 namespace subscription {
 
+/**
+ * Subscribe to an account to receive notifications when the lamports or data
+ * for a given account public key changes
+ */
+json accountSubscribeRequest(
+    const std::string &account,
+    const Commitment commitment = Commitment::FINALIZED,
+    const std::string &encoding = BASE64);
+
 class WebSocketSubscriber {
  public:
   net::io_context ioc;
@@ -1006,7 +1016,8 @@ class WebSocketSubscriber {
   RequestIdType curr_id = 0;
   std::vector<std::string> available_commitment;
 
-  WebSocketSubscriber(const std::string &host, const std::string &port, int timeout_in_seconds = 30);
+  WebSocketSubscriber(const std::string &host, const std::string &port,
+                      int timeout_in_seconds = 30);
   ~WebSocketSubscriber();
 
   /// @brief callback to call when data in account changes

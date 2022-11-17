@@ -4,11 +4,12 @@
 
 using json = nlohmann::json;
 
-bool subscribe_called = false;
-void call_on_subscribe(json &data) { subscribe_called = !subscribe_called; }
-
 int main() {
   solana::rpc::subscription::WebSocketSubscriber sub("127.0.0.1", "8900");
+  bool subscribe_called = false;
+  auto call_on_subscribe = [&subscribe_called](const json&) {
+    subscribe_called = true;
+  };
   int sub_id = sub.onAccountChange(
       "8vnAsXjHtdRgyuFHVESjfe1CBmWSwRFRgBR3WJCQbMiW", call_on_subscribe);
   // stop execution here and call solana airdrop 1 from terminal

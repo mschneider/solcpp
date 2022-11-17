@@ -924,26 +924,26 @@ std::vector<SignaturesAddress> Connection::getSignaturesForAddress(
   return samples_list;
 }
 
-}  // namespace rpc
-
 namespace subscription {
-
 /**
  * Subscribe to an account to receive notifications when the lamports or data
  * for a given account public key changes
  */
 json accountSubscribeRequest(const std::string &account,
-                                    const std::string &commitment = "finalized",
-                                    const std::string &encoding = "base64") {
+                             const Commitment commitment,
+                             const std::string &encoding) {
   const json params = {account,
                        {{"commitment", commitment}, {"encoding", encoding}}};
 
   return rpc::jsonRequest("accountSubscribe", params);
 }
 
-WebSocketSubscriber::WebSocketSubscriber(const std::string &host, const std::string &port, int timeout_in_seconds) {
+WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
+                                         const std::string &port,
+                                         int timeout_in_seconds) {
   // create a new session
-  sess = std::make_shared<session>(ioc, timeout);
+  sess = std::make_shared<session>(ioc, timeout_in_seconds);
+  std::cout << host << ":" << port << std::endl;
   // function to read
   auto read_fn = [=]() {
     sess->run(host, port);
@@ -955,11 +955,13 @@ WebSocketSubscriber::WebSocketSubscriber(const std::string &host, const std::str
 
   // wait for connection to be established
   while (true) {
-    if (timeout <= 0) {
+    sleep(1);
+    if (timeout_in_seconds <= 0) {
       std::cout << "Could not connect" << std::endl;
+      break;
     }
     if (sess->connection_established()) break;
-    timeout--;
+    timeout_in_seconds--;
   }
 }
 WebSocketSubscriber::~WebSocketSubscriber() {
@@ -976,13 +978,12 @@ WebSocketSubscriber::~WebSocketSubscriber() {
 int WebSocketSubscriber::onAccountChange(std::string pub_key,
                                          Callback account_change_callback,
                                          const Commitment &commitment) {
-
   // create parameters using the user provided input
   json param = {pub_key, {{"encoding", "base64"}, {"commitment", commitment}}};
 
   // create a new request content
   RequestContent req(curr_id, "accountSubscribe", "accountUnsubscribe",
-                         account_change_callback, std::move(param));
+                     account_change_callback, std::move(param));
 
   // subscribe the new request content
   sess->subscribe(req);
@@ -990,12 +991,12 @@ int WebSocketSubscriber::onAccountChange(std::string pub_key,
   // increase the curr_id so that it can be used for the next request content
   curr_id += 2;
 
-  return req->id;
+  return req.id;
 }
 
 /// @brief remove the account change listener for the given id
 /// @param sub_id the id for which removing subscription is needed
-void WebSocketSubscriber::removeAccountChangeListener(int sub_id) {
+void WebSocketSubscriber::removeAccountChangeListener(RequestIdType sub_id) {
   sess->unsubscribe(sub_id);
 }
 }  // namespace subscription
