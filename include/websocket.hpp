@@ -32,13 +32,17 @@ struct RequestContent {
 
   // callback to call in case of notification
   Callback cb;
+  Callback on_subscribe;
+  Callback on_unsubscribe;
   // params to be passed with the subscription string
   json params;
+  bool subscribed = false;
+  RequestIdType ws_id;
 
   RequestContent() = default;
 
   /// @brief constructor
-  RequestContent(RequestIdType id, std::string subscribe_method, std::string unsubscribe_method, Callback cb, json &&params);
+  RequestContent(RequestIdType id, std::string subscribe_method, std::string unsubscribe_method, Callback cb, json &&params, Callback on_subscribe = nullptr, Callback on_unsubscribe = nullptr);
 
   /// @brief Get the json request to do subscription
   /// @return the json that can be used to make subscription
@@ -53,9 +57,11 @@ struct RequestContent {
 // used to create a session to read and write to websocket
 class session : public std::enable_shared_from_this<session> {
  public:
+  using OnHandshakeCallback = std::function<void()>;
+  OnHandshakeCallback handshake_callback = nullptr;
   /// @brief resolver and websocket require an io context to do io operations
   /// @param ioc
-  explicit session(net::io_context &ioc, int timeout_in_seconds = 30);
+  explicit session(net::io_context &ioc, int timeout_in_seconds = 30, OnHandshakeCallback handshake_callback = nullptr);
 
   /// @brief Looks up the domain name to make connection to -> calls on_resolve
   /// @param host the host address
@@ -138,6 +144,7 @@ class session : public std::enable_shared_from_this<session> {
 
   // map of subscription id with callback
   std::unordered_map<RequestIdType, RequestContent> callback_map;
+  std::unordered_map<RequestIdType, RequestIdType> maps_wsid_to_id;
   std::shared_mutex mutex_for_maps;
 
   // connection timeout

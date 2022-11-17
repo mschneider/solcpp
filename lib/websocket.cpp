@@ -7,9 +7,13 @@ using json = nlohmann::json;  // from <nlohmann/json.hpp>
 /// @brief constructor
 RequestContent::RequestContent(RequestIdType id, std::string subscribe_method,
                                std::string unsubscribe_method, Callback cb,
-                               json &&params)
+                               json &&params,
+                               Callback on_subscribe,
+                               Callback on_unsubscribe)
     : id(id), subscribe_method(std::move(subscribe_method)),
-      unsubscribe_method(std::move(unsubscribe_method)), cb(cb), params(std::move(params)) {}
+      unsubscribe_method(std::move(unsubscribe_method)), cb(cb), params(std::move(params)),
+      on_subscribe(on_subscribe), on_unsubscribe(on_unsubscribe) 
+      {}
 
 /// @brief Get the json request to do subscription
 /// @return the json that can be used to make subscription
@@ -35,9 +39,9 @@ json RequestContent::get_unsubscription_request(RequestIdType subscription_id) c
 
 /// @brief resolver and websocket require an io context to do io operations
 /// @param ioc
-session::session(net::io_context &ioc, int timeout_in_seconds)
+session::session(net::io_context &ioc, int timeout_in_seconds, session::OnHandshakeCallback handshake_callback)
     : resolver(net::make_strand(ioc)), ws(net::make_strand(ioc)),
-      connection_timeout(timeout_in_seconds) {
+      connection_timeout(timeout_in_seconds), handshake_callback(handshake_callback) {
         is_connected.store(false);
       }
 
@@ -58,8 +62,11 @@ void session::run(std::string host, std::string port) {
 /// @brief push a function for subscription
 /// @param req the request to call
 void session::subscribe( const RequestContent &req) {
-  std::unique_lock lk (mutex_for_maps);
-  callback_map[req.id] = req;
+  // context for unique_lock
+  {
+    std::unique_lock lk (mutex_for_maps);
+    callback_map[req.id] = req;
+  }
   // get subscription request and then send it to the websocket
   ws.write(net::buffer(req.get_subscription_request().dump()));
 }
@@ -67,14 +74,22 @@ void session::subscribe( const RequestContent &req) {
 /// @brief push for unsubscription
 /// @param id the id to unsubscribe on
 void session::unsubscribe(RequestIdType id) {
-  auto ite = callback_map.find(id);
-  if (ite == callback_map.end()) return;
-
-  std::unique_lock lk (mutex_for_maps);
-  const RequestContent context = ite->second;
-  callback_map.erase(ite);
-  // write it to the websocket
-  ws.write(net::buffer(context.get_unsubscription_request(id).dump()));
+  // context for shared lock
+  std::string unsubsciption_request = "";
+  {
+    std::shared_lock lk(mutex_for_maps);
+    
+    auto ite = callback_map.find(id);
+    if (ite == callback_map.end()) 
+      return;
+    unsubsciption_request = ite->second.get_unsubscription_request(ite->second.ws_id).dump();
+    maps_wsid_to_id.erase(ite->second.ws_id);
+  }
+  if(!unsubsciption_request.empty())
+  {
+    // write it to the websocket
+    ws.write(net::buffer(unsubsciption_request));
+  }
 }
 
 /// @brief disconnect from browser
@@ -157,6 +172,9 @@ void session::on_handshake(beast::error_code ec) {
   // If you reach here connection is up set is_connected to true
   is_connected.store(true);
 
+  if(handshake_callback)
+    handshake_callback();
+
   // Start listening to the socket for messages
   ws.async_read(
       buffer, beast::bind_front_handler(&session::on_read, shared_from_this()));
@@ -182,16 +200,66 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   auto res = buffer.data();
   json data = json::parse(net::buffers_begin(res), net::buffers_end(res));
 
+  std::cout << "read json\n";
+  std::cout << data << std::endl;
+
   // if data contains field result then it's either subscription or
   // unsubscription response
-  std::string result = "result";
-  if (data.contains(std::string{result})) {
-    // if the result field is boolean than it's an unsubscription request could be ignored
-    return;
+  static const char * result = "result";
+  try {
+    if (data.contains(std::string{result})) {
+      RequestIdType id = data["id"];
+      // if the result field is boolean than it's an unsubscription request could be ignored
+      if (data[result].is_boolean()) {
+        // usually this means that we are unsubscribing
+        Callback on_unsubscribe = nullptr;
+        id--;
+        // context for lock
+        {
+          std::unique_lock lk(mutex_for_maps);
+          const auto ite = callback_map.find(id);
+          if( ite != callback_map.end() )
+          {
+            on_unsubscribe = ite->second.on_unsubscribe;
+            maps_wsid_to_id.erase(ite->second.ws_id);
+            callback_map.erase(ite);
+          }
+        }
+        if(on_unsubscribe)
+        {
+          on_unsubscribe(data);
+        }
+      } else {
+        // usually this means that our subscription request has been successfull
+        // context for lock
+        Callback on_subscribe = nullptr;
+        {
+          std::unique_lock lk(mutex_for_maps);
+
+          const auto ite = callback_map.find(id);
+          if( ite != callback_map.end() )
+          {
+            on_subscribe = ite->second.on_subscribe;
+            ite->second.subscribed = true;
+            ite->second.ws_id = data[result];
+            maps_wsid_to_id[ite->second.ws_id] = id;
+          }
+        }
+        if(on_subscribe)
+        {
+          on_subscribe(data);
+        }
+      }
+    }
+    // it's a notification process it sccordingly
+    else {
+      call_callback(data);
+    }
   }
-  // it's a notification process it sccordingly
-  else {
-    call_callback(data);
+  catch(...)
+  {
+    // catch any exception so that we still continue reading
+    std::cerr << "An exception was caught while dispatching the error";
   }
 
   // consume the buffer
@@ -207,10 +275,20 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 Callback session::get_callback(RequestIdType request_id)
 {
   std::shared_lock lk(mutex_for_maps);
-  if (callback_map.find(request_id) != callback_map.end()) {
-    return callback_map[request_id].cb;
+  auto id_ite = maps_wsid_to_id.find(request_id);
+  if(id_ite == maps_wsid_to_id.end())
+  {
+    std::cerr << "unknown subscription " << request_id << std::endl;
+    return nullptr; 
   }
-  return nullptr;
+  RequestIdType id = id_ite->second;
+  auto sub_ite = callback_map.find(id);
+  if ( sub_ite == callback_map.end()) {
+
+    std::cerr << "subscription found but request not found " << request_id << std::endl;
+    return nullptr;
+  }
+  return sub_ite->second.cb;
 }
 
 /// @brief call the specified callback
@@ -232,9 +310,6 @@ void session::call_callback(const json &data) {
   Callback cb = get_callback(returned_sub);
   if (cb != nullptr) {
     cb(data);
-  }
-  else {
-    std::cerr << "recieved message for " << returned_sub << " probably already unsubscribed";
   }
 }
 

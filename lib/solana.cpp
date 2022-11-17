@@ -14,6 +14,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <future>
 
 #include "base64.hpp"
 #include "cpr/api.h"
@@ -938,9 +939,18 @@ json accountSubscribeRequest(const std::string &account,
   return rpc::jsonRequest("accountSubscribe", params);
 }
 
+void fulfill_promise(std::promise<void> p)
+{
+  p.set_value();
+}
+
 WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
                                          const std::string &port,
                                          int timeout_in_seconds) {
+  std::promise<void> handshake_promise;
+  std::future<void> hanshake_future = handshake_promise.get_future();
+
+  auto on_handshake = bind(fulfill_promise, std::move(handshake_promise));
   // create a new session
   sess = std::make_shared<session>(ioc, timeout_in_seconds);
   std::cout << host << ":" << port << std::endl;
@@ -952,17 +962,7 @@ WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
 
   // writing using one thread and read using another
   read_thread = std::thread(read_fn);
-
-  // wait for connection to be established
-  while (true) {
-    sleep(1);
-    if (timeout_in_seconds <= 0) {
-      std::cout << "Could not connect" << std::endl;
-      break;
-    }
-    if (sess->connection_established()) break;
-    timeout_in_seconds--;
-  }
+  hanshake_future.wait_for(std::chrono::seconds(timeout_in_seconds));
 }
 WebSocketSubscriber::~WebSocketSubscriber() {
   // disconnect the session and wait for the threads to complete
