@@ -5,15 +5,15 @@
 using json = nlohmann::json;  // from <nlohmann/json.hpp>
 
 /// @brief constructor
-RequestContent::RequestContent(int id, std::string subscribe_method,
+RequestContent::RequestContent(RequestIdType id, std::string subscribe_method,
                                std::string unsubscribe_method, Callback cb,
-                               json params)
-    : id(id), subscribe_method(subscribe_method),
-      unsubscribe_method(unsubscribe_method), cb(cb), params(params) {}
+                               json &&params)
+    : id(id), subscribe_method(std::move(subscribe_method)),
+      unsubscribe_method(std::move(unsubscribe_method)), cb(cb), params(std::move(params)) {}
 
 /// @brief Get the json request to do subscription
 /// @return the json that can be used to make subscription
-json RequestContent::get_subscription_request() {
+json RequestContent::get_subscription_request() const {
   json req = {{"jsonrpc", "2.0"},
               {"id", id},
               {"method", subscribe_method},
@@ -24,7 +24,7 @@ json RequestContent::get_subscription_request() {
 /// @brief Json data to write to unsubscribe
 /// @param subscription_id the id to subscribe for
 /// @return request json for unsubscription
-json RequestContent::get_unsubscription_request(int subscription_id) {
+json RequestContent::get_unsubscription_request(RequestIdType subscription_id) const {
   json params = {subscription_id};
   json req = {{"jsonrpc", "2.0"},
               {"id", id + 1},
@@ -35,9 +35,11 @@ json RequestContent::get_unsubscription_request(int subscription_id) {
 
 /// @brief resolver and websocket require an io context to do io operations
 /// @param ioc
-session::session(net::io_context &ioc, int timeout)
+session::session(net::io_context &ioc, int timeout_in_seconds)
     : resolver(net::make_strand(ioc)), ws(net::make_strand(ioc)),
-      connection_timeout(timeout) {}
+      connection_timeout(timeout_in_seconds) {
+        is_connected.store(false);
+      }
 
 /// @brief Looks up the domain name to make connection to -> calls on_resolve
 /// @param host the host address
@@ -55,45 +57,30 @@ void session::run(std::string host, std::string port) {
 
 /// @brief push a function for subscription
 /// @param req the request to call
-void session::subscribe(std::shared_ptr<RequestContent> &req) {
-  // store the request in latest sub
-  latest_sub = req;
-  id_sub_map[req->id] = -1;  // set it to processing
-
+void session::subscribe( const RequestContent &req) {
+  std::unique_lock lk (mutex_for_maps);
+  callback_map[req.id] = req;
   // get subscription request and then send it to the websocket
-  ws.write(net::buffer(req->get_subscription_request().dump()));
+  ws.write(net::buffer(req.get_subscription_request().dump()));
 }
 
 /// @brief push for unsubscription
 /// @param id the id to unsubscribe on
-void session::unsubscribe(int id) {
-  // check if the id is part of id_sub_map
-  if (id_sub_map.find(id) == id_sub_map.end()) return;
+void session::unsubscribe(RequestIdType id) {
+  auto ite = callback_map.find(id);
+  if (ite == callback_map.end()) return;
 
-  // if the result of subscription was failure just remove it
-  // as no subscription was done anyways
-  if (id_sub_map[id] == -1) {
-    id_sub_map.erase(id);
-    return;
-  }
-
-  // store the id
-  latest_unsub = id;
-
-  // get the subscription number to unsubscribe for
-  int unsub_num = id_sub_map[id];
-
-  // get the RequestContent to unsubscribe for
-  auto unsub = callback_map[unsub_num];
-
+  std::unique_lock lk (mutex_for_maps);
+  const RequestContent context = ite->second;
+  callback_map.erase(ite);
   // write it to the websocket
-  ws.write(net::buffer(unsub->get_unsubscription_request(unsub_num).dump()));
+  ws.write(net::buffer(context.get_unsubscription_request(id).dump()));
 }
 
 /// @brief disconnect from browser
 void session::disconnect() {
   // set is connected to false to close the read and write thread
-  is_connected = false;
+  is_connected.store(false);
 
   // Close the WebSocket connection
   ws.async_close(
@@ -104,9 +91,7 @@ void session::disconnect() {
 /// @brief check if connection has been stablished
 /// @return if connection has been established
 bool session::connection_established() {
-  // wait for 1 second
-  sleep(1);
-  return is_connected;
+  return is_connected.load();
 }
 
 /// @brief log error messages
@@ -170,7 +155,7 @@ void session::on_handshake(beast::error_code ec) {
   if (ec) return fail(ec, "handshake");
 
   // If you reach here connection is up set is_connected to true
-  is_connected = true;
+  is_connected.store(true);
 
   // Start listening to the socket for messages
   ws.async_read(
@@ -189,7 +174,7 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   }
 
   // id socket has been disconnected then return
-  if (!is_connected) {
+  if (!is_connected.load()) {
     return;
   }
 
@@ -201,12 +186,8 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // unsubscription response
   std::string result = "result";
   if (data.contains(std::string{result})) {
-    // if the result field is boolean than it's an unsubscription request
-    if (data["result"].is_boolean()) {
-      remove_callback(data);
-    } else {
-      add_callback(data);
-    }
+    // if the result field is boolean than it's an unsubscription request could be ignored
+    return;
   }
   // it's a notification process it sccordingly
   else {
@@ -221,39 +202,20 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
       buffer, beast::bind_front_handler(&session::on_read, shared_from_this()));
 }
 
-/// @brief function to add callback using the respons of subscription
-/// @param data the reponse of subscription from server
-void session::add_callback(json &data) {
-  if (latest_sub == NULL) {
-    return;
+/// @brief close the connection from websocket
+/// @param ec the error code
+Callback session::get_callback(RequestIdType request_id)
+{
+  std::shared_lock lk(mutex_for_maps);
+  if (callback_map.find(request_id) != callback_map.end()) {
+    return callback_map[request_id].cb;
   }
-
-  // update sub_id with the returned subscription id
-  int sub_id = data["result"];
-
-  // add the subscription to callback map
-  callback_map[sub_id] = latest_sub;
-
-  // add the subscription to the id map
-  id_sub_map[latest_sub->id] = sub_id;
-}
-
-/// @brief function to remove callback when unsubscribing
-/// @param data the data recieved from websocket
-void session::remove_callback(json &data) {
-  // get id related with the latest unsub
-  int unsub_num = id_sub_map[latest_unsub];
-
-  // if unsubscription was successful remove it from map
-  if (data["result"]) {
-    callback_map.erase(unsub_num);
-    id_sub_map.erase(latest_unsub);
-  }
+  return nullptr;
 }
 
 /// @brief call the specified callback
 /// @param data the data recieved from websocket
-void session::call_callback(json &data) {
+void session::call_callback(const json &data) {
   // if params is not a key then return
   std::string par = "params";
   if (!data.contains(std::string{par})) {
@@ -266,9 +228,13 @@ void session::call_callback(json &data) {
     return;
   }
   // call the specified callback related to the subscription id
-  int returned_sub = data["params"]["subscription"];
-  if (callback_map.find(returned_sub) != callback_map.end()) {
-    callback_map[returned_sub]->cb(data);
+  RequestIdType returned_sub = data["params"]["subscription"];
+  Callback cb = get_callback(returned_sub);
+  if (cb != nullptr) {
+    cb(data);
+  }
+  else {
+    std::cerr << "recieved message for " << returned_sub << " probably already unsubscribed";
   }
 }
 

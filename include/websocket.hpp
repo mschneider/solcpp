@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <thread>
+#include <shared_mutex>
 
 namespace beast = boost::beast;          // from <boost/beast.hpp>
 namespace http = beast::http;            // from <boost/beast/http.hpp>
@@ -20,10 +21,11 @@ using json = nlohmann::json;             // from <nlohmann/json.hpp>
 using Callback = std::function<void(const json &)>;  // callback function which takes
                                                // the json and returns nothing
 
+using RequestIdType = unsigned long;
 /// @brief Class to store the request and function given by user
 struct RequestContent {
   // id will be the id for subscription while id+1 will be id for unsubscription
-  int id;
+  RequestIdType id;
   // subscription and unsubscription method
   std::string subscribe_method;
   std::string unsubscribe_method;
@@ -33,18 +35,19 @@ struct RequestContent {
   // params to be passed with the subscription string
   json params;
 
+  RequestContent() = default;
+
   /// @brief constructor
-  RequestContent(int id, std::string subscribe_method,
-                 std::string unsubscribe_method, Callback cb, json params);
+  RequestContent(RequestIdType id, std::string subscribe_method, std::string unsubscribe_method, Callback cb, json &&params);
 
   /// @brief Get the json request to do subscription
   /// @return the json that can be used to make subscription
-  json get_subscription_request();
+  json get_subscription_request() const;
 
   /// @brief Json data to write to unsubscribe
   /// @param subscription_id the id to subscribe for
   /// @return request json for unsubscription
-  json get_unsubscription_request(int subscription_id);
+  json get_unsubscription_request(RequestIdType subscription_id) const;
 };
 
 // used to create a session to read and write to websocket
@@ -52,7 +55,7 @@ class session : public std::enable_shared_from_this<session> {
  public:
   /// @brief resolver and websocket require an io context to do io operations
   /// @param ioc
-  explicit session(net::io_context &ioc, int timeout = 30);
+  explicit session(net::io_context &ioc, int timeout_in_seconds = 30);
 
   /// @brief Looks up the domain name to make connection to -> calls on_resolve
   /// @param host the host address
@@ -62,11 +65,11 @@ class session : public std::enable_shared_from_this<session> {
 
   /// @brief push a function for subscription
   /// @param req the request to call
-  void subscribe(std::shared_ptr<RequestContent> &req);
+  void subscribe(const RequestContent &req);
 
   /// @brief push for unsubscription
   /// @param id the id to unsubscribe on
-  void unsubscribe(int id);
+  void unsubscribe(RequestIdType id);
 
   /// @brief disconnect from browser
   void disconnect();
@@ -104,21 +107,18 @@ class session : public std::enable_shared_from_this<session> {
   /// @param bytes_transferred Amount of byte recieved
   void on_read(beast::error_code ec, std::size_t bytes_transferred);
 
-  /// @brief function to add callback using the respons of subscription
-  /// @param data the reponse of subscription from server
-  void add_callback(json &data);
-
-  /// @brief function to remove callback when unsubscribing
-  /// @param data the data recieved from websocket
-  void remove_callback(json &data);
-
   /// @brief call the specified callback
   /// @param data the data recieved from websocket
-  void call_callback(json &data);
+  void call_callback(const json &data);
 
   /// @brief close the connection from websocket
   /// @param ec the error code
   void on_close(beast::error_code ec);
+
+  /// @brief get callback
+  /// @param request_id
+  Callback get_callback(RequestIdType request_id);
+
 
   // resolves the host and port provided by user
   tcp::resolver resolver;
@@ -132,20 +132,13 @@ class session : public std::enable_shared_from_this<session> {
   // host
   std::string host;
 
-  // map of subscription id with callback
-  std::unordered_map<int, std::shared_ptr<RequestContent>> callback_map;
-
-  // The RequestContent which was used to just subscribe
-  std::shared_ptr<RequestContent> latest_sub = NULL;
-
-  // The id which was used to unsubscribe
-  int latest_unsub = -1;
-
   // denotes if the connection is up
-  bool is_connected = false;
+  std::atomic_bool is_connected;
 
-  // request content id with subscription map
-  std::unordered_map<int, int> id_sub_map;
+
+  // map of subscription id with callback
+  std::unordered_map<RequestIdType, RequestContent> callback_map;
+  std::shared_mutex mutex_for_maps;
 
   // connection timeout
   int connection_timeout = 30;

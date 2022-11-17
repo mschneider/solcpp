@@ -892,7 +892,7 @@ class Connection {
    */
   std::vector<Nodes> getClusterNodes() const;
 
-  /**
+  /**RequestIdType
    *Get the fee the network will charge for a particular Message
    */
   getFeeForMessageRes getFeeForMessage(
@@ -998,29 +998,15 @@ class Connection {
 /// Websocket requests
 namespace subscription {
 
-/**
- * Subscribe to an account to receive notifications when the lamports or data
- * for a given account public key changes
- */
-inline json accountSubscribeRequest(const std::string &account,
-                                    const std::string &commitment = "finalized",
-                                    const std::string &encoding = "base64") {
-  const json params = {account,
-                       {{"commitment", commitment}, {"encoding", encoding}}};
-
-  return rpc::jsonRequest("accountSubscribe", params);
-}
-
 class WebSocketSubscriber {
  public:
   net::io_context ioc;
   std::shared_ptr<session> sess;
   std::thread read_thread;
-  int curr_id = 0;
+  RequestIdType curr_id = 0;
   std::vector<std::string> available_commitment;
 
-  WebSocketSubscriber(std::string host = "api.devnet.solana.com",
-                      std::string port = "80", int timeout = 30);
+  WebSocketSubscriber(const std::string &host, const std::string &port, int timeout_in_seconds = 30);
   ~WebSocketSubscriber();
 
   /// @brief callback to call when data in account changes
@@ -1033,7 +1019,7 @@ class WebSocketSubscriber {
 
   /// @brief remove the account change listener for the given id
   /// @param sub_id the id for which removing subscription is needed
-  void removeAccountChangeListener(int sub_id);
+  void removeAccountChangeListener(RequestIdType sub_id);
 };
 }  // namespace subscription
 }  // namespace rpc

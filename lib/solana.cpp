@@ -927,8 +927,21 @@ std::vector<SignaturesAddress> Connection::getSignaturesForAddress(
 }  // namespace rpc
 
 namespace subscription {
-WebSocketSubscriber::WebSocketSubscriber(std::string host, std::string port,
-                                         int timeout) {
+
+/**
+ * Subscribe to an account to receive notifications when the lamports or data
+ * for a given account public key changes
+ */
+json accountSubscribeRequest(const std::string &account,
+                                    const std::string &commitment = "finalized",
+                                    const std::string &encoding = "base64") {
+  const json params = {account,
+                       {{"commitment", commitment}, {"encoding", encoding}}};
+
+  return rpc::jsonRequest("accountSubscribe", params);
+}
+
+WebSocketSubscriber::WebSocketSubscriber(const std::string &host, const std::string &port, int timeout_in_seconds) {
   // create a new session
   sess = std::make_shared<session>(ioc, timeout);
   // function to read
@@ -968,9 +981,8 @@ int WebSocketSubscriber::onAccountChange(std::string pub_key,
   json param = {pub_key, {{"encoding", "base64"}, {"commitment", commitment}}};
 
   // create a new request content
-  std::shared_ptr<RequestContent> req(
-      new RequestContent(curr_id, "accountSubscribe", "accountUnsubscribe",
-                         account_change_callback, param));
+  RequestContent req(curr_id, "accountSubscribe", "accountUnsubscribe",
+                         account_change_callback, std::move(param));
 
   // subscribe the new request content
   sess->subscribe(req);
