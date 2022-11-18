@@ -11,6 +11,7 @@
 #include <string>
 #include <thread>
 #include <shared_mutex>
+#include <future>
 
 namespace beast = boost::beast;          // from <boost/beast.hpp>
 namespace http = beast::http;            // from <boost/beast/http.hpp>
@@ -57,11 +58,11 @@ struct RequestContent {
 // used to create a session to read and write to websocket
 class session : public std::enable_shared_from_this<session> {
  public:
-  using OnHandshakeCallback = std::function<void()>;
-  OnHandshakeCallback handshake_callback = nullptr;
+  using HandshakePromisePtr = std::unique_ptr<std::promise<void>>;
+  HandshakePromisePtr handshake_promise = nullptr;
   /// @brief resolver and websocket require an io context to do io operations
   /// @param ioc
-  explicit session(net::io_context &ioc, int timeout_in_seconds = 30, OnHandshakeCallback handshake_callback = nullptr);
+  explicit session(net::io_context &ioc, int timeout_in_seconds = 30, HandshakePromisePtr handshake_callback = nullptr);
 
   /// @brief Looks up the domain name to make connection to -> calls on_resolve
   /// @param host the host address

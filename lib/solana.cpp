@@ -939,20 +939,13 @@ json accountSubscribeRequest(const std::string &account,
   return rpc::jsonRequest("accountSubscribe", params);
 }
 
-void fulfill_promise(std::promise<void> p)
-{
-  p.set_value();
-}
-
 WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
                                          const std::string &port,
                                          int timeout_in_seconds) {
   std::promise<void> handshake_promise;
   std::future<void> hanshake_future = handshake_promise.get_future();
-
-  auto on_handshake = bind(fulfill_promise, std::move(handshake_promise));
   // create a new session
-  sess = std::make_shared<session>(ioc, timeout_in_seconds);
+  sess = std::make_shared<session>(ioc, timeout_in_seconds, std::make_unique<std::promise<void>>(std::move(handshake_promise)));
   std::cout << host << ":" << port << std::endl;
   // function to read
   auto read_fn = [=]() {
@@ -962,7 +955,10 @@ WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
 
   // writing using one thread and read using another
   read_thread = std::thread(read_fn);
-  hanshake_future.wait_for(std::chrono::seconds(timeout_in_seconds));
+  if( hanshake_future.wait_for(std::chrono::seconds(timeout_in_seconds)) == std::future_status::timeout)
+  {
+    std::cerr << "Timeout waiting for subscription request on " << host << ":" << port << std::endl;
+  }
 }
 WebSocketSubscriber::~WebSocketSubscriber() {
   // disconnect the session and wait for the threads to complete
@@ -975,15 +971,17 @@ WebSocketSubscriber::~WebSocketSubscriber() {
 /// @param account_change_callback callback to call when the data changes
 /// @param commitment commitment
 /// @return subsccription id (actually the current id)
-int WebSocketSubscriber::onAccountChange(std::string pub_key,
+int WebSocketSubscriber::onAccountChange(const solana::PublicKey &pub_key,
                                          Callback account_change_callback,
-                                         const Commitment &commitment) {
+                                         const Commitment &commitment,
+                                         Callback on_subscibe,
+                                         Callback on_unsubscribe) {
   // create parameters using the user provided input
   json param = {pub_key, {{"encoding", "base64"}, {"commitment", commitment}}};
 
   // create a new request content
   RequestContent req(curr_id, "accountSubscribe", "accountUnsubscribe",
-                     account_change_callback, std::move(param));
+                     account_change_callback, std::move(param), on_subscibe, on_unsubscribe);
 
   // subscribe the new request content
   sess->subscribe(req);

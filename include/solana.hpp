@@ -1025,8 +1025,10 @@ class WebSocketSubscriber {
   /// @param account_change_callback callback to call when the data changes
   /// @param commitment commitment
   /// @return subsccription id (actually the current id)
-  int onAccountChange(std::string pub_key, Callback account_change_callback,
-                      const Commitment &commitment = Commitment::FINALIZED);
+  int onAccountChange(const solana::PublicKey &pub_key, Callback account_change_callback,
+                      const Commitment &commitment = Commitment::FINALIZED,
+                      Callback on_subscibe = nullptr,
+                      Callback on_unsubscribe = nullptr);
 
   /// @brief remove the account change listener for the given id
   /// @param sub_id the id for which removing subscription is needed

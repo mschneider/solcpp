@@ -39,9 +39,9 @@ json RequestContent::get_unsubscription_request(RequestIdType subscription_id) c
 
 /// @brief resolver and websocket require an io context to do io operations
 /// @param ioc
-session::session(net::io_context &ioc, int timeout_in_seconds, session::OnHandshakeCallback handshake_callback)
+session::session(net::io_context &ioc, int timeout_in_seconds, session::HandshakePromisePtr handshake_promise)
     : resolver(net::make_strand(ioc)), ws(net::make_strand(ioc)),
-      connection_timeout(timeout_in_seconds), handshake_callback(handshake_callback) {
+      connection_timeout(timeout_in_seconds), handshake_promise(std::move(handshake_promise)) {
         is_connected.store(false);
       }
 
@@ -172,8 +172,8 @@ void session::on_handshake(beast::error_code ec) {
   // If you reach here connection is up set is_connected to true
   is_connected.store(true);
 
-  if(handshake_callback)
-    handshake_callback();
+  if(handshake_promise)
+    handshake_promise->set_value();
 
   // Start listening to the socket for messages
   ws.async_read(
@@ -200,9 +200,6 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   auto res = buffer.data();
   json data = json::parse(net::buffers_begin(res), net::buffers_end(res));
 
-  std::cout << "read json\n";
-  std::cout << data << std::endl;
-
   // if data contains field result then it's either subscription or
   // unsubscription response
   static const char * result = "result";
@@ -221,7 +218,6 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
           if( ite != callback_map.end() )
           {
             on_unsubscribe = ite->second.on_unsubscribe;
-            maps_wsid_to_id.erase(ite->second.ws_id);
             callback_map.erase(ite);
           }
         }
@@ -278,7 +274,7 @@ Callback session::get_callback(RequestIdType request_id)
   auto id_ite = maps_wsid_to_id.find(request_id);
   if(id_ite == maps_wsid_to_id.end())
   {
-    std::cerr << "unknown subscription " << request_id << std::endl;
+    // we have already unsubscribed so no need to call the callback
     return nullptr; 
   }
   RequestIdType id = id_ite->second;

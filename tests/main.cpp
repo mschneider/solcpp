@@ -873,7 +873,7 @@ TEST_CASE("account subscribe and unsubscribe") {
   // solana::rpc::subscription::WebSocketSubscriber
   // subscribe for account change
   int sub_id =
-      sub.onAccountChange(keyPair.publicKey.toBase58(), call_on_subscribe);
+      sub.onAccountChange(keyPair.publicKey, call_on_subscribe);
   // change account data
   connection.requestAirdrop(keyPair.publicKey, 50);
   // wait for 40 seconds for transaction to process
