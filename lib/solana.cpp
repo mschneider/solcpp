@@ -242,6 +242,14 @@ void from_json(const json &j, SignaturesAddress &signaturesaddress) {
   signaturesaddress.slot = j["slot"];
 };
 
+void from_json(const json &j, TokenLargestAccounts &tokenlargestaccounts) {
+  tokenlargestaccounts.address = j["address"];
+  tokenlargestaccounts.amount = j["amount"];
+  tokenlargestaccounts.decimals = j["decimals"];
+  tokenlargestaccounts.uiAmount = j["uiAmount"];
+  tokenlargestaccounts.uiAmountString = j["uiAmountString"];
+}
+
 ///
 /// SignatureStatus
 void to_json(json &j, const SignatureStatus &status) {
@@ -918,6 +926,27 @@ std::vector<SignaturesAddress> Connection::getSignaturesForAddress(
   samples_list.reserve(value.size());
   std::copy(value.begin(), value.end(), std::back_inserter(samples_list));
   return samples_list;
+}
+
+RpcResponseAndContext<std::vector<TokenLargestAccounts>>
+Connection::getTokenLargestAccounts(std::string pubkey,
+                                    const commitmentconfig &config) const {
+  const json params = {pubkey, config};
+  const auto reqJson = jsonRequest("getTokenLargestAccounts", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const std::vector<json> value = res["value"];
+  std::vector<TokenLargestAccounts> accounts_list;
+  accounts_list.reserve(value.size());
+  std::copy(value.begin(), value.end(), std::back_inserter(accounts_list));
+  return {res["context"], accounts_list};
+}
+
+std::vector<uint64_t> Connection::getBlocks(
+    uint64_t start_slot, uint64_t end_slot,
+    const commitmentconfig &config) const {
+  const json params = {start_slot, end_slot, config};
+  const json reqJson = jsonRequest("getBlocks", params);
+  return sendJsonRpcRequest(reqJson);
 }
 
 }  // namespace rpc

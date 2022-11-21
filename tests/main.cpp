@@ -935,3 +935,18 @@ TEST_CASE("getSignaturesForAddress") {
       solana::GetSignatureAddressConfig{2});
   CHECK_EQ(SignaturesForAddress.size(), 2);
 }
+
+TEST_CASE("getTokenLargestAccounts") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  const auto TokenLargestAccounts = connection.getTokenLargestAccounts(
+      "1YDQ35V8g68FGvcT85haHwAXv1U7XMzuc4mZeEXfrjE");
+  CHECK_EQ(TokenLargestAccounts.value.size(), 20);
+}
+
+TEST_CASE("getBlocks") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  int startslot{5}, latestslot{20};
+  const auto Blocks = connection.getBlocks(startslot, latestslot);
+  CHECK_EQ(Blocks.size(), latestslot - startslot + 1);
+  CHECK_EQ(Blocks[0], startslot);
+}

@@ -452,6 +452,16 @@ void from_json(const json &j, SignaturesAddress &signaturesaddress);
 void to_json(json &j, const GetSupplyConfig &config);
 void to_json(json &j, const GetVoteAccountsConfig &config);
 
+struct TokenLargestAccounts {
+  std::string address;
+  std::string amount;
+  uint8_t decimals;
+  double uiAmount;
+  std::string uiAmountString;
+};
+
+void from_json(const json &j, TokenLargestAccounts &tokenlargestaccounts);
+
 /**
  * Extra contextual information for RPC responses
  */
@@ -944,6 +954,18 @@ class Connection {
   std::vector<SignaturesAddress> getSignaturesForAddress(
       std::string pubkey, const GetSignatureAddressConfig &config =
                               GetSignatureAddressConfig{}) const;
+  /*
+  *Returns the token balance of an SPL Token account.
+  */
+  RpcResponseAndContext<std::vector<TokenLargestAccounts>>
+  getTokenLargestAccounts(std::string pubkey, const commitmentconfig &config =
+                                                  commitmentconfig{}) const;
+  /*
+  *Returns a list of confirmed blocks between two slots
+  */
+  std::vector<uint64_t> getBlocks(
+      uint64_t start_slot, uint64_t end_slot,
+      const commitmentconfig &config = commitmentconfig{}) const;
 
   /**
    * Fetch parsed account info for the specified public key
