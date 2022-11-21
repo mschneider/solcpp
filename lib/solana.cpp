@@ -1,15 +1,20 @@
+#include "solana.hpp"
+
 #include <cpr/cpr.h>
 #include <sodium.h>
+#include <unistd.h>
 
 #include <chrono>
 #include <cstdint>
 #include <iterator>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <ostream>
 #include <solana.hpp>
 #include <string>
 #include <thread>
 #include <vector>
+#include <future>
 
 #include "base64.hpp"
 #include "cpr/api.h"
@@ -920,8 +925,79 @@ std::vector<SignaturesAddress> Connection::getSignaturesForAddress(
   return samples_list;
 }
 
+namespace subscription {
+/**
+ * Subscribe to an account to receive notifications when the lamports or data
+ * for a given account public key changes
+ */
+json accountSubscribeRequest(const std::string &account,
+                             const Commitment commitment,
+                             const std::string &encoding) {
+  const json params = {account,
+                       {{"commitment", commitment}, {"encoding", encoding}}};
+
+  return rpc::jsonRequest("accountSubscribe", params);
+}
+
+WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
+                                         const std::string &port,
+                                         int timeout_in_seconds) {
+  std::promise<void> handshake_promise;
+  std::future<void> hanshake_future = handshake_promise.get_future();
+  // create a new session
+  sess = std::make_shared<session>(ioc, timeout_in_seconds, std::make_unique<std::promise<void>>(std::move(handshake_promise)));
+  std::cout << host << ":" << port << std::endl;
+  // function to read
+  auto read_fn = [=]() {
+    sess->run(host, port);
+    ioc.run();
+  };
+
+  // writing using one thread and read using another
+  read_thread = std::thread(read_fn);
+  if( hanshake_future.wait_for(std::chrono::seconds(timeout_in_seconds)) == std::future_status::timeout)
+  {
+    std::cerr << "Timeout waiting for subscription request on " << host << ":" << port << std::endl;
+  }
+}
+WebSocketSubscriber::~WebSocketSubscriber() {
+  // disconnect the session and wait for the threads to complete
+  sess->disconnect();
+  if (read_thread.joinable()) read_thread.join();
+}
+
+/// @brief callback to call when data in account changes
+/// @param pub_key public key for the account
+/// @param account_change_callback callback to call when the data changes
+/// @param commitment commitment
+/// @return subsccription id (actually the current id)
+int WebSocketSubscriber::onAccountChange(const solana::PublicKey &pub_key,
+                                         Callback account_change_callback,
+                                         const Commitment &commitment,
+                                         Callback on_subscibe,
+                                         Callback on_unsubscribe) {
+  // create parameters using the user provided input
+  json param = {pub_key, {{"encoding", "base64"}, {"commitment", commitment}}};
+
+  // create a new request content
+  RequestContent req(curr_id, "accountSubscribe", "accountUnsubscribe",
+                     account_change_callback, std::move(param), on_subscibe, on_unsubscribe);
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req.id;
+}
+
+/// @brief remove the account change listener for the given id
+/// @param sub_id the id for which removing subscription is needed
+void WebSocketSubscriber::removeAccountChangeListener(RequestIdType sub_id) {
+  sess->unsubscribe(sub_id);
+}
+}  // namespace subscription
+
 }  // namespace rpc
-
-namespace subscription {}  // namespace subscription
-
 }  // namespace solana

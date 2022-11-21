@@ -860,6 +860,36 @@ TEST_CASE("getMinimumBalanceForRentExemption") {
   CHECK_GE(minimumBalance, 0);
 }
 
+TEST_CASE("account subscribe and unsubscribe") {
+  solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  bool subscribe_called = false;
+  auto call_on_subscribe = [&subscribe_called](const json& data) {
+    subscribe_called = true;
+  };
+
+  // solana::rpc::subscription::WebSocketSubscriber
+  // subscribe for account change
+  int sub_id =
+      sub.onAccountChange(keyPair.publicKey, call_on_subscribe);
+  // change account data
+  connection.requestAirdrop(keyPair.publicKey, 50);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
+  // assure that callback has been called
+  CHECK(subscribe_called);
+  // stop listening to websocket
+  sub.removeAccountChangeListener(sub_id);
+  // change account data
+  connection.requestAirdrop(keyPair.publicKey, 50);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
+  // ensure that callback wasn't called
+  CHECK(subscribe_called);
+}
+
 TEST_CASE("getBlockTime") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto slot = connection.getFirstAvailableBlock();
