@@ -1025,7 +1025,8 @@ class WebSocketSubscriber {
   /// @param account_change_callback callback to call when the data changes
   /// @param commitment commitment
   /// @return subsccription id (actually the current id)
-  int onAccountChange(const solana::PublicKey &pub_key, Callback account_change_callback,
+  int onAccountChange(const solana::PublicKey &pub_key,
+                      Callback account_change_callback,
                       const Commitment &commitment = Commitment::FINALIZED,
                       Callback on_subscibe = nullptr,
                       Callback on_unsubscribe = nullptr);

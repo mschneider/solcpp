@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <future>
 #include <iterator>
 #include <nlohmann/json.hpp>
 #include <optional>
@@ -14,7 +15,6 @@
 #include <string>
 #include <thread>
 #include <vector>
-#include <future>
 
 #include "base64.hpp"
 #include "cpr/api.h"
@@ -945,7 +945,9 @@ WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
   std::promise<void> handshake_promise;
   std::future<void> hanshake_future = handshake_promise.get_future();
   // create a new session
-  sess = std::make_shared<session>(ioc, timeout_in_seconds, std::make_unique<std::promise<void>>(std::move(handshake_promise)));
+  sess = std::make_shared<session>(
+      ioc, timeout_in_seconds,
+      std::make_unique<std::promise<void>>(std::move(handshake_promise)));
   std::cout << host << ":" << port << std::endl;
   // function to read
   auto read_fn = [=]() {
@@ -955,9 +957,10 @@ WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
 
   // writing using one thread and read using another
   read_thread = std::thread(read_fn);
-  if( hanshake_future.wait_for(std::chrono::seconds(timeout_in_seconds)) == std::future_status::timeout)
-  {
-    std::cerr << "Timeout waiting for subscription request on " << host << ":" << port << std::endl;
+  if (hanshake_future.wait_for(std::chrono::seconds(timeout_in_seconds)) ==
+      std::future_status::timeout) {
+    std::cerr << "Timeout waiting for subscription request on " << host << ":"
+              << port << std::endl;
   }
 }
 WebSocketSubscriber::~WebSocketSubscriber() {
@@ -981,7 +984,8 @@ int WebSocketSubscriber::onAccountChange(const solana::PublicKey &pub_key,
 
   // create a new request content
   RequestContent req(curr_id, "accountSubscribe", "accountUnsubscribe",
-                     account_change_callback, std::move(param), on_subscibe, on_unsubscribe);
+                     account_change_callback, std::move(param), on_subscibe,
+                     on_unsubscribe);
 
   // subscribe the new request content
   sess->subscribe(req);

@@ -18,22 +18,21 @@ int main() {
   };
 
   int callback_called = 0;
-  auto on_callback = [&callback_called](const json&) {
-    ++callback_called;
-  };
+  auto on_callback = [&callback_called](const json&) { ++callback_called; };
 
   std::cout << "Initailizing ws" << std::endl;
-  const solana::PublicKey pk = solana::PublicKey::fromBase58("8vnAsXjHtdRgyuFHVESjfe1CBmWSwRFRgBR3WJCQbMiW");
-  int sub_id = sub.onAccountChange(pk, on_callback, solana::Commitment::CONFIRMED, call_on_subscribe, call_on_unsubscribed);
-  
-  for( int i=0; i< 1000; ++i) // wait for subscription for 10 sec
+  const solana::PublicKey pk = solana::PublicKey::fromBase58(
+      "8vnAsXjHtdRgyuFHVESjfe1CBmWSwRFRgBR3WJCQbMiW");
+  int sub_id =
+      sub.onAccountChange(pk, on_callback, solana::Commitment::CONFIRMED,
+                          call_on_subscribe, call_on_unsubscribed);
+
+  for (int i = 0; i < 1000; ++i)  // wait for subscription for 10 sec
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    if(subscribe_called)
-      break;
+    if (subscribe_called) break;
   }
-  if(!subscribe_called)
-  {
+  if (!subscribe_called) {
     std::cerr << "subscription unsuccesful" << std::endl;
     return -1;
   }
@@ -42,18 +41,17 @@ int main() {
   std::this_thread::sleep_for(std::chrono::seconds(20));
 
   assert(unsubscribe_called == false);
-  std::cout << "callback called should be equal to number of airdrops result " << callback_called << std::endl;
+  std::cout << "callback called should be equal to number of airdrops result "
+            << callback_called << std::endl;
   std::cout << "Unsubscribing" << std::endl;
   sub.removeAccountChangeListener(sub_id);
   // call solana airdrop 1
-  for( int i=0; i< 1000; ++i) // wait for subscription for 10 sec
+  for (int i = 0; i < 1000; ++i)  // wait for subscription for 10 sec
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    if(unsubscribe_called)
-      break;
+    if (unsubscribe_called) break;
   }
-  if(!unsubscribe_called)
-  {
+  if (!unsubscribe_called) {
     std::cerr << "unsubscription unsuccesful" << std::endl;
     return -1;
   }

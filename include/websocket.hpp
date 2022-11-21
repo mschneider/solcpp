@@ -5,13 +5,13 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <shared_mutex>
 #include <string>
 #include <thread>
-#include <shared_mutex>
-#include <future>
 
 namespace beast = boost::beast;          // from <boost/beast.hpp>
 namespace http = beast::http;            // from <boost/beast/http.hpp>
@@ -19,8 +19,9 @@ namespace websocket = beast::websocket;  // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;             // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;        // from <boost/asio/ip/tcp.hpp>
 using json = nlohmann::json;             // from <nlohmann/json.hpp>
-using Callback = std::function<void(const json &)>;  // callback function which takes
-                                               // the json and returns nothing
+using Callback =
+    std::function<void(const json &)>;  // callback function which takes
+                                        // the json and returns nothing
 
 using RequestIdType = unsigned long;
 /// @brief Class to store the request and function given by user
@@ -43,7 +44,10 @@ struct RequestContent {
   RequestContent() = default;
 
   /// @brief constructor
-  RequestContent(RequestIdType id, std::string subscribe_method, std::string unsubscribe_method, Callback cb, json &&params, Callback on_subscribe = nullptr, Callback on_unsubscribe = nullptr);
+  RequestContent(RequestIdType id, std::string subscribe_method,
+                 std::string unsubscribe_method, Callback cb, json &&params,
+                 Callback on_subscribe = nullptr,
+                 Callback on_unsubscribe = nullptr);
 
   /// @brief Get the json request to do subscription
   /// @return the json that can be used to make subscription
@@ -62,7 +66,8 @@ class session : public std::enable_shared_from_this<session> {
   HandshakePromisePtr handshake_promise = nullptr;
   /// @brief resolver and websocket require an io context to do io operations
   /// @param ioc
-  explicit session(net::io_context &ioc, int timeout_in_seconds = 30, HandshakePromisePtr handshake_callback = nullptr);
+  explicit session(net::io_context &ioc, int timeout_in_seconds = 30,
+                   HandshakePromisePtr handshake_callback = nullptr);
 
   /// @brief Looks up the domain name to make connection to -> calls on_resolve
   /// @param host the host address
@@ -126,7 +131,6 @@ class session : public std::enable_shared_from_this<session> {
   /// @param request_id
   Callback get_callback(RequestIdType request_id);
 
-
   // resolves the host and port provided by user
   tcp::resolver resolver;
 
@@ -141,7 +145,6 @@ class session : public std::enable_shared_from_this<session> {
 
   // denotes if the connection is up
   std::atomic_bool is_connected;
-
 
   // map of subscription id with callback
   std::unordered_map<RequestIdType, RequestContent> callback_map;
