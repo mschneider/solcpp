@@ -977,7 +977,9 @@ TEST_CASE("getBlocks") {
   const auto slot = connection.getSlot();
   uint64_t startslot = slot - 10;
   uint64_t latestslot = slot;
-  const auto Blocks = connection.getBlocks(startslot, latestslot);
-  CHECK_EQ(Blocks.size(), latestslot - startslot + 1);
-  CHECK_EQ(Blocks[0], startslot);
+  std::vector<uint64_t> Blocks = connection.getBlocks(startslot, latestslot);
+  std::sort(std::begin(Blocks), std::end(Blocks));
+  CHECK_GT(Blocks.size(), 0);
+  CHECK_GE(Blocks[0], startslot);
+  CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
 }
