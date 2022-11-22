@@ -932,7 +932,6 @@ std::vector<SignaturesAddress> Connection::getSignaturesForAddress(
   return samples_list;
 }
 
-
 RpcResponseAndContext<std::vector<TokenLargestAccounts>>
 Connection::getTokenLargestAccounts(std::string pubkey,
                                     const commitmentconfig &config) const {
