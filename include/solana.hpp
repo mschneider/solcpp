@@ -2,18 +2,25 @@
 
 #include <cpr/cpr.h>
 #include <sodium.h>
+#include <unistd.h>
 
+#include <boost/asio.hpp>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "base58.hpp"
 #include "base64.hpp"
+#include "websocket.hpp"
+
+namespace net = boost::asio;  // from <boost/asio.hpp>
 
 namespace solana {
 using json = nlohmann::json;
@@ -213,7 +220,7 @@ void from_json(const json &j, TransactionReturnData &data);
 /**
  * The level of commitment desired when querying state
  */
-enum Commitment {
+enum class Commitment : short {
   /**
    * Query the most recent block which has reached 1 confirmation by the
    * connected node
@@ -229,11 +236,12 @@ enum Commitment {
   FINALIZED,
 };
 
-NLOHMANN_JSON_SERIALIZE_ENUM(Commitment, {
-                                             {PROCESSED, "processed"},
-                                             {CONFIRMED, "confirmed"},
-                                             {FINALIZED, "finalized"},
-                                         })
+NLOHMANN_JSON_SERIALIZE_ENUM(Commitment,
+                             {
+                                 {Commitment::PROCESSED, "processed"},
+                                 {Commitment::CONFIRMED, "confirmed"},
+                                 {Commitment::FINALIZED, "finalized"},
+                             })
 
 struct GetStakeActivationConfig {
   /** The level of commitment desired */
@@ -496,7 +504,7 @@ struct AccountInfo {
    * base-58 encoded Pubkey of the program this account has been assigned to
    */
   PublicKey owner;
-  /**
+  /**namespace net = boost::asio; // from <boost/asio.hpp>
    * number of lamports assigned to this account
    */
   uint64_t lamports;
@@ -895,7 +903,7 @@ class Connection {
    */
   std::vector<Nodes> getClusterNodes() const;
 
-  /**
+  /**RequestIdType
    *Get the fee the network will charge for a particular Message
    */
   getFeeForMessageRes getFeeForMessage(
@@ -1017,15 +1025,38 @@ namespace subscription {
  * Subscribe to an account to receive notifications when the lamports or data
  * for a given account public key changes
  */
-inline json accountSubscribeRequest(const std::string &account,
-                                    const std::string &commitment = "finalized",
-                                    const std::string &encoding = "base64") {
-  const json params = {account,
-                       {{"commitment", commitment}, {"encoding", encoding}}};
+json accountSubscribeRequest(
+    const std::string &account,
+    const Commitment commitment = Commitment::FINALIZED,
+    const std::string &encoding = BASE64);
 
-  return rpc::jsonRequest("accountSubscribe", params);
-}
+class WebSocketSubscriber {
+ public:
+  net::io_context ioc;
+  std::shared_ptr<session> sess;
+  std::thread read_thread;
+  RequestIdType curr_id = 0;
+  std::vector<std::string> available_commitment;
 
+  WebSocketSubscriber(const std::string &host, const std::string &port,
+                      int timeout_in_seconds = 30);
+  ~WebSocketSubscriber();
+
+  /// @brief callback to call when data in account changes
+  /// @param pub_key public key for the account
+  /// @param account_change_callback callback to call when the data changes
+  /// @param commitment commitment
+  /// @return subsccription id (actually the current id)
+  int onAccountChange(const solana::PublicKey &pub_key,
+                      Callback account_change_callback,
+                      const Commitment &commitment = Commitment::FINALIZED,
+                      Callback on_subscibe = nullptr,
+                      Callback on_unsubscribe = nullptr);
+
+  /// @brief remove the account change listener for the given id
+  /// @param sub_id the id for which removing subscription is needed
+  void removeAccountChangeListener(RequestIdType sub_id);
+};
 }  // namespace subscription
 }  // namespace rpc
 }  // namespace solana
