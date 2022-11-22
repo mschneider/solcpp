@@ -974,7 +974,9 @@ TEST_CASE("getTokenLargestAccounts") {
 
 TEST_CASE("getBlocks") {
   const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
-  int startslot{5}, latestslot{20};
+  const auto slot = connection.getSlot();
+  uint64_t startslot = slot - 10;
+  uint64_t latestslot = slot;
   const auto Blocks = connection.getBlocks(startslot, latestslot);
   CHECK_EQ(Blocks.size(), latestslot - startslot + 1);
   CHECK_EQ(Blocks[0], startslot);
