@@ -254,7 +254,6 @@ void from_json(const json &j, TokenLargestAccounts &tokenlargestaccounts) {
   tokenlargestaccounts.uiAmount = j["uiAmount"];
   tokenlargestaccounts.uiAmountString = j["uiAmountString"];
 }
-
 ///
 /// SignatureStatus
 void to_json(json &j, const SignatureStatus &status) {
@@ -933,6 +932,7 @@ std::vector<SignaturesAddress> Connection::getSignaturesForAddress(
   return samples_list;
 }
 
+
 RpcResponseAndContext<std::vector<TokenLargestAccounts>>
 Connection::getTokenLargestAccounts(std::string pubkey,
                                     const commitmentconfig &config) const {
@@ -953,10 +953,6 @@ std::vector<uint64_t> Connection::getBlocks(
   const json reqJson = jsonRequest("getBlocks", params);
   return sendJsonRpcRequest(reqJson);
 }
-}  // namespace rpc
-
-namespace subscription {}  // namespace subscription
-=======
 namespace subscription {
 /**
  * Subscribe to an account to receive notifications when the lamports or data
@@ -1034,6 +1030,5 @@ void WebSocketSubscriber::removeAccountChangeListener(RequestIdType sub_id) {
   sess->unsubscribe(sub_id);
 }
 }  // namespace subscription
-
 }  // namespace rpc
 }  // namespace solana
