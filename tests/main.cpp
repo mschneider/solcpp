@@ -964,3 +964,22 @@ TEST_CASE("getSignaturesForAddress") {
       solana::GetSignatureAddressConfig{2});
   CHECK_EQ(SignaturesForAddress.size(), 2);
 }
+
+TEST_CASE("getTokenLargestAccounts") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  const auto TokenLargestAccounts = connection.getTokenLargestAccounts(
+      "1YDQ35V8g68FGvcT85haHwAXv1U7XMzuc4mZeEXfrjE");
+  CHECK_EQ(TokenLargestAccounts.value.size(), 20);
+}
+
+TEST_CASE("getBlocks") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  const auto slot = connection.getSlot();
+  uint64_t startslot = slot - 10;
+  uint64_t latestslot = slot;
+  std::vector<uint64_t> Blocks = connection.getBlocks(startslot, latestslot);
+  std::sort(std::begin(Blocks), std::end(Blocks));
+  CHECK_GT(Blocks.size(), 0);
+  CHECK_GE(Blocks[0], startslot);
+  CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
+}
