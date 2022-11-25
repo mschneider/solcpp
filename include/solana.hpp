@@ -925,7 +925,6 @@ class Connection {
    */
   std::vector<Nodes> getClusterNodes() const;
 
-
   /**
    * Returns the total supply of SPL token type
    */

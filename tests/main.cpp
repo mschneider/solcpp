@@ -925,7 +925,6 @@ TEST_CASE("getRecentPerformanceSamples") {
   CHECK_EQ(RecentPerformanceSamples[0].samplePeriodSecs, 60);
 }
 
-
 TEST_CASE("getTokenSupply") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
@@ -1000,5 +999,4 @@ TEST_CASE("getBlocks") {
   CHECK_GT(Blocks.size(), 0);
   CHECK_GE(Blocks[0], startslot);
   CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
-
 }
