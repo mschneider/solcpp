@@ -174,6 +174,7 @@ void from_json(const json &j, InflationGovernor &inflationgovernor);
 struct TokenSupply {
   std::string amount;
   uint8_t decimals;
+  uint64_t uiAmount;
   std::string uiAmountString;
 };
 
@@ -926,25 +927,6 @@ class Connection {
   std::vector<Nodes> getClusterNodes() const;
 
   /**
-   * Returns the total supply of SPL token type
-   */
-
-  TokenSupply getTokenSupply(const PublicKey &pubKey) const;
-
-  /**
-   * Returns recent block production information from the current or previous
-   * epoch.
-   */
-
-  BlockProduction getBlockProduction() const;
-
-  /**
-   * Returns the leader schedule for an epoch
-   */
-
-  TokenSupply getTokenSupply() const;
-
-  /**
    *Get the fee the network will charge for a particular Message
    */
   getFeeForMessageRes getFeeForMessage(
@@ -1015,6 +997,19 @@ class Connection {
   std::vector<uint64_t> getBlocks(
       uint64_t start_slot, uint64_t end_slot,
       const commitmentconfig &config = commitmentconfig{}) const;
+
+  /**
+   * Returns the total supply of SPL token type
+   */
+
+  TokenSupply getTokenSupply(std::string pubKey) const;
+
+  /**
+   * Returns recent block production information from the current or previous
+   * epoch.
+   */
+
+  BlockProduction getBlockProduction() const;
 
   /**
    * Fetch parsed account info for the specified public key

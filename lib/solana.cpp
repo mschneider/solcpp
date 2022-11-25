@@ -295,6 +295,7 @@ void from_json(const json &j, InflationGovernor &inflationgovernor) {
 void from_json(const json &j, TokenSupply &tokensupply) {
   tokensupply.amount = j["amount"];
   tokensupply.decimals = j["decimals"];
+  tokensupply.uiAmount = j["uiAmount"];
   tokensupply.uiAmountString = j["uiAmountString"];
 }
 
@@ -303,6 +304,9 @@ void from_json(const json &j, BlockProduction &blockproduction) {
   blockproduction.lastSlot = j["range"]["lastSlot"];
   blockproduction.byIdentity = j["byIdentity"];
 }
+
+void from_json(const json &j, LeaderSchedule &leaderschedule){
+    leaderschedule.validator_identities = j};
 
 void from_json(const json &j, Nodes &nodes) {
   if (!j["featureSet"].is_null()) {
@@ -758,25 +762,6 @@ Connection::getSignatureStatus(const std::string &signature,
   return {res.context, res.value[0]};
 }
 
-TokenSupply Connection::getTokenSupply(const PublicKey &pubKey) const {
-  const json params = {pubKey.toBase58()};
-  const auto res = jsonRequest("getTokenSupply", params);
-
-  return sendJsonRpcRequest(res);
-}
-
-BlockProduction Connection::getBlockProduction() const {
-  const json params = {};
-  const auto res = jsonRequest("getBlockProduction", params);
-  return sendJsonRpcRequest(res)["value"];
-}
-
-TokenSupply Connection::getTokenSupply() const {
-  const json params = {};
-  const auto res = jsonRequest("getTokenSupply", params);
-  return sendJsonRpcRequest(res)["result"];
-}
-
 bool Connection::confirmTransaction(std::string transactionSignature,
                                     Commitment confirmLevel,
                                     uint16_t retries) const {
@@ -983,6 +968,25 @@ std::vector<uint64_t> Connection::getBlocks(
   const json reqJson = jsonRequest("getBlocks", params);
   return sendJsonRpcRequest(reqJson);
 }
+
+TokenSupply Connection::getTokenSupply(std::string pubkey) const {
+  const json params = {pubkey};
+  const auto res = jsonRequest("getTokenSupply", params);
+  return sendJsonRpcRequest(res);
+}
+
+BlockProduction Connection::getBlockProduction() const {
+  const json params = {};
+  const auto res = jsonRequest("getBlockProduction", params);
+  return sendJsonRpcRequest(res)["value"];
+}
+
+LeaderSchedule Connection::getLeaderSchedule() const {
+  const json params = {};
+  const auto res = jsonRequest("getLeaderSchedule", params);
+  return sendJsonRpcRequest(res);
+}
+
 namespace subscription {
 /**
  * Subscribe to an account to receive notifications when the lamports or data

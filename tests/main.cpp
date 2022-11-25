@@ -925,23 +925,6 @@ TEST_CASE("getRecentPerformanceSamples") {
   CHECK_EQ(RecentPerformanceSamples[0].samplePeriodSecs, 60);
 }
 
-TEST_CASE("getTokenSupply") {
-  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
-  const auto connection = solana::rpc::Connection(solana::DEVNET);
-  const solana::PublicKey pubkey = solana::PublicKey::fromBase58(
-      "3wyAj7Rt1TWVPZVteFJPLa26JmLvdb1CAKEFZm3NY75E");
-  connection.getTokenSupply(keyPair.publicKey);
-}
-
-TEST_CASE("getBlockProduction") {
-  const auto connection = solana::rpc::Connection(solana::DEVNET);
-  auto x = connection.getBlockProduction();
-}
-
-TEST_CASE("getLeaderSchedule") {
-  const auto connection = solana::rpc::Connection(solana::DEVNET);
-  auto x = connection.getTokenSupply();
-}
 TEST_CASE("getSlotLeaders") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto slot = connection.getSlot();
@@ -1000,3 +983,24 @@ TEST_CASE("getBlocks") {
   CHECK_GE(Blocks[0], startslot);
   CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
 }
+
+TEST_CASE("getTokenSupply") {
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto TokenSupply =
+      connection.getTokenSupply("1YDQ35V8g68FGvcT85haHwAXv1U7XMzuc4mZeEXfrjE");
+  CHECK_GT(TokenSupply.amount.size(), 0);
+  CHECK_GE(TokenSupply.decimals, 0);
+  CHECK_GE(TokenSupply.uiAmount, 0);
+  CHECK_GT(TokenSupply.uiAmountString.size(), 0);
+}
+
+// TEST_CASE("getBlockProduction") {
+//   const auto connection = solana::rpc::Connection(solana::DEVNET);
+//   auto x = connection.getBlockProduction();
+// }
+
+// TEST_CASE("getLeaderSchedule") {
+//   const auto connection = solana::rpc::Connection(solana::DEVNET);
+//   auto x = connection.getTokenSupply();
+// }
