@@ -1,9 +1,14 @@
+#include "solana.hpp"
+
 #include <cpr/cpr.h>
 #include <sodium.h>
+#include <unistd.h>
 
 #include <chrono>
 #include <cstdint>
+#include <future>
 #include <iterator>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <ostream>
 #include <solana.hpp>
@@ -184,6 +189,71 @@ void to_json(json &j, const LargestAccountsConfig &config) {
     j["filter"] = config.filter.value();
   }
 }
+
+void from_json(const json &j, Supply &supply) {
+  supply.circulating = j["circulating"];
+  supply.nonCirculating = j["nonCirculating"];
+  supply.nonCirculatingAccounts =
+      std::optional<std::vector<std::string>>{j["nonCirculatingAccounts"]};
+  supply.total = j["total"];
+}
+void from_json(const json &j, TokenAccountBalance &tokenaccountbalance) {
+  tokenaccountbalance.amount = j["amount"];
+  tokenaccountbalance.decimals = j["decimals"];
+  tokenaccountbalance.uiAmount = j["uiAmount"];
+  tokenaccountbalance.uiAmountString = j["uiAmountString"];
+}
+
+void from_json(const json &j, Current &current) {
+  current.activatedStake = j["activatedStake"];
+  current.commission = j["commission"];
+  current.epochCredits = j["epochCredits"];
+  current.epochVoteAccount = j["epochVoteAccount"];
+  current.lastVote = j["lastVote"];
+  current.nodePubkey = j["nodePubkey"];
+  current.votePubkey = j["votePubkey"];
+}
+
+void from_json(const json &j, Delinquent &delinquent) {
+  delinquent.activatedStake = j["activatedStake"];
+  delinquent.commission = j["commission"];
+  delinquent.epochCredits = j["epochCredits"];
+  delinquent.epochVoteAccount = j["epochVoteAccount"];
+  delinquent.lastVote = j["lastVote"];
+  delinquent.nodePubkey = j["nodePubkey"];
+  delinquent.votePubkey = j["votePubkey"];
+}
+
+void from_json(const json &j, VoteAccounts &voteaccounts) {
+  voteaccounts.current = j["current"];
+  voteaccounts.delinquent = j["delinquent"];
+}
+
+void from_json(const json &j, SignaturesAddress &signaturesaddress) {
+  if (!j["blockTime"].is_null()) {
+    signaturesaddress.blockTime = std::optional{j["blockTime"]};
+  }
+  if (!j["err"].is_null()) {
+    signaturesaddress.err = std::optional{j["err"]};
+  }
+  if (!j["confirmationStatus"].is_null()) {
+    signaturesaddress.confirmationStatus =
+        std::optional{j["confirmationStatus"]};
+  }
+  if (!j["memo"].is_null()) {
+    signaturesaddress.memo = std::optional{j["memo"]};
+  }
+  signaturesaddress.signature = j["signature"];
+  signaturesaddress.slot = j["slot"];
+};
+
+void from_json(const json &j, TokenLargestAccounts &tokenlargestaccounts) {
+  tokenlargestaccounts.address = j["address"];
+  tokenlargestaccounts.amount = j["amount"];
+  tokenlargestaccounts.decimals = j["decimals"];
+  tokenlargestaccounts.uiAmount = j["uiAmount"];
+  tokenlargestaccounts.uiAmountString = j["uiAmountString"];
+}
 ///
 /// SignatureStatus
 void to_json(json &j, const SignatureStatus &status) {
@@ -275,6 +345,49 @@ void from_json(const json &j,
   recentperformancesamples.numTransactions = j["numTransactions"];
   recentperformancesamples.samplePeriodSecs = j["samplePeriodSecs"];
   recentperformancesamples.slot = j["slot"];
+}
+
+void to_json(json &j, const GetSupplyConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.excludeNonCirculatingAccountsList.has_value()) {
+    j["excludeNonCirculatingAccountsList"] =
+        config.excludeNonCirculatingAccountsList.value();
+  }
+}
+
+void to_json(json &j, const GetVoteAccountsConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.votePubkey.has_value()) {
+    j["votePubkey"] = config.votePubkey.value();
+  }
+  if (config.keepUnstakedDelinquents.has_value()) {
+    j["keepUnstakedDelinquents"] = config.keepUnstakedDelinquents.value();
+  }
+  if (config.delinquentSlotDistance.has_value()) {
+    j["keepUnstakedDelinquents"] = config.keepUnstakedDelinquents.value();
+  }
+}
+
+void to_json(json &j, const GetSignatureAddressConfig &signatureaddressconfig) {
+  if (signatureaddressconfig.limit.has_value()) {
+    j["limit"] = signatureaddressconfig.limit.value();
+  }
+  if (signatureaddressconfig.before.has_value()) {
+    j["before"] = signatureaddressconfig.before.value();
+  }
+  if (signatureaddressconfig.until.has_value()) {
+    j["until"] = signatureaddressconfig.until.value();
+  }
+  if (signatureaddressconfig.commitment.has_value()) {
+    j["commitment"] = signatureaddressconfig.commitment.value();
+  }
+  if (signatureaddressconfig.minContextSlot.has_value()) {
+    j["minContextSlot"] = signatureaddressconfig.minContextSlot.value();
+  }
 }
 
 ///
@@ -805,8 +918,147 @@ std::vector<RecentPerformanceSamples> Connection::getRecentPerformanceSamples(
   return samples_list;
 }
 
+std::vector<std::string> Connection::getSlotLeaders(uint64_t startSlot,
+                                                    uint64_t limit) const {
+  const json params = {startSlot, limit};
+  const json reqJson = jsonRequest("getSlotLeaders", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+RpcResponseAndContext<Supply> Connection::getSupply(
+    const GetSupplyConfig &config) const {
+  const json params = {config};
+  const auto reqJson = jsonRequest("getSupply", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  Supply accounts_list = res["value"];
+  return {res["context"], accounts_list};
+}
+
+RpcResponseAndContext<TokenAccountBalance> Connection::getTokenAccountBalance(
+    const std::string pubkey, const commitmentconfig &config) const {
+  const json params = {pubkey, config};
+  const auto reqJson = jsonRequest("getTokenAccountBalance", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  TokenAccountBalance accounts_list = res["value"];
+  return {res["context"], accounts_list};
+}
+
+VoteAccounts Connection::getVoteAccounts(
+    const GetVoteAccountsConfig &config) const {
+  const json params = {config};
+  const auto reqJson = jsonRequest("getVoteAccounts", params);
+  return sendJsonRpcRequest(reqJson);
+}
+
+std::vector<SignaturesAddress> Connection::getSignaturesForAddress(
+    std::string pubkey,
+    const GetSignatureAddressConfig &signatureaddressconfig) const {
+  const json params = {pubkey, signatureaddressconfig};
+  const auto reqJson = jsonRequest("getSignaturesForAddress", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const std::vector<json> value = res;
+  std::vector<SignaturesAddress> samples_list;
+  samples_list.reserve(value.size());
+  std::copy(value.begin(), value.end(), std::back_inserter(samples_list));
+  return samples_list;
+}
+
+RpcResponseAndContext<std::vector<TokenLargestAccounts>>
+Connection::getTokenLargestAccounts(std::string pubkey,
+                                    const commitmentconfig &config) const {
+  const json params = {pubkey, config};
+  const auto reqJson = jsonRequest("getTokenLargestAccounts", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const std::vector<json> value = res["value"];
+  std::vector<TokenLargestAccounts> accounts_list;
+  accounts_list.reserve(value.size());
+  std::copy(value.begin(), value.end(), std::back_inserter(accounts_list));
+  return {res["context"], accounts_list};
+}
+
+std::vector<uint64_t> Connection::getBlocks(
+    uint64_t start_slot, uint64_t end_slot,
+    const commitmentconfig &config) const {
+  const json params = {start_slot, end_slot, config};
+  const json reqJson = jsonRequest("getBlocks", params);
+  return sendJsonRpcRequest(reqJson);
+}
+namespace subscription {
+/**
+ * Subscribe to an account to receive notifications when the lamports or data
+ * for a given account public key changes
+ */
+json accountSubscribeRequest(const std::string &account,
+                             const Commitment commitment,
+                             const std::string &encoding) {
+  const json params = {account,
+                       {{"commitment", commitment}, {"encoding", encoding}}};
+
+  return rpc::jsonRequest("accountSubscribe", params);
+}
+
+WebSocketSubscriber::WebSocketSubscriber(const std::string &host,
+                                         const std::string &port,
+                                         int timeout_in_seconds) {
+  std::promise<void> handshake_promise;
+  std::future<void> hanshake_future = handshake_promise.get_future();
+  // create a new session
+  sess = std::make_shared<session>(
+      ioc, timeout_in_seconds,
+      std::make_unique<std::promise<void>>(std::move(handshake_promise)));
+  std::cout << host << ":" << port << std::endl;
+  // function to read
+  auto read_fn = [=]() {
+    sess->run(host, port);
+    ioc.run();
+  };
+
+  // writing using one thread and read using another
+  read_thread = std::thread(read_fn);
+  if (hanshake_future.wait_for(std::chrono::seconds(timeout_in_seconds)) ==
+      std::future_status::timeout) {
+    std::cerr << "Timeout waiting for subscription request on " << host << ":"
+              << port << std::endl;
+  }
+}
+WebSocketSubscriber::~WebSocketSubscriber() {
+  // disconnect the session and wait for the threads to complete
+  sess->disconnect();
+  if (read_thread.joinable()) read_thread.join();
+}
+
+/// @brief callback to call when data in account changes
+/// @param pub_key public key for the account
+/// @param account_change_callback callback to call when the data changes
+/// @param commitment commitment
+/// @return subsccription id (actually the current id)
+int WebSocketSubscriber::onAccountChange(const solana::PublicKey &pub_key,
+                                         Callback account_change_callback,
+                                         const Commitment &commitment,
+                                         Callback on_subscibe,
+                                         Callback on_unsubscribe) {
+  // create parameters using the user provided input
+  json param = {pub_key, {{"encoding", "base64"}, {"commitment", commitment}}};
+
+  // create a new request content
+  RequestContent req(curr_id, "accountSubscribe", "accountUnsubscribe",
+                     account_change_callback, std::move(param), on_subscibe,
+                     on_unsubscribe);
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req.id;
+}
+
+/// @brief remove the account change listener for the given id
+/// @param sub_id the id for which removing subscription is needed
+void WebSocketSubscriber::removeAccountChangeListener(RequestIdType sub_id) {
+  sess->unsubscribe(sub_id);
+}
+}  // namespace subscription
 }  // namespace rpc
-
-namespace subscription {}  // namespace subscription
-
 }  // namespace solana

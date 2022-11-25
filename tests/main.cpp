@@ -860,6 +860,35 @@ TEST_CASE("getMinimumBalanceForRentExemption") {
   CHECK_GE(minimumBalance, 0);
 }
 
+TEST_CASE("account subscribe and unsubscribe") {
+  solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  bool subscribe_called = false;
+  auto call_on_subscribe = [&subscribe_called](const json& data) {
+    subscribe_called = true;
+  };
+
+  // solana::rpc::subscription::WebSocketSubscriber
+  // subscribe for account change
+  int sub_id = sub.onAccountChange(keyPair.publicKey, call_on_subscribe);
+  // change account data
+  connection.requestAirdrop(keyPair.publicKey, 50);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
+  // assure that callback has been called
+  CHECK(subscribe_called);
+  // stop listening to websocket
+  sub.removeAccountChangeListener(sub_id);
+  // change account data
+  connection.requestAirdrop(keyPair.publicKey, 50);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
+  // ensure that callback wasn't called
+  CHECK(subscribe_called);
+}
+
 TEST_CASE("getBlockTime") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   const auto slot = connection.getFirstAvailableBlock();
@@ -896,6 +925,7 @@ TEST_CASE("getRecentPerformanceSamples") {
   CHECK_EQ(RecentPerformanceSamples[0].samplePeriodSecs, 60);
 }
 
+
 TEST_CASE("getTokenSupply") {
   const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
@@ -912,4 +942,63 @@ TEST_CASE("getBlockProduction") {
 TEST_CASE("getLeaderSchedule") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   auto x = connection.getTokenSupply();
+}
+TEST_CASE("getSlotLeaders") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto slot = connection.getSlot();
+  const auto slotLeaders = connection.getSlotLeaders(slot, 10);
+  CHECK_GT(slotLeaders.size(), 0);
+}
+
+TEST_CASE("getSupply") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto supply = connection.getSupply();
+  CHECK_GT(supply.value.circulating, 0);
+  CHECK_GT(supply.value.nonCirculating, 0);
+  CHECK_GT(supply.value.nonCirculatingAccounts.value().size(), 0);
+  CHECK_GT(supply.value.total, 0);
+}
+
+TEST_CASE("getVoteAccounts") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto VoteAccounts = connection.getVoteAccounts();
+  CHECK_GT(VoteAccounts.current.size() + VoteAccounts.delinquent.size(), 0);
+}
+
+TEST_CASE("getTokenAccountBalance") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  const auto accountBalance = connection.getTokenAccountBalance(
+      "DhzDoryP2a4rMK2bcWwJxrE2uW6ir81ES8ZwJJPPpxDN");
+  CHECK_GT(accountBalance.value.amount.size(), 0);
+  CHECK_GE(accountBalance.value.decimals, 0);
+  CHECK_GT(accountBalance.value.uiAmount, 0);
+  CHECK_GT(accountBalance.value.uiAmountString.size(), 0);
+}
+
+TEST_CASE("getSignaturesForAddress") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  const auto SignaturesForAddress = connection.getSignaturesForAddress(
+      "Vote111111111111111111111111111111111111111",
+      solana::GetSignatureAddressConfig{2});
+  CHECK_EQ(SignaturesForAddress.size(), 2);
+}
+
+TEST_CASE("getTokenLargestAccounts") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  const auto TokenLargestAccounts = connection.getTokenLargestAccounts(
+      "1YDQ35V8g68FGvcT85haHwAXv1U7XMzuc4mZeEXfrjE");
+  CHECK_EQ(TokenLargestAccounts.value.size(), 20);
+}
+
+TEST_CASE("getBlocks") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  const auto slot = connection.getSlot();
+  uint64_t startslot = slot - 10;
+  uint64_t latestslot = slot;
+  std::vector<uint64_t> Blocks = connection.getBlocks(startslot, latestslot);
+  std::sort(std::begin(Blocks), std::end(Blocks));
+  CHECK_GT(Blocks.size(), 0);
+  CHECK_GE(Blocks[0], startslot);
+  CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
+
 }

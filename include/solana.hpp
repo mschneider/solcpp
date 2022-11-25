@@ -2,18 +2,25 @@
 
 #include <cpr/cpr.h>
 #include <sodium.h>
+#include <unistd.h>
 
+#include <boost/asio.hpp>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "base58.hpp"
 #include "base64.hpp"
+#include "websocket.hpp"
+
+namespace net = boost::asio;  // from <boost/asio.hpp>
 
 namespace solana {
 using json = nlohmann::json;
@@ -235,7 +242,7 @@ void from_json(const json &j, TransactionReturnData &data);
 /**
  * The level of commitment desired when querying state
  */
-enum Commitment {
+enum class Commitment : short {
   /**
    * Query the most recent block which has reached 1 confirmation by the
    * connected node
@@ -251,11 +258,12 @@ enum Commitment {
   FINALIZED,
 };
 
-NLOHMANN_JSON_SERIALIZE_ENUM(Commitment, {
-                                             {PROCESSED, "processed"},
-                                             {CONFIRMED, "confirmed"},
-                                             {FINALIZED, "finalized"},
-                                         })
+NLOHMANN_JSON_SERIALIZE_ENUM(Commitment,
+                             {
+                                 {Commitment::PROCESSED, "processed"},
+                                 {Commitment::CONFIRMED, "confirmed"},
+                                 {Commitment::FINALIZED, "finalized"},
+                             })
 
 struct GetStakeActivationConfig {
   /** The level of commitment desired */
@@ -396,6 +404,94 @@ void to_json(json &j, const SignatureStatus &status);
  */
 void from_json(const json &j, SignatureStatus &status);
 
+struct GetSupplyConfig {
+  /** The level of commitment desired */
+  std::optional<Commitment> commitment = std::nullopt;
+  /** The minimum slot that the request can be evaluated at */
+  std::optional<bool> excludeNonCirculatingAccountsList = std::nullopt;
+};
+
+struct GetVoteAccountsConfig {
+  std::optional<Commitment> commitment = std::nullopt;
+  std::optional<std::string> votePubkey = std::nullopt;
+  std::optional<bool> keepUnstakedDelinquents = std::nullopt;
+  std::optional<uint64_t> delinquentSlotDistance = std::nullopt;
+};
+
+struct GetSignatureAddressConfig {
+  std::optional<uint64_t> limit = std::nullopt;
+  std::optional<std::string> before = std::nullopt;
+  std::optional<std::string> until = std::nullopt;
+  std::optional<Commitment> commitment = std::nullopt;
+  std::optional<uint64_t> minContextSlot = std::nullopt;
+};
+
+struct Supply {
+  uint64_t circulating;
+  uint64_t nonCirculating;
+  std::optional<std::vector<std::string>> nonCirculatingAccounts = std::nullopt;
+  uint64_t total;
+};
+
+void from_json(const json &j, Supply &supply);
+
+struct TokenAccountBalance {
+  std::string amount;
+  uint64_t decimals;
+  double uiAmount;
+  std::string uiAmountString;
+};
+
+void from_json(const json &j, TokenAccountBalance &tokenaccountbalance);
+
+struct Current {
+  uint64_t commission;
+  bool epochVoteAccount;
+  std::vector<std::vector<uint64_t>> epochCredits;
+  std::string nodePubkey;
+  uint64_t lastVote;
+  uint64_t activatedStake;
+  std::string votePubkey;
+};
+
+struct Delinquent {
+  uint64_t commission;
+  bool epochVoteAccount;
+  std::vector<std::vector<uint64_t>> epochCredits;
+  std::string nodePubkey;
+  uint64_t lastVote;
+  uint64_t activatedStake;
+  std::string votePubkey;
+};
+
+struct VoteAccounts {
+  std::vector<Current> current;
+  std::vector<Delinquent> delinquent;
+};
+
+struct SignaturesAddress {
+  std::optional<uint64_t> blockTime = std::nullopt;
+  std::optional<Commitment> confirmationStatus = std::nullopt;
+  std::optional<std::string> err = std::nullopt;
+  std::optional<std::string> memo = std::nullopt;
+  std::string signature;
+  uint64_t slot;
+};
+
+void from_json(const json &j, SignaturesAddress &signaturesaddress);
+void to_json(json &j, const GetSupplyConfig &config);
+void to_json(json &j, const GetVoteAccountsConfig &config);
+
+struct TokenLargestAccounts {
+  std::string address;
+  std::string amount;
+  uint8_t decimals;
+  double uiAmount;
+  std::string uiAmountString;
+};
+
+void from_json(const json &j, TokenLargestAccounts &tokenlargestaccounts);
+
 /**
  * Extra contextual information for RPC responses
  */
@@ -430,7 +526,7 @@ struct AccountInfo {
    * base-58 encoded Pubkey of the program this account has been assigned to
    */
   PublicKey owner;
-  /**
+  /**namespace net = boost::asio; // from <boost/asio.hpp>
    * number of lamports assigned to this account
    */
   uint64_t lamports;
@@ -829,6 +925,7 @@ class Connection {
    */
   std::vector<Nodes> getClusterNodes() const;
 
+
   /**
    * Returns the total supply of SPL token type
    */
@@ -873,6 +970,52 @@ class Connection {
   RpcResponseAndContext<std::optional<SignatureStatus>> getSignatureStatus(
       const std::string &signature,
       bool searchTransactionHistory = false) const;
+
+  /**
+   * Returns the slot leaders for a given slot range
+   */
+  std::vector<std::string> getSlotLeaders(uint64_t startSlot,
+                                          uint64_t limit) const;
+
+  /**
+   * Returns information about the current supply.
+   */
+  RpcResponseAndContext<Supply> getSupply(
+      const GetSupplyConfig &config = GetSupplyConfig{}) const;
+
+  /**
+   * Returns the token balance of an SPL Token account.
+   */
+  RpcResponseAndContext<TokenAccountBalance> getTokenAccountBalance(
+      const std::string pubkey,
+      const commitmentconfig &config = commitmentconfig{}) const;
+
+  /**
+   * Returns the account info and associated stake for all the voting accounts
+   * in the current bank.
+   */
+  VoteAccounts getVoteAccounts(
+      const GetVoteAccountsConfig &config = GetVoteAccountsConfig{}) const;
+
+  /**
+   * Returns signatures for confirmed transactions that include the given
+   * address in their accountKeys list.
+   */
+  std::vector<SignaturesAddress> getSignaturesForAddress(
+      std::string pubkey, const GetSignatureAddressConfig &config =
+                              GetSignatureAddressConfig{}) const;
+  /*
+   *Returns the token balance of an SPL Token account.
+   */
+  RpcResponseAndContext<std::vector<TokenLargestAccounts>>
+  getTokenLargestAccounts(std::string pubkey, const commitmentconfig &config =
+                                                  commitmentconfig{}) const;
+  /*
+   *Returns a list of confirmed blocks between two slots
+   */
+  std::vector<uint64_t> getBlocks(
+      uint64_t start_slot, uint64_t end_slot,
+      const commitmentconfig &config = commitmentconfig{}) const;
 
   /**
    * Fetch parsed account info for the specified public key
@@ -925,15 +1068,38 @@ namespace subscription {
  * Subscribe to an account to receive notifications when the lamports or data
  * for a given account public key changes
  */
-inline json accountSubscribeRequest(const std::string &account,
-                                    const std::string &commitment = "finalized",
-                                    const std::string &encoding = "base64") {
-  const json params = {account,
-                       {{"commitment", commitment}, {"encoding", encoding}}};
+json accountSubscribeRequest(
+    const std::string &account,
+    const Commitment commitment = Commitment::FINALIZED,
+    const std::string &encoding = BASE64);
 
-  return rpc::jsonRequest("accountSubscribe", params);
-}
+class WebSocketSubscriber {
+ public:
+  net::io_context ioc;
+  std::shared_ptr<session> sess;
+  std::thread read_thread;
+  RequestIdType curr_id = 0;
+  std::vector<std::string> available_commitment;
 
+  WebSocketSubscriber(const std::string &host, const std::string &port,
+                      int timeout_in_seconds = 30);
+  ~WebSocketSubscriber();
+
+  /// @brief callback to call when data in account changes
+  /// @param pub_key public key for the account
+  /// @param account_change_callback callback to call when the data changes
+  /// @param commitment commitment
+  /// @return subsccription id (actually the current id)
+  int onAccountChange(const solana::PublicKey &pub_key,
+                      Callback account_change_callback,
+                      const Commitment &commitment = Commitment::FINALIZED,
+                      Callback on_subscibe = nullptr,
+                      Callback on_unsubscribe = nullptr);
+
+  /// @brief remove the account change listener for the given id
+  /// @param sub_id the id for which removing subscription is needed
+  void removeAccountChangeListener(RequestIdType sub_id);
+};
 }  // namespace subscription
 }  // namespace rpc
 }  // namespace solana
