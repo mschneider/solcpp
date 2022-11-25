@@ -292,6 +292,18 @@ void from_json(const json &j, InflationGovernor &inflationgovernor) {
   inflationgovernor.terminal = j["terminal"];
 }
 
+void from_json(const json &j, TokenSupply &tokensupply) {
+  tokensupply.amount = j["amount"];
+  tokensupply.decimals = j["decimals"];
+  tokensupply.uiAmountString = j["uiAmountString"];
+}
+
+void from_json(const json &j, BlockProduction &blockproduction) {
+  blockproduction.firstSlot = j["range"]["firstSlot"];
+  blockproduction.lastSlot = j["range"]["lastSlot"];
+  blockproduction.byIdentity = j["byIdentity"];
+}
+
 void from_json(const json &j, Nodes &nodes) {
   if (!j["featureSet"].is_null()) {
     nodes.featureSet = std::optional{j["featureSet"]};
@@ -744,6 +756,25 @@ Connection::getSignatureStatus(const std::string &signature,
                                bool searchTransactionHistory) const {
   const auto res = getSignatureStatuses({signature}, searchTransactionHistory);
   return {res.context, res.value[0]};
+}
+
+TokenSupply Connection::getTokenSupply(const PublicKey &pubKey) const {
+  const json params = {pubKey.toBase58()};
+  const auto res = jsonRequest("getTokenSupply", params);
+
+  return sendJsonRpcRequest(res);
+}
+
+BlockProduction Connection::getBlockProduction() const {
+  const json params = {};
+  const auto res = jsonRequest("getBlockProduction", params);
+  return sendJsonRpcRequest(res)["value"];
+}
+
+TokenSupply Connection::getTokenSupply() const {
+  const json params = {};
+  const auto res = jsonRequest("getTokenSupply", params);
+  return sendJsonRpcRequest(res)["result"];
 }
 
 bool Connection::confirmTransaction(std::string transactionSignature,

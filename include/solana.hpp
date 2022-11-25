@@ -148,6 +148,11 @@ struct EpochSchedule {
   }
 };
 
+/**
+ * EpochSchedule from json
+ */
+void from_json(const json &j, EpochSchedule &epochschedule);
+
 struct StakeActivation {
   uint64_t active;
   uint64_t inactive;
@@ -165,11 +170,28 @@ struct InflationGovernor {
 };
 
 void from_json(const json &j, InflationGovernor &inflationgovernor);
-/**
- * EpochSchedule from json
- */
-void from_json(const json &j, EpochSchedule &epochschedule);
 
+struct TokenSupply {
+  std::string amount;
+  uint8_t decimals;
+  std::string uiAmountString;
+};
+
+void from_json(const json &j, TokenSupply &tokensupply);
+
+struct BlockProduction {
+  uint64_t firstSlot;
+  uint64_t lastSlot;
+  json byIdentity;
+};
+
+void from_json(const json &j, BlockProduction &blockproduction);
+
+struct LeaderSchedule {
+  json validator_identities;
+};
+
+void from_json(const json &j, LeaderSchedule &leaderschedule);
 /**
  * Account metadata used to define instructions
  */
@@ -903,7 +925,27 @@ class Connection {
    */
   std::vector<Nodes> getClusterNodes() const;
 
-  /**RequestIdType
+
+  /**
+   * Returns the total supply of SPL token type
+   */
+
+  TokenSupply getTokenSupply(const PublicKey &pubKey) const;
+
+  /**
+   * Returns recent block production information from the current or previous
+   * epoch.
+   */
+
+  BlockProduction getBlockProduction() const;
+
+  /**
+   * Returns the leader schedule for an epoch
+   */
+
+  TokenSupply getTokenSupply() const;
+
+  /**
    *Get the fee the network will charge for a particular Message
    */
   getFeeForMessageRes getFeeForMessage(
@@ -978,6 +1020,7 @@ class Connection {
   /**
    * Fetch parsed account info for the specified public key
    */
+
   template <typename T>
   RpcResponseAndContext<std::optional<AccountInfo<T>>> getAccountInfo(
       const PublicKey &publicKey,
