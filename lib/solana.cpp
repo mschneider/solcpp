@@ -181,6 +181,29 @@ void to_json(json &j, const commitmentconfig &config) {
   }
 }
 
+void to_json(json &j, const mintOrProgramIdConfig &config) {
+  if (config.mint.has_value()) {
+    j["mint"] = config.mint.value();
+  }
+  if (config.programId.has_value()) {
+    j["programId"] = config.programId.value();
+  }
+}
+
+void to_json(json &j, const TokenAccountsByOwnerConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.encoding.has_value()) {
+    j["encoding"] = config.encoding.value();
+  }
+  if (config.dataSlice.has_value()) {
+    j["dataSlice"] = config.dataSlice.value();
+  }
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
+  }
+}
 void to_json(json &j, const LargestAccountsConfig &config) {
   if (config.commitment.has_value()) {
     j["commitment"] = config.commitment.value();
@@ -308,6 +331,9 @@ void from_json(const json &j, BlockProduction &blockproduction) {
 void from_json(const json &j, LeaderSchedule &leaderschedule) {
   leaderschedule.validator_identities = j;
 }
+void from_json(const json &j, TokenAccountsByOwner &tokenAccountsByOwner) {
+  tokenAccountsByOwner.validator_identities = j;
+};
 
 void from_json(const json &j, Nodes &nodes) {
   if (!j["featureSet"].is_null()) {
@@ -985,6 +1011,14 @@ BlockProduction Connection::getBlockProduction() const {
 LeaderSchedule Connection::getLeaderSchedule() const {
   const json params = {};
   const auto res = jsonRequest("getLeaderSchedule", params);
+  return sendJsonRpcRequest(res);
+}
+
+TokenAccountsByOwner Connection::getTokenAccountsByOwner(
+    std::string pubkey, const mintOrProgramIdConfig &mPconfig,
+    const TokenAccountsByOwnerConfig &config) const {
+  const json params = {pubkey, mPconfig, config};
+  const auto res = jsonRequest("getTokenAccountsByOwner", params);
   return sendJsonRpcRequest(res);
 }
 
