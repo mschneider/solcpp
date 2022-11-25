@@ -996,10 +996,16 @@ TEST_CASE("getTokenSupply") {
 
 TEST_CASE("getBlockProduction") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
-  auto x = connection.getBlockProduction();
+  auto BlockProduction = connection.getBlockProduction();
+  CHECK_GE(BlockProduction.firstSlot, 0);
+  CHECK_GE(BlockProduction.lastSlot, 0);
+  CHECK_GT(BlockProduction.byIdentity.begin().key().size(), 0);
+  CHECK_GT(BlockProduction.byIdentity.begin().value().size(), 0);
 }
 
 TEST_CASE("getLeaderSchedule") {
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   auto x = connection.getLeaderSchedule();
+  CHECK_GT(x.validator_identities.begin().value().size(), 0);
+  CHECK_GT(x.validator_identities.begin().key().size(), 0);
 }
