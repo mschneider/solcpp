@@ -305,8 +305,9 @@ void from_json(const json &j, BlockProduction &blockproduction) {
   blockproduction.byIdentity = j["byIdentity"];
 }
 
-void from_json(const json &j, LeaderSchedule &leaderschedule){
-    leaderschedule.validator_identities = j};
+void from_json(const json &j, LeaderSchedule &leaderschedule) {
+  leaderschedule.validator_identities = j;
+}
 
 void from_json(const json &j, Nodes &nodes) {
   if (!j["featureSet"].is_null()) {
@@ -972,7 +973,7 @@ std::vector<uint64_t> Connection::getBlocks(
 TokenSupply Connection::getTokenSupply(std::string pubkey) const {
   const json params = {pubkey};
   const auto res = jsonRequest("getTokenSupply", params);
-  return sendJsonRpcRequest(res);
+  return sendJsonRpcRequest(res)["value"];
 }
 
 BlockProduction Connection::getBlockProduction() const {

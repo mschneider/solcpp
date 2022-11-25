@@ -174,7 +174,7 @@ void from_json(const json &j, InflationGovernor &inflationgovernor);
 struct TokenSupply {
   std::string amount;
   uint8_t decimals;
-  uint64_t uiAmount;
+  do uiAmount;
   std::string uiAmountString;
 };
 
@@ -1008,9 +1008,12 @@ class Connection {
    * Returns recent block production information from the current or previous
    * epoch.
    */
-
   BlockProduction getBlockProduction() const;
 
+  /*
+   * Returns the leader schedule for an epoch
+   */
+  LeaderSchedule getLeaderSchedule() const;
   /**
    * Fetch parsed account info for the specified public key
    */
