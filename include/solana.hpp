@@ -174,7 +174,7 @@ void from_json(const json &j, InflationGovernor &inflationgovernor);
 struct TokenSupply {
   std::string amount;
   uint8_t decimals;
-  do uiAmount;
+  double uiAmount;
   std::string uiAmountString;
 };
 
