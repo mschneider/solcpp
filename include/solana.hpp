@@ -183,19 +183,23 @@ void from_json(const json &j, TokenSupply &tokensupply);
 struct BlockProduction {
   uint64_t firstSlot;
   uint64_t lastSlot;
-  json byIdentity;
+  std::vector<std::pair<std::string, std::vector<uint64_t>>> byIdentity;
 };
 
 void from_json(const json &j, BlockProduction &blockproduction);
 
-struct LeaderSchedule {
-  json validator_identities;
+struct TokenAccountInfo {
+  bool executable;
+  std::string owner;
+  uint64_t lamports;
+  json data;
+  uint64_t rentEpoch;
 };
-
-void from_json(const json &j, LeaderSchedule &leaderschedule);
+void from_json(const json &j, TokenAccountInfo &tokenAccountInfo);
 
 struct TokenAccountsByOwner {
-  json validator_identities;
+  std::string pubkey;
+  TokenAccountInfo account;
 };
 void from_json(const json &j, TokenAccountsByOwner &tokenAccountsByOwner);
 /**
@@ -362,6 +366,13 @@ struct GetSlotConfig {
  * convert GetSlotConfig to json
  */
 void to_json(json &j, const GetSlotConfig &config);
+
+struct BlockProductionConfig {
+  std::optional<Commitment> commitment = std::nullopt;
+  std::optional<json> range = std::nullopt;
+  std::optional<std::string> identity = std::nullopt;
+};
+void to_json(json &j, const BlockProductionConfig &config);
 
 struct LargestAccountsConfig {
   std::optional<Commitment> commitment = std::nullopt;
@@ -1027,18 +1038,24 @@ class Connection {
    * Returns recent block production information from the current or previous
    * epoch.
    */
-  BlockProduction getBlockProduction() const;
+  BlockProduction getBlockProduction(
+      const BlockProductionConfig &config = BlockProductionConfig{}) const;
 
   /*
    * Returns the leader schedule for an epoch
    */
-  LeaderSchedule getLeaderSchedule() const;
 
-  TokenAccountsByOwner getTokenAccountsByOwner(
-      std::string pubkey,
-      const mintOrProgramIdConfig &mPconfig = mintOrProgramIdConfig{},
-      const TokenAccountsByOwnerConfig &config =
-          TokenAccountsByOwnerConfig{}) const;
+  std::vector<std::pair<std::string, std::vector<uint64_t>>> getLeaderSchedule(
+      const std::optional<uint64_t> slot, const GetSlotConfig &config) const;
+
+  /*
+   * Returns all SPL Token accounts by token owner.
+   */
+
+  RpcResponseAndContext<std::vector<TokenAccountsByOwner>>
+  getTokenAccountsByOwner(std::string pubkey,
+                          const mintOrProgramIdConfig &mPconfig,
+                          const TokenAccountsByOwnerConfig &config) const;
   /**
    * Fetch parsed account info for the specified public key
    */
