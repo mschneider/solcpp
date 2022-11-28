@@ -196,8 +196,7 @@ void to_json(json &j, const commitmentconfig &config) {
 void to_json(json &j, const mintOrProgramIdConfig &config) {
   if (config.mint.has_value()) {
     j["mint"] = config.mint.value();
-  }
-  if (config.programId.has_value()) {
+  } else {
     j["programId"] = config.programId.value();
   }
 }
