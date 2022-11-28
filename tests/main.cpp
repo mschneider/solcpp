@@ -983,3 +983,126 @@ TEST_CASE("getBlocks") {
   CHECK_GE(Blocks[0], startslot);
   CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
 }
+
+TEST_CASE("program account change") {
+  solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  bool subscribe_called = false;
+  auto call_on_subscribe = [&subscribe_called](const json& data) {
+    subscribe_called = true;
+  };
+
+  const solana::PublicKey memoProgram =
+      solana::PublicKey::fromBase58(solana::MEMO_PROGRAM_ID);
+
+  // solana::rpc::subscription::WebSocketSubscriber
+  // subscribe for account change
+  int sub_id = sub.onProgramAccountChange(memoProgram, call_on_subscribe);
+  // change account data
+  auto recentBlockHash = connection.getLatestBlockhash();
+  const std::string memo = "Hello";
+
+  const solana::CompiledInstruction ix = {
+      1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
+  const solana::CompiledTransaction compiledTx = {
+      recentBlockHash, {keyPair.publicKey, memoProgram}, {ix}, 1, 0, 1};
+  const std::string transactionSignature =
+      connection.sendTransaction(keyPair, compiledTx);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
+  // assure that callback has been called
+  CHECK(subscribe_called);
+  // stop listening to websocket
+  sub.removeProgramAccountChangeListener(sub_id);
+  // change account data
+  auto recentBlockHash = connection.getLatestBlockhash();
+  const std::string memo = "Hello";
+
+  const solana::CompiledInstruction ix = {
+      1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
+  const solana::CompiledTransaction compiledTx = {
+      recentBlockHash, {keyPair.publicKey, memoProgram}, {ix}, 1, 0, 1};
+  const std::string transactionSignature =
+      connection.sendTransaction(keyPair, compiledTx);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
+  // ensure that callback wasn't called
+  CHECK(subscribe_called);
+}
+
+TEST_CASE("on root change") {
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  int num_notif, fin_number;
+  auto on_callback = [&num_notif](const json&) { ++num_notif; };
+  auto on_subscribe = [&num_notif](const json&) { num_notif = 0; };
+  auto on_unsubscribe = [&num_notif, &fin_number](const json&) {
+    fin_number = num_notif;
+  };
+  int sub_id = sub.onRootChange(on_callback, solana::Commitment::CONFIRMED,
+                                on_subscribe, on_unsubscribe);
+  sleep(10);
+  CHECK_GT(num_notif,0)
+  sub.removeRootChangeListener(sub_id);
+  sleep(10);
+  CHECK_EQ(num_notif,fin_number)
+}
+
+TEST_CASE("on signature") {
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  // request Airdrop
+  const auto prev_sol = connection.getBalance(keyPair.publicKey);
+  const auto signature = connection.requestAirdrop(keyPair.publicKey, 10);
+  bool transaction_complete = false;
+  auto on_callback = [&transaction_complete](const json &j) {
+    // TODO : to solve for error
+    transaction_complete = true;
+  };
+  int sub_id = sub.onSignature(signature,on_callback);
+  sleep(20);
+  const auto new_sol = connection.getBalance(keyPair.publicKey);
+  if(new_sol>prev_sol){
+    CHECK(transaction_complete);
+  }
+}
+
+TEST_CASE("on slot change") {
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  int num_notif, fin_number;
+  auto on_callback = [&num_notif](const json&) { ++num_notif; };
+  auto on_subscribe = [&num_notif](const json&) { num_notif = 0; };
+  auto on_unsubscribe = [&num_notif, &fin_number](const json&) {
+    fin_number = num_notif;
+  };
+  int sub_id = sub.onSlotChange(on_callback, solana::Commitment::CONFIRMED,
+                                on_subscribe, on_unsubscribe);
+  sleep(10);
+  CHECK_GT(num_notif, 0)
+  sub.removeSlotChangeListener(sub_id);
+  sleep(10);
+  CHECK_EQ(num_notif, fin_number)
+}
+
+TEST_CASE("on slot update") {
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  int num_notif, fin_number;
+  auto on_callback = [&num_notif](const json&) { ++num_notif; };
+  auto on_subscribe = [&num_notif](const json&) { num_notif = 0; };
+  auto on_unsubscribe = [&num_notif, &fin_number](const json&) {
+    fin_number = num_notif;
+  };
+  int sub_id = sub.onSlotUpdate(on_callback, solana::Commitment::CONFIRMED,
+                                on_subscribe, on_unsubscribe);
+  sleep(10);
+  CHECK_GT(num_notif, 0)
+  sub.removeSlotUpdateListener(sub_id);
+  sleep(10);
+  CHECK_EQ(num_notif, fin_number)
+}

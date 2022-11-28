@@ -1028,10 +1028,10 @@ namespace subscription {
 enum class LogsFilter : short { ALL, ALLWITHVOTES };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(LogsFilter,
-                            {
-                                {LogsFilter::ALL, "all"},
-                                {LogsFilter::ALLWITHVOTES, "allWithVotes"},
-                            })
+                             {
+                                 {LogsFilter::ALL, "all"},
+                                 {LogsFilter::ALLWITHVOTES, "allWithVotes"},
+                             })
 
 json accountSubscribeRequest(
     const std::string &account,
@@ -1066,12 +1066,47 @@ class WebSocketSubscriber {
   void removeAccountChangeListener(RequestIdType sub_id);
 
   int onLogs(Callback callback,
-            const Commitment &commitment = Commitment::FINALIZED,
-            const LogsFilter &logFilter = LogsFilter::ALL,
-            Callback on_subscibe = nullptr, 
-            Callback on_unsubscribe = nullptr);
+             const Commitment &commitment = Commitment::FINALIZED,
+             const LogsFilter &logFilter = LogsFilter::ALL,
+             Callback on_subscibe = nullptr, Callback on_unsubscribe = nullptr);
 
   void removeOnLogsListener(RequestIdType sub_id);
+
+  int onProgramAccountChange(
+      const solana::PublicKey &programId, Callback callback,
+      const Commitment &commitment = Commitment::FINALIZED,
+      const json &filters = json::array(), Callback on_subscibe = nullptr,
+      Callback on_unsubscribe = nullptr);
+
+  void removeProgramAccountChangeListener(RequestIdType sub_id);
+
+  int onRootChange(Callback callback,
+                   const Commitment &commitment = Commitment::FINALIZED,
+                   Callback on_subscibe = nullptr,
+                   Callback on_unsubscribe = nullptr);
+
+  void removeRootChangeListener(RequestIdType sub_id);
+
+  int onSignature(const std::string &signature, Callback callback,
+                  const Commitment &commitment = Commitment::FINALIZED,
+                  Callback on_subscibe = nullptr,
+                  Callback on_unsubscribe = nullptr);
+
+  void removeSignatureListener(RequestIdType sub_id);
+
+  int onSlotChange(Callback callback,
+                   const Commitment &commitment = Commitment::FINALIZED,
+                   Callback on_subscibe = nullptr,
+                   Callback on_unsubscribe = nullptr);
+
+  void removeSlotChangeListener(RequestIdType sub_id);
+
+  int onSlotUpdate(Callback callback,
+                   const Commitment &commitment = Commitment::FINALIZED,
+                   Callback on_subscibe = nullptr,
+                   Callback on_unsubscribe = nullptr);
+
+  void removeSlotUpdateListener(RequestIdType sub_id);
 };
 }  // namespace subscription
 }  // namespace rpc

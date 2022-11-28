@@ -1030,20 +1030,15 @@ void WebSocketSubscriber::removeAccountChangeListener(RequestIdType sub_id) {
 }
 
 /*Function to subscribe to logs*/
-int WebSocketSubscriber::onLogs(
-    Callback callback,
-    const Commitment &commitment,
-    const LogsFilter &logFilter,
-    Callback on_subscibe,
-    Callback on_unsubscribe) {
+int WebSocketSubscriber::onLogs(Callback callback, const Commitment &commitment,
+                                const LogsFilter &logFilter,
+                                Callback on_subscibe, Callback on_unsubscribe) {
   // create parameters using the user provided input
-  json param = {logFilter,
-                {{"commitment", commitment}}};
+  json param = {logFilter, {{"commitment", commitment}}};
 
   // create a new request content
-  RequestContent req(curr_id, "logsSubscribe", "logsUnsubscribe",
-                    callback, std::move(param), on_subscibe,
-                    on_unsubscribe);
+  RequestContent req(curr_id, "logsSubscribe", "logsUnsubscribe", callback,
+                     std::move(param), on_subscibe, on_unsubscribe);
 
   // subscribe the new request content
   sess->subscribe(req);
@@ -1055,6 +1050,135 @@ int WebSocketSubscriber::onLogs(
 }
 
 void WebSocketSubscriber::removeOnLogsListener(RequestIdType sub_id) {
+  sess->unsubscribe(sub_id);
+}
+
+int WebSocketSubscriber::onProgramAccountChange(
+    const solana::PublicKey &programId, Callback callback,
+    const Commitment &commitment, const json &filters, Callback on_subscibe,
+    Callback on_unsubscribe) {
+  // create parameters using the user provided input
+  json param = {programId,
+                {{"encoding", "base64"},
+                 {"commitment", commitment},
+                 {"filters", filters}}};
+
+  // create a new request content
+  RequestContent req(curr_id, "programSubscribe", "programUnsubscribe",
+                     callback, std::move(param), on_subscibe, on_unsubscribe);
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req.id;
+}
+
+void WebSocketSubscriber::removeProgramAccountChangeListener(
+    RequestIdType sub_id) {
+  sess->unsubscribe(sub_id);
+}
+
+int WebSocketSubscriber::onRootChange(Callback callback,
+                                      const Commitment &commitment,
+                                      Callback on_subscibe,
+                                      Callback on_unsubscribe) {
+  // create parameters using the user provided input
+  json param = json::array();
+
+  // create a new request content
+  RequestContent req(curr_id, "rootSubscribe", "rootUnsubscribe", callback,
+                     std::move(param), on_subscibe, on_unsubscribe);
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req.id;
+}
+
+void WebSocketSubscriber::removeRootChangeListener(RequestIdType sub_id) {
+  sess->unsubscribe(sub_id);
+}
+
+int WebSocketSubscriber::onSignature(const std::string &signature,
+                                     Callback callback,
+                                     const Commitment &commitment,
+                                     Callback on_subscibe,
+                                     Callback on_unsubscribe) {
+  // create parameters using the user provided input
+  json param = {signature,
+                {
+                    {"commitment", commitment},
+                }};
+
+  // create a new request content
+  RequestContent req(curr_id, "signatureSubscribe", "signatureUnsubscribe",
+                     callback, std::move(param), on_subscibe, on_unsubscribe);
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req.id;
+}
+
+void WebSocketSubscriber::removeSignatureListener(RequestIdType sub_id) {
+  sess->unsubscribe(sub_id);
+}
+
+int WebSocketSubscriber::onSlotChange(Callback callback,
+                                      const Commitment &commitment,
+                                      Callback on_subscibe,
+                                      Callback on_unsubscribe) {
+  // create parameters using the user provided input
+  json param = json::array();
+
+  // create a new request content
+  RequestContent req(curr_id, "slotSubscribe", "slotUnsubscribe", callback,
+                     std::move(param), on_subscibe, on_unsubscribe);
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req.id;
+}
+
+void WebSocketSubscriber::removeSlotChangeListener(RequestIdType sub_id) {
+  sess->unsubscribe(sub_id);
+}
+
+int WebSocketSubscriber::onSlotUpdate(Callback callback,
+                                      const Commitment &commitment,
+                                      Callback on_subscibe,
+                                      Callback on_unsubscribe) {
+  // create parameters using the user provided input
+  json param = json::array();
+
+  // create a new request content
+  RequestContent req(curr_id, "slotsUpdatesSubscribe",
+                     "slotsUpdatesUnsubscribe", callback, std::move(param),
+                     on_subscibe, on_unsubscribe);
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req.id;
+}
+
+void WebSocketSubscriber::removeSlotUpdateListener(RequestIdType sub_id) {
   sess->unsubscribe(sub_id);
 }
 
