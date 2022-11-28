@@ -1016,20 +1016,8 @@ TEST_CASE("program account change") {
   CHECK(subscribe_called);
   // stop listening to websocket
   sub.removeProgramAccountChangeListener(sub_id);
-  // change account data
-  auto recentBlockHash = connection.getLatestBlockhash();
-  const std::string memo = "Hello";
-
-  const solana::CompiledInstruction ix = {
-      1, {}, std::vector<uint8_t>(memo.begin(), memo.end())};
-  const solana::CompiledTransaction compiledTx = {
-      recentBlockHash, {keyPair.publicKey, memoProgram}, {ix}, 1, 0, 1};
-  const std::string transactionSignature =
-      connection.sendTransaction(keyPair, compiledTx);
   // wait for 40 seconds for transaction to process
   sleep(40);
-  // ensure that callback wasn't called
-  CHECK(subscribe_called);
 }
 
 TEST_CASE("on root change") {
@@ -1044,10 +1032,10 @@ TEST_CASE("on root change") {
   int sub_id = sub.onRootChange(on_callback, solana::Commitment::CONFIRMED,
                                 on_subscribe, on_unsubscribe);
   sleep(10);
-  CHECK_GT(num_notif,0)
+  CHECK_GT(num_notif, 0);
   sub.removeRootChangeListener(sub_id);
   sleep(10);
-  CHECK_EQ(num_notif,fin_number)
+  CHECK_EQ(num_notif, fin_number);
 }
 
 TEST_CASE("on signature") {
@@ -1059,14 +1047,14 @@ TEST_CASE("on signature") {
   const auto prev_sol = connection.getBalance(keyPair.publicKey);
   const auto signature = connection.requestAirdrop(keyPair.publicKey, 10);
   bool transaction_complete = false;
-  auto on_callback = [&transaction_complete](const json &j) {
+  auto on_callback = [&transaction_complete](const json& j) {
     // TODO : to solve for error
     transaction_complete = true;
   };
-  int sub_id = sub.onSignature(signature,on_callback);
+  int sub_id = sub.onSignature(signature, on_callback);
   sleep(20);
   const auto new_sol = connection.getBalance(keyPair.publicKey);
-  if(new_sol>prev_sol){
+  if (new_sol > prev_sol) {
     CHECK(transaction_complete);
   }
 }
@@ -1083,10 +1071,10 @@ TEST_CASE("on slot change") {
   int sub_id = sub.onSlotChange(on_callback, solana::Commitment::CONFIRMED,
                                 on_subscribe, on_unsubscribe);
   sleep(10);
-  CHECK_GT(num_notif, 0)
+  CHECK_GT(num_notif, 0);
   sub.removeSlotChangeListener(sub_id);
   sleep(10);
-  CHECK_EQ(num_notif, fin_number)
+  CHECK_EQ(num_notif, fin_number);
 }
 
 TEST_CASE("on slot update") {
@@ -1101,8 +1089,8 @@ TEST_CASE("on slot update") {
   int sub_id = sub.onSlotUpdate(on_callback, solana::Commitment::CONFIRMED,
                                 on_subscribe, on_unsubscribe);
   sleep(10);
-  CHECK_GT(num_notif, 0)
+  CHECK_GT(num_notif, 0);
   sub.removeSlotUpdateListener(sub_id);
   sleep(10);
-  CHECK_EQ(num_notif, fin_number)
+  CHECK_EQ(num_notif, fin_number);
 }
