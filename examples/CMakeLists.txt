@@ -6,6 +6,7 @@ add_executable(example-account-subscribe accountSubscribe.cpp)
 add_executable(example-send-transaction sendTransaction.cpp)
 add_executable(example-positions positions.cpp)
 add_executable(example-ws ws.cpp)
+add_executable(example-ws-logs ws_logs.cpp)
 
 # link
 target_link_libraries(example-get-account-info ${CONAN_LIBS} sol)
@@ -13,3 +14,4 @@ target_link_libraries(example-account-subscribe ${CONAN_LIBS} sol)
 target_link_libraries(example-send-transaction ${CONAN_LIBS} sol)
 target_link_libraries(example-positions ${CONAN_LIBS} sol)
 target_link_libraries(example-ws ${CONAN_LIBS} sol)
+target_link_libraries(example-ws-logs ${CONAN_LIBS} sol)
