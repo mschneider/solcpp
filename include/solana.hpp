@@ -1025,6 +1025,14 @@ namespace subscription {
  * Subscribe to an account to receive notifications when the lamports or data
  * for a given account public key changes
  */
+enum class LogsFilter : short { ALL, ALLWITHVOTES };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(LogsFilter,
+                            {
+                                {LogsFilter::ALL, "all"},
+                                {LogsFilter::ALLWITHVOTES, "allWithVotes"},
+                            })
+
 json accountSubscribeRequest(
     const std::string &account,
     const Commitment commitment = Commitment::FINALIZED,
@@ -1056,6 +1064,14 @@ class WebSocketSubscriber {
   /// @brief remove the account change listener for the given id
   /// @param sub_id the id for which removing subscription is needed
   void removeAccountChangeListener(RequestIdType sub_id);
+
+  int onLogs(Callback callback,
+            const Commitment &commitment = Commitment::FINALIZED,
+            const LogsFilter &logFilter = LogsFilter::ALL,
+            Callback on_subscibe = nullptr, 
+            Callback on_unsubscribe = nullptr);
+
+  void removeOnLogsListener(RequestIdType sub_id);
 };
 }  // namespace subscription
 }  // namespace rpc
