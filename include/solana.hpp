@@ -1021,6 +1021,14 @@ class Connection {
 /// Websocket requests
 namespace subscription {
 
+enum class LogsFilter : short { ALL, ALLWITHVOTES };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(LogsFilter,
+                             {
+                                 {LogsFilter::ALL, "all"},
+                                 {LogsFilter::ALLWITHVOTES, "allWithVotes"},
+                             })
+
 /**
  * Subscribe to an account to receive notifications when the lamports or data
  * for a given account public key changes
