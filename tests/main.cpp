@@ -983,3 +983,31 @@ TEST_CASE("getBlocks") {
   CHECK_GE(Blocks[0], startslot);
   CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
 }
+
+TEST_CASE("logs subscribe and unsubscribe") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  bool subscribe_called = false;
+  auto call_on_subscribe = [&subscribe_called](const json& data) {
+    subscribe_called = true;
+  };
+
+  // solana::rpc::subscription::WebSocketSubscriber
+  // subscribe for account change
+  int sub_id = sub.onLogs(call_on_subscribe);
+  // change account data
+  connection.requestAirdrop(keyPair.publicKey, 50);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
+  // assure that callback has been called
+  CHECK(subscribe_called);
+  // stop listening to websocket
+  sub.removeOnLogsListener(sub_id);
+  // change account data
+  connection.requestAirdrop(keyPair.publicKey, 50);
+  // wait for 40 seconds for transaction to process
+  sleep(40);
+  // ensure that callback wasn't called
+  CHECK(subscribe_called);
+}
