@@ -1056,6 +1056,13 @@ class WebSocketSubscriber {
   /// @brief remove the account change listener for the given id
   /// @param sub_id the id for which removing subscription is needed
   void removeAccountChangeListener(RequestIdType sub_id);
+
+  int onRootChange(Callback callback,
+                   const Commitment &commitment = Commitment::FINALIZED,
+                   Callback on_subscibe = nullptr,
+                   Callback on_unsubscribe = nullptr);
+
+  void removeRootChangeListener(RequestIdType sub_id);
 };
 }  // namespace subscription
 }  // namespace rpc
