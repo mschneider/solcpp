@@ -983,3 +983,24 @@ TEST_CASE("getBlocks") {
   CHECK_GE(Blocks[0], startslot);
   CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
 }
+
+TEST_CASE("signature subscribe and unsubscribe") {
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  const solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  // request Airdrop
+  const auto prev_sol = connection.getBalance(keyPair.publicKey);
+  const auto signature = connection.requestAirdrop(keyPair.publicKey, 10);
+  bool transaction_complete = false;
+  auto on_callback = [&transaction_complete](const json& j) {
+    // TODO : to solve for error
+    transaction_complete = true;
+  };
+  int sub_id = sub.onSignature(signature, on_callback);
+  sleep(20);
+  const auto new_sol = connection.getBalance(keyPair.publicKey);
+  if (new_sol > prev_sol) {
+    CHECK(transaction_complete);
+  }
+}
