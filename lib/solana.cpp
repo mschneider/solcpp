@@ -1137,6 +1137,31 @@ int WebSocketSubscriber::onAccountChange(const solana::PublicKey &pub_key,
 void WebSocketSubscriber::removeAccountChangeListener(RequestIdType sub_id) {
   sess->unsubscribe(sub_id);
 }
+
+int WebSocketSubscriber::onSlotChange(Callback callback,
+                                      const Commitment &commitment,
+                                      Callback on_subscibe,
+                                      Callback on_unsubscribe) {
+  // create parameters using the user provided input
+  json param = json::array();
+
+  // create a new request content
+  RequestContent req(curr_id, "slotSubscribe", "slotUnsubscribe", callback,
+                     std::move(param), on_subscibe, on_unsubscribe);
+
+  // subscribe the new request content
+  sess->subscribe(req);
+
+  // increase the curr_id so that it can be used for the next request content
+  curr_id += 2;
+
+  return req.id;
+}
+
+void WebSocketSubscriber::removeSlotChangeListener(RequestIdType sub_id) {
+  sess->unsubscribe(sub_id);
+}
+
 }  // namespace subscription
 }  // namespace rpc
 }  // namespace solana
