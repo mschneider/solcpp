@@ -985,6 +985,7 @@ TEST_CASE("getBlocks") {
 }
 
 TEST_CASE("logs subscribe and unsubscribe") {
+  solana::Keypair keyPair = solana::Keypair::fromFile(KEY_PAIR_FILE);
   const auto connection = solana::rpc::Connection(solana::DEVNET);
   solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
                                                      "80");
