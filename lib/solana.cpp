@@ -56,6 +56,18 @@ void to_json(json &j, const GetSlotConfig &config) {
   }
 }
 
+void to_json(json &j, const BlockProductionConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.range.has_value()) {
+    j["range"] = config.range.value();
+  }
+  if (config.identity.has_value()) {
+    j["identity"] = config.identity.value();
+  }
+}
+
 void from_json(const json &j, PublicKey &key) {
   key = PublicKey::fromBase58(j);
 }
@@ -181,6 +193,28 @@ void to_json(json &j, const commitmentconfig &config) {
   }
 }
 
+void to_json(json &j, const mintOrProgramIdConfig &config) {
+  if (config.mint.has_value()) {
+    j["mint"] = config.mint.value();
+  } else {
+    j["programId"] = config.programId.value();
+  }
+}
+
+void to_json(json &j, const TokenAccountsByOwnerConfig &config) {
+  if (config.commitment.has_value()) {
+    j["commitment"] = config.commitment.value();
+  }
+  if (config.encoding.has_value()) {
+    j["encoding"] = config.encoding.value();
+  }
+  if (config.dataSlice.has_value()) {
+    j["dataSlice"] = config.dataSlice.value();
+  }
+  if (config.minContextSlot.has_value()) {
+    j["minContextSlot"] = config.minContextSlot.value();
+  }
+}
 void to_json(json &j, const LargestAccountsConfig &config) {
   if (config.commitment.has_value()) {
     j["commitment"] = config.commitment.value();
@@ -290,6 +324,36 @@ void from_json(const json &j, InflationGovernor &inflationgovernor) {
   inflationgovernor.initial = j["initial"];
   inflationgovernor.taper = j["taper"];
   inflationgovernor.terminal = j["terminal"];
+}
+
+void from_json(const json &j, TokenSupply &tokensupply) {
+  tokensupply.amount = j["amount"];
+  tokensupply.decimals = j["decimals"];
+  tokensupply.uiAmount = j["uiAmount"];
+  tokensupply.uiAmountString = j["uiAmountString"];
+}
+
+void from_json(const json &j, BlockProduction &blockproduction) {
+  blockproduction.firstSlot = j["range"]["firstSlot"];
+  blockproduction.lastSlot = j["range"]["lastSlot"];
+  auto byIdentity = j["byIdentity"];
+  std::vector<std::pair<std::string, std::vector<uint64_t>>> vec;
+  for (auto it = byIdentity.begin(); it != byIdentity.end(); ++it) {
+    vec.emplace_back(it.key(), it.value());
+  }
+  blockproduction.byIdentity = vec;
+}
+void from_json(const json &j, TokenAccountInfo &tokenAccountInfo) {
+  tokenAccountInfo.data = j["data"];
+  tokenAccountInfo.executable = j["executable"];
+  tokenAccountInfo.lamports = j["lamports"];
+  tokenAccountInfo.owner = j["owner"];
+  tokenAccountInfo.rentEpoch = j["rentEpoch"];
+}
+
+void from_json(const json &j, TokenAccountsByOwner &tokenAccountsByOwner) {
+  tokenAccountsByOwner.pubkey = j["pubkey"];
+  tokenAccountsByOwner.account = j["account"];
 }
 
 void from_json(const json &j, Nodes &nodes) {
@@ -952,6 +1016,51 @@ std::vector<uint64_t> Connection::getBlocks(
   const json reqJson = jsonRequest("getBlocks", params);
   return sendJsonRpcRequest(reqJson);
 }
+
+TokenSupply Connection::getTokenSupply(std::string pubkey) const {
+  const json params = {pubkey};
+  const auto res = jsonRequest("getTokenSupply", params);
+  return sendJsonRpcRequest(res)["value"];
+}
+
+BlockProduction Connection::getBlockProduction(
+    const BlockProductionConfig &config) const {
+  const json params = {config};
+  const auto res = jsonRequest("getBlockProduction", params);
+  return sendJsonRpcRequest(res)["value"];
+}
+
+std::vector<std::pair<std::string, std::vector<uint64_t>>>
+Connection::getLeaderSchedule(const std::optional<uint64_t> slot,
+                              const GetSlotConfig &config) const {
+  uint64_t slotArg;
+  json params;
+  if (slot.has_value()) {
+    slotArg = slot.value();
+    params = {slotArg, config};
+  } else {
+    params = {config};
+  }
+  const auto reqJson = jsonRequest("getLeaderSchedule", params);
+  std::vector<std::pair<std::string, std::vector<uint64_t>>> vec;
+  const json byIdentity = sendJsonRpcRequest(reqJson);
+  for (auto it = byIdentity.begin(); it != byIdentity.end(); ++it) {
+    vec.emplace_back(it.key(), it.value());
+  }
+  return vec;
+}
+
+RpcResponseAndContext<std::vector<TokenAccountsByOwner>>
+Connection::getTokenAccountsByOwner(
+    std::string pubkey, const mintOrProgramIdConfig &mPconfig,
+    const TokenAccountsByOwnerConfig &config) const {
+  const json params = {pubkey, mPconfig, config};
+  const auto reqJson = jsonRequest("getTokenAccountsByOwner", params);
+  const json res = sendJsonRpcRequest(reqJson);
+  const json value = res["value"];
+  return {res["context"], value};
+}
+
 namespace subscription {
 /**
  * Subscribe to an account to receive notifications when the lamports or data
