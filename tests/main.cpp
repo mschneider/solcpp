@@ -1001,3 +1001,41 @@ TEST_CASE("slot change subscribe and unsubscribe") {
   sleep(10);
   CHECK_EQ(num_notif, fin_number);
 }
+
+TEST_CASE("getTokenSupply") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  const auto TokenSupply =
+      connection.getTokenSupply("7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU");
+  CHECK_GT(TokenSupply.amount.size(), 0);
+  CHECK_GE(TokenSupply.decimals, 0);
+  CHECK_GE(TokenSupply.uiAmount, 0);
+  CHECK_GT(TokenSupply.uiAmountString.size(), 0);
+}
+
+TEST_CASE("getBlockProduction") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  auto BlockProduction = connection.getBlockProduction();
+  CHECK_GE(BlockProduction.firstSlot, 0);
+  CHECK_GE(BlockProduction.lastSlot, 0);
+  CHECK_GT(BlockProduction.byIdentity[0].first.size(), 0);
+  CHECK_GT(BlockProduction.byIdentity[0].second.size(), 0);
+}
+
+TEST_CASE("getLeaderSchedule") {
+  const auto connection = solana::rpc::Connection(solana::DEVNET);
+  auto slot = connection.getSlot();
+  auto LeaderSchedule = connection.getLeaderSchedule(
+      slot, solana::GetSlotConfig{solana::Commitment::PROCESSED});
+  CHECK_GT(LeaderSchedule.size(), 0);
+}
+
+TEST_CASE("getTokenAccountsByOwner") {
+  const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
+  auto TokenAccountsByOwner = connection.getTokenAccountsByOwner(
+      "GgPpTKg78vmzgDtP1DNn72CHAYjRdKY7AV6zgszoHCSa",
+      solana::mintOrProgramIdConfig{
+          "1YDQ35V8g68FGvcT85haHwAXv1U7XMzuc4mZeEXfrjE"},
+      solana::TokenAccountsByOwnerConfig{{}, "jsonParsed"});
+  CHECK_GT(TokenAccountsByOwner.value.size(), 0);
+}
+
