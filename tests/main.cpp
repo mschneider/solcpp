@@ -984,6 +984,24 @@ TEST_CASE("getBlocks") {
   CHECK_LE(Blocks[Blocks.size() - 1], latestslot);
 }
 
+TEST_CASE("root subscribe and unsubscribe") {
+  solana::rpc::subscription::WebSocketSubscriber sub("api.devnet.solana.com",
+                                                     "80");
+  int num_notif, fin_number;
+  auto on_callback = [&num_notif](const json&) { ++num_notif; };
+  auto on_subscribe = [&num_notif](const json&) { num_notif = 0; };
+  auto on_unsubscribe = [&num_notif, &fin_number](const json&) {
+    fin_number = num_notif;
+  };
+  int sub_id = sub.onRootChange(on_callback, solana::Commitment::CONFIRMED,
+                                on_subscribe, on_unsubscribe);
+  sleep(10);
+  CHECK_GT(num_notif, 0);
+  sub.removeRootChangeListener(sub_id);
+  sleep(10);
+  CHECK_EQ(num_notif, fin_number);
+}
+
 TEST_CASE("getTokenSupply") {
   const auto connection = solana::rpc::Connection(solana::MAINNET_BETA);
   const auto TokenSupply =
