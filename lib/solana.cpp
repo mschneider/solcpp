@@ -1119,9 +1119,9 @@ int WebSocketSubscriber::onAccountChange(const solana::PublicKey &pub_key,
   json param = {pub_key, {{"encoding", "base64"}, {"commitment", commitment}}};
 
   // create a new request content
-  RequestContent req(curr_id, "accountSubscribe", "accountUnsubscribe",
-                     account_change_callback, std::move(param), on_subscibe,
-                     on_unsubscribe);
+  RequestContent *req = new RequestContent(
+      curr_id, "accountSubscribe", "accountUnsubscribe",
+      account_change_callback, std::move(param), on_subscibe, on_unsubscribe);
 
   // subscribe the new request content
   sess->subscribe(req);
@@ -1129,7 +1129,7 @@ int WebSocketSubscriber::onAccountChange(const solana::PublicKey &pub_key,
   // increase the curr_id so that it can be used for the next request content
   curr_id += 2;
 
-  return req.id;
+  return req->id;
 }
 
 /// @brief remove the account change listener for the given id

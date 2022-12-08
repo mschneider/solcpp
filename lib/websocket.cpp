@@ -18,9 +18,9 @@ RequestContent::RequestContent(RequestIdType id, std::string subscribe_method,
 /// @return the json that can be used to make subscription
 json RequestContent::get_subscription_request() const {
   json req = {{"jsonrpc", "2.0"},
-              {"id", id},
-              {"method", subscribe_method},
-              {"params", params}};
+              {"id", this->id},
+              {"method", this->subscribe_method},
+              {"params", this->params}};
   return req;
 }
 
@@ -31,8 +31,8 @@ json RequestContent::get_unsubscription_request(
     RequestIdType subscription_id) const {
   json params = {subscription_id};
   json req = {{"jsonrpc", "2.0"},
-              {"id", id + 1},
-              {"method", unsubscribe_method},
+              {"id", this->id + 1},
+              {"method", this->unsubscribe_method},
               {"params", params}};
   return req;
 }
@@ -63,14 +63,14 @@ void session::run(std::string host, std::string port) {
 
 /// @brief push a function for subscription
 /// @param req the request to call
-void session::subscribe(const RequestContent &req) {
+void session::subscribe(RequestContent *req) {
   // context for unique_lock
   {
     std::unique_lock lk(mutex_for_maps);
-    callback_map[req.id] = req;
+    callback_map[req->id] = req;
   }
   // get subscription request and then send it to the websocket
-  ws.write(net::buffer(req.get_subscription_request().dump()));
+  ws.write(net::buffer(req->get_subscription_request().dump()));
 }
 
 /// @brief push for unsubscription
@@ -78,15 +78,33 @@ void session::subscribe(const RequestContent &req) {
 void session::unsubscribe(RequestIdType id) {
   // context for shared lock
   std::string unsubsciption_request = "";
+  std::unordered_map<RequestIdType, RequestContent *>::iterator ite;
   {
     std::shared_lock lk(mutex_for_maps);
 
-    auto ite = callback_map.find(id);
-    if (ite == callback_map.end()) return;
-    unsubsciption_request =
-        ite->second.get_unsubscription_request(ite->second.ws_id).dump();
-    maps_wsid_to_id.erase(ite->second.ws_id);
+    ite = callback_map.find(id);
   }
+  if (ite == callback_map.end()) return;
+
+  // wait for subscription to happen
+  bool subscription_successful = ite->second->subscription_future.get();
+
+  // if subscription wasn't successful then just remove the id from callback
+  if (!subscription_successful) {
+    {
+      std::unique_lock lk(mutex_for_maps);
+      const auto ite = callback_map.find(id);
+      if (ite != callback_map.end()) {
+        callback_map.erase(ite);
+        delete ite->second;
+      }
+    }
+    return;
+  }
+
+  unsubsciption_request =
+      ite->second->get_unsubscription_request(ite->second->ws_id).dump();
+  maps_wsid_to_id.erase(ite->second->ws_id);
   if (!unsubsciption_request.empty()) {
     // write it to the websocket
     ws.write(net::buffer(unsubsciption_request));
@@ -197,10 +215,10 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // get the data from the websocket and parse it to json
   auto res = buffer.data();
   json data = json::parse(net::buffers_begin(res), net::buffers_end(res));
-
   // if data contains field result then it's either subscription or
   // unsubscription response
   static const char *result = "result";
+  static const char *error = "error";
   try {
     if (data.contains(std::string{result})) {
       RequestIdType id = data["id"];
@@ -215,8 +233,9 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
           std::unique_lock lk(mutex_for_maps);
           const auto ite = callback_map.find(id);
           if (ite != callback_map.end()) {
-            on_unsubscribe = ite->second.on_unsubscribe;
+            on_unsubscribe = ite->second->on_unsubscribe;
             callback_map.erase(ite);
+            delete ite->second;
           }
         }
         if (on_unsubscribe) {
@@ -231,16 +250,36 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
           const auto ite = callback_map.find(id);
           if (ite != callback_map.end()) {
-            on_subscribe = ite->second.on_subscribe;
-            ite->second.subscribed = true;
-            ite->second.ws_id = data[result];
-            maps_wsid_to_id[ite->second.ws_id] = id;
+            on_subscribe = ite->second->on_subscribe;
+            ite->second->subscribed_pr.set_value(true);
+            ite->second->ws_id = data[result];
+            maps_wsid_to_id[ite->second->ws_id] = id;
           }
         }
         if (on_subscribe) {
           on_subscribe(data);
         }
       }
+    }
+    // In case of erro
+    else if (data.contains(std::string{error})) {
+      RequestIdType id = data["id"];
+      json er_mess = data["error"];
+      // if id is even then error in subscribing else error in unsubscribing
+      if (id % 2 == 0) {
+        std::cout << "Some error happened while subscribing" << std::endl;
+        {
+          std::unique_lock lk(mutex_for_maps);
+
+          const auto ite = callback_map.find(id);
+          if (ite != callback_map.end()) {
+            ite->second->subscribed_pr.set_value(false);
+          }
+        }
+      } else {
+        std::cout << "Some error happened while unsubscribing" << std::endl;
+      }
+      std::cout << er_mess << std::endl;
     }
     // it's a notification process it sccordingly
     else {
@@ -275,7 +314,7 @@ Callback session::get_callback(RequestIdType request_id) {
               << std::endl;
     return nullptr;
   }
-  return sub_ite->second.cb;
+  return sub_ite->second->cb;
 }
 
 /// @brief call the specified callback
