@@ -1129,7 +1129,7 @@ int WebSocketSubscriber::onAccountChange(const solana::PublicKey &pub_key,
   // increase the curr_id so that it can be used for the next request content
   curr_id += 2;
 
-  return req.id;
+  return req->id;
 }
 
 /// @brief remove the account change listener for the given id
