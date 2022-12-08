@@ -38,7 +38,9 @@ struct RequestContent {
   Callback on_unsubscribe;
   // params to be passed with the subscription string
   json params;
-  bool subscribed = false;
+  // using promise to ensure this
+  std::promise<bool> subscribed_pr;
+  std::future<bool> subscription_future = subscribed_pr.get_future();
   RequestIdType ws_id;
 
   RequestContent() = default;
@@ -77,7 +79,7 @@ class session : public std::enable_shared_from_this<session> {
 
   /// @brief push a function for subscription
   /// @param req the request to call
-  void subscribe(const RequestContent &req);
+  void subscribe(RequestContent *req);
 
   /// @brief push for unsubscription
   /// @param id the id to unsubscribe on
@@ -147,7 +149,7 @@ class session : public std::enable_shared_from_this<session> {
   std::atomic_bool is_connected;
 
   // map of subscription id with callback
-  std::unordered_map<RequestIdType, RequestContent> callback_map;
+  std::unordered_map<RequestIdType, RequestContent *> callback_map;
   std::unordered_map<RequestIdType, RequestIdType> maps_wsid_to_id;
   std::shared_mutex mutex_for_maps;
 
